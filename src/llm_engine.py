@@ -295,3 +295,81 @@ JSON 格式: {{"intent": "...", "target": "...", "narrative": "..."}}"""
             return self._call_api(self.intent_model, contents)[:100]
         except Exception:
             return f"[{event_type}]"
+    
+    def generate_npc_response(self, player_input: str, npc_data: Dict, player_data: Dict, memory_context: str = "") -> str:
+        """
+        ★ 生成式对话：基于图谱人设 + 记忆上下文的实时对话生成
+        
+        双脑协同：
+        - 左脑(Neo4j): 提供NPC静态人设
+        - 右脑(Postgres): 提供动态记忆上下文
+        - LLM: 结合两者生成自然回复
+        
+        Args:
+            player_input: 玩家说的话
+            npc_data: NPC 数据 (name, faction, disposition, location, dialogue)
+            player_data: 玩家数据 (name, faction)
+            memory_context: 记忆上下文（从向量库检索的相关记忆）
+        
+        Returns:
+            LLM 生成的 NPC 回复
+        """
+        # 构建记忆部分（如果有）
+        memory_section = ""
+        if memory_context and memory_context != "暂无相关记忆":
+            memory_section = f"""
+# 相关记忆（你们之前的互动）
+{memory_context}
+
+# 记忆使用规则
+- 如果玩家提到之前的事情，请参考记忆回答。
+- 如果记忆中有你对玩家做出的承诺，请兑现。
+- 如果记忆显示玩家曾帮助过你，请表示感谢。
+- 回答时要自然，不要生硬地背诵记忆。
+"""
+        
+        system_prompt = f"""你正在扮演一个游戏里的 NPC。请根据以下人设和记忆回答玩家的话。
+
+# NPC 档案 (你的身份)
+名字: {npc_data.get('name', '未知')}
+阵营: {npc_data.get('faction', '无阵营')}
+性格: {npc_data.get('disposition', 'neutral')} (aggressive=粗鲁好战, neutral=冷漠平淡, friendly=热情友好)
+当前位置: {npc_data.get('location', '未知地点')}
+背景台词风格: "{npc_data.get('dialogue', '...')}" (参考这种语气和用词风格)
+
+# 玩家档案 (对方身份)
+名字: {player_data.get('name', '无名氏')}
+阵营: {player_data.get('faction', '无阵营')}
+{memory_section}
+# 角色扮演规则
+1. 保持完全的角色扮演，不要跳出戏说"我是一个AI"之类的话。
+2. 如果玩家问名字、身份，按你的人设回答，可以编一个符合背景的名字。
+3. 语气控制：
+   - 如果玩家阵营与你敌对 (HOSTILE_TO 关系)，语气要充满敌意、威胁、不耐烦
+   - 如果是同一阵营或友好，要恭敬、热情、愿意帮助
+   - 如果是中立，要冷淡、公事公办
+4. 回答简短有力（30-50字），符合古代/战国背景的语言风格。
+5. 可以反问玩家，增加互动感。
+
+记住：你就是 {npc_data.get('name')}，不是AI。
+
+现在，玩家对你说: "{player_input}""""
+        
+        try:
+            contents = [
+                {"role": "user", "parts": [{"text": system_prompt}]},
+                {"role": "user", "parts": [{"text": f"玩家对你说: \"{player_input}\""}]}
+            ]
+            
+            response = self._call_api(self.intent_model, contents)
+            
+            # 清理回复，移除可能的引号
+            reply = response.strip().strip('"').strip("'")
+            
+            logger.info(f"生成式对话: {npc_data.get('name')} -> {reply[:30]}...")
+            return reply
+            
+        except Exception as e:
+            logger.error(f"生成式对话失败: {e}")
+            # 失败时回退到静态台词
+            return npc_data.get('dialogue', '...')

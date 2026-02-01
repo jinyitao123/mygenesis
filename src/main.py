@@ -15,6 +15,7 @@ init(autoreset=True)
 
 from graph_client import GraphClient
 from llm_engine import LLMEngine
+from vector_client import VectorClient  # ★ 双脑架构：右脑记忆系统
 
 
 def print_banner():
@@ -132,18 +133,28 @@ def main():
     # 1. 加载环境变量
     load_dotenv()
     
-    # 2. 初始化服务
+    # 2. 初始化双脑系统
     try:
+        # 左脑 (Neo4j): 逻辑、关系、当前状态
         db = GraphClient(
             os.getenv("NEO4J_URI", "bolt://localhost:7687"),
             os.getenv("NEO4J_USER", "neo4j"),
-            os.getenv("NEO4J_PASSWORD", "password")
+            os.getenv("NEO4J_PASSWORD", "mysecretpassword")
         )
+        
+        # 右脑 (Postgres/pgvector): 记忆、语义、历史上下文
+        memory_db = VectorClient()
+        
         llm = LLMEngine()
-        print(Fore.GREEN + ">>> 系统初始化完成。神经元网络已连接。\n")
+        
+        print(Fore.GREEN + ">>> 双脑系统初始化完成。")
+        print(Fore.GREEN + "  🧠 左脑(Neo4j): 逻辑推理引擎")
+        print(Fore.GREEN + "  🧠 右脑(Postgres): 记忆语义引擎\n")
     except Exception as e:
         print(Fore.RED + f"初始化失败: {e}")
-        print(Fore.YELLOW + "请检查：1) Neo4j 是否运行 2) API 密钥是否正确")
+        print(Fore.YELLOW + "请检查：1) Neo4j 是否运行 2) PostgreSQL 是否运行 3) API 密钥是否正确")
+        import traceback
+        traceback.print_exc()
         return 1
     
     # 3. 世界构建阶段
@@ -237,16 +248,30 @@ def main():
             print(Fore.YELLOW + f"系统: {msg}")
         
         elif intent == "TALK":
-            # ★ 生成式对话系统 (RAG-based)
+            # ★★★ 双脑协同对话系统 ★★★
+            # 左脑(Neo4j): 获取NPC静态人设
             npc_data = db.get_npc_details(target)
+            
             if npc_data:
-                print(Fore.BLACK + Style.BRIGHT + f">>> 🤖 AI正在生成{target}的回复...")
+                # 右脑(Postgres): 检索相关记忆
+                print(Fore.BLACK + Style.BRIGHT + f">>> 🧠 右脑检索记忆中...")
+                memories = memory_db.search_memory(f"关于 {target} 的信息: {user_input}", limit=3)
+                memory_context = "\n".join(memories) if memories else "暂无相关记忆"
                 
-                # 使用 LLM 实时生成对话（基于人设）
+                if memories:
+                    print(Fore.BLACK + Style.BRIGHT + f">>> 💭 回忆起 {len(memories)} 条相关记忆")
+                
+                # 左脑+右脑协同: 生成回复
+                print(Fore.BLACK + Style.BRIGHT + f">>> 🤖 左脑生成回复中...")
                 player_data = status.get('player', {})
-                reply = llm.generate_npc_response(user_input, npc_data, player_data)
+                reply = llm.generate_npc_response(
+                    user_input, 
+                    npc_data, 
+                    player_data,
+                    memory_context=memory_context  # ★ 注入记忆上下文
+                )
                 
-                # 根据性情显示不同颜色
+                # 显示回复
                 disposition = npc_data.get('disposition', 'neutral')
                 if disposition == 'friendly':
                     print(Fore.GREEN + f"💬 [{target}] 热情地说: {reply}")
@@ -254,6 +279,14 @@ def main():
                     print(Fore.RED + f"💬 [{target}] 恶狠狠地说: {reply}")
                 else:
                     print(Fore.CYAN + f"💬 [{target}] 淡淡地说: {reply}")
+                
+                # ★★★ 关键：将对话存入右脑记忆！
+                full_log = f"玩家对 {target} 说: '{user_input}'。{target} 回答: '{reply}'"
+                memory_db.add_memory(
+                    full_log, 
+                    meta={"source": "dialogue", "npc": target, "location": status.get('location', {}).get('name')}
+                )
+                
             else:
                 print(Fore.YELLOW + "系统: 你对着空气说话，没人理你。")
         
