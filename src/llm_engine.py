@@ -102,38 +102,30 @@ class LLMEngine:
             包含 nodes 和 edges 的字典
             如果 API 调用失败，返回静态备用模板
         """
-        system_prompt = """你是一个专业的游戏世界设计器。根据用户的描述生成一个文字冒险游戏的世界结构。
+        system_prompt = """你是一个专业的游戏世界设计器。生成符合以下本体的游戏世界 JSON。
 
-必须遵循以下 JSON Schema：
-{
-  "nodes": [
-    {
-      "id": "英文唯一标识符（小写，下划线分隔）",
-      "label": "节点类型（Player/Location/NPC/Item/Goal）",
-      "properties": {
-        "name": "中文显示名称",
-        "description": "中文详细描述",
-        ...其他属性（如hp, damage等）
-      }
-    }
-  ],
-  "edges": [
-    {
-      "source": "源节点id",
-      "target": "目标节点id",
-      "type": "关系类型（LOCATED_AT/CONNECTED_TO/HAS_GOAL）",
-      "properties": {}
-    }
-  ]
-}
+# Ontology Rules
+1. 节点类型 (Labels):
+   - Player: {id, name, hp=100, faction='PlayerFaction'}
+   - Location: {id, name, description}
+   - NPC: {id, name, hp, damage, faction, dialogue, disposition}
+   - Faction: {id, name, description}
 
-规则：
-1. 必须包含1个Player节点（玩家）
-2. 必须包含2-5个Location节点（地点），并用CONNECTED_TO连接成通路
-3. 添加1-3个NPC节点（敌人或中立角色），带damage属性表示攻击力
-4. 添加0-2个Item节点（可选物品）
-5. 使用LOCATED_AT关系放置所有实体到地点
-6. 只输出纯JSON，不要有Markdown代码块标记"""
+2. 关系类型 (Types):
+   - LOCATED_AT: (Entity) -> (Location)
+   - CONNECTED_TO: (Location) -> (Location)
+   - BELONGS_TO: (Player/NPC) -> (Faction)
+   - HOSTILE_TO: (Faction) -> (Faction)
+
+3. 生成要求:
+   - 必须生成 2-3 个 Faction 节点 (例如: 官府, 叛军, 平民)。
+   - 每个 NPC 必须 BELONGS_TO 一个 Faction。
+   - 必须生成至少一组 HOSTILE_TO 关系 (定义谁恨谁)。
+   - NPC 必须有 dialogue (中文对话) 和 disposition (aggressive/neutral/friendly)。
+   - 确保地图 (Location) 是连通的。
+
+4. 输出格式:
+   纯 JSON，包含 "nodes" 和 "edges" 列表。不要使用 Markdown 代码块。"""
         
         try:
             contents = [
@@ -226,31 +218,36 @@ class LLMEngine:
             - target: 目标名称（如有）
             - narrative: 中文动作描述（用于AI旁白）
         """
+        # 简化 status 以减少 token 消耗
+        simple_status = {
+            "location": context.get("location", {}).get("name"),
+            "exits": [e.get("name") for e in context.get("exits", [])],
+            "entities": [e.get("name") for e in context.get("entities", [])],
+            "player_faction": context.get("player_faction", {}).get("name")
+        }
+        
         system_prompt = f"""你是一个文字冒险游戏的意图解析器。
 
 当前游戏状态：
-{json.dumps(context, ensure_ascii=False, indent=2)}
+{json.dumps(simple_status, ensure_ascii=False, indent=2)}
 
 玩家输入："{player_input}"
 
-请分析玩家意图并返回 JSON 格式：
-{{
-    "intent": "意图类型",
-    "target": "目标名称",
-    "narrative": "中文动作描述"
-}}
+任务：解析意图并返回 JSON。
 
-意图类型说明：
-- MOVE: 移动/前往/去某个地点（目标必须是 exits 列表中的 name）
-- ATTACK: 攻击/战斗/打某个目标
-- LOOK: 查看/观察/检查环境或物品
-- UNKNOWN: 无法理解的指令
+Intent 类型:
+- MOVE: 移动 (target 必须是当前 exits 中的名称)
+- TALK: 对话 (target 必须是 entities 中的 NPC 名称)
+- INSPECT: 观察 (target 可以是 location, NPC 或 item)
+- ATTACK: 攻击 (target 是 entities 中的敌人名称)
+- WAIT: 等待/跳过
+- UNKNOWN: 无法理解
 
-注意：
-1. 如果是 MOVE，target 必须是当前 exits 中存在的地点名称
-2. 如果是 ATTACK，target 必须是当前 entities 中存在的实体名称
-3. narrative 应该是一句流畅的中文描述
-"""
+规则:
+1. narrative 应该是流畅的 RPG 风格中文描述。
+2. 如果意图是 UNKNOWN，narrative 说明为什么不理解。
+
+JSON 格式: {{"intent": "...", "target": "...", "narrative": "..."}}"""
         
         try:
             contents = [
