@@ -239,19 +239,26 @@ class GraphClient:
             action = "恢复" if delta > 0 else "失去"
             logger.info(f"玩家 {action} {abs(delta)} 点生命值")
     
-    def get_npc_dialogue(self, npc_name: str) -> Optional[Dict]:
-        """获取 NPC 的对话和性情
+    def get_npc_details(self, npc_name: str) -> Optional[Dict]:
+        """获取 NPC 的详细信息 (用于生成式对话)
         
         Args:
             npc_name: NPC 的中文名称
         
         Returns:
-            包含 dialogue 和 disposition 的字典，如果未找到返回 None
+            包含完整人设的字典：name, faction, disposition, location, dialogue
+            如果未找到返回 None
         """
         with self.driver.session() as session:
             result = session.run("""
-                MATCH (n:NPC {name: $name})
-                RETURN n.dialogue as dialogue, n.disposition as disposition
+                MATCH (n:NPC {name: $name})-[:LOCATED_AT]->(loc:Location)
+                OPTIONAL MATCH (n)-[:BELONGS_TO]->(f:Faction)
+                RETURN 
+                    n.name as name,
+                    n.dialogue as dialogue,
+                    n.disposition as disposition,
+                    loc.name as location,
+                    f.name as faction
             """, name=npc_name).single()
             return dict(result) if result else None
     
@@ -309,11 +316,14 @@ class GraphClient:
             # -------------------------------------------------------
             # 1. NPC 移动推演 (让 NPC 在地图上游走)
             # -------------------------------------------------------
-            # 逻辑：随机选取 30% 的 NPC，让他们移动到相邻的房间
+            # 逻辑：随机选取 20% 的 NPC，让他们移动到相邻的房间
+            # 约束：名字包含"宫门"的NPC是守卫，坚守岗位不许动！
             move_query = """
             MATCH (n:NPC)-[old:LOCATED_AT]->(curr:Location)
             MATCH (curr)-[:CONNECTED_TO]-(next:Location)
-            WHERE n.hp > 0 AND rand() < 0.3  // 30% 概率移动
+            WHERE n.hp > 0 
+              AND rand() < 0.2  // 20% 概率移动（降低频率）
+              AND NOT n.name CONTAINS '宫门'  // 宫门卫兵坚守岗位！
             
             // 随机选一个出口
             WITH n, old, curr, next, rand() as r
