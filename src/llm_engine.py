@@ -219,11 +219,12 @@ class LLMEngine:
             - narrative: 中文动作描述（用于AI旁白）
         """
         # 简化 status 以减少 token 消耗
+        player_faction = context.get("player_faction")
         simple_status = {
             "location": context.get("location", {}).get("name"),
             "exits": [e.get("name") for e in context.get("exits", [])],
             "entities": [e.get("name") for e in context.get("entities", [])],
-            "player_faction": context.get("player_faction", {}).get("name")
+            "player_faction": player_faction.get("name") if player_faction else None
         }
         
         system_prompt = f"""你是一个文字冒险游戏的意图解析器。

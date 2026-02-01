@@ -108,6 +108,7 @@ def demo():
         try:
             action = llm.interpret_action(action_input, status)
             print(Fore.MAGENTA + f"AI 旁白: {action.get('narrative', '')}")
+            print(Fore.WHITE + f"[调试] 意图: {action}")
             
             # 执行动作
             intent = action.get("intent", "UNKNOWN")
@@ -120,11 +121,20 @@ def demo():
                 print(Fore.RED + f">>> 你向 {target} 发起攻击！")
             elif intent == "LOOK":
                 print(Fore.CYAN + "你环顾四周...")
+            elif intent == "TALK":
+                # v0.2 新增
+                npc_data = db.get_npc_dialogue(target)
+                if npc_data:
+                    print(Fore.CYAN + f"💬 [{target}]: {npc_data.get('dialogue', '...')}")
+                else:
+                    print(Fore.YELLOW + "没有回应。")
             else:
-                print(Fore.YELLOW + "未知的意图")
+                print(Fore.YELLOW + f"未知的意图: {intent}")
                 
         except Exception as e:
             print(Fore.RED + f"动作执行失败: {e}")
+            import traceback
+            traceback.print_exc()
     
     # 6. 显示最终状态
     print(Fore.CYAN + "\n=== 最终游戏状态 ===")
