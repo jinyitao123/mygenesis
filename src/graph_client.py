@@ -292,3 +292,104 @@ class GraphClient:
             
             results = session.run(query, pid=player_id)
             return [dict(record) for record in results]
+    
+    def run_global_tick(self) -> List[str]:
+        """
+        ★ v0.3 核心：全局图谱推演 - 让世界活起来
+        
+        在玩家每次行动后调用，让整个世界的 NPC 都行动一次。
+        实现真正的自主推演式仿真，而非触发式。
+        
+        Returns:
+            传闻事件列表，供消息系统显示
+        """
+        events = []
+        
+        with self.driver.session() as session:
+            # -------------------------------------------------------
+            # 1. NPC 移动推演 (让 NPC 在地图上游走)
+            # -------------------------------------------------------
+            # 逻辑：随机选取 30% 的 NPC，让他们移动到相邻的房间
+            move_query = """
+            MATCH (n:NPC)-[old:LOCATED_AT]->(curr:Location)
+            MATCH (curr)-[:CONNECTED_TO]-(next:Location)
+            WHERE n.hp > 0 AND rand() < 0.3  // 30% 概率移动
+            
+            // 随机选一个出口
+            WITH n, old, curr, next, rand() as r
+            ORDER BY r LIMIT 1
+            
+            // 更新位置
+            DELETE old
+            CREATE (n)-[:LOCATED_AT]->(next)
+            
+            RETURN n.name as npc, curr.name as from_loc, next.name as to_loc
+            """
+            
+            result = session.run(move_query)
+            for record in result:
+                # 系统日志，玩家不一定能直接看到
+                logger.info(f"[世界推演] {record['npc']} 从 {record['from_loc']} 移动到了 {record['to_loc']}")
+            
+            # -------------------------------------------------------
+            # 2. 视野外战斗推演 (NPC vs NPC)
+            # -------------------------------------------------------
+            # 逻辑：如果有两个敌对阵营的 NPC 在同一个房间（且玩家不在场），他们会互殴
+            battle_query = """
+            MATCH (n1:NPC)-[:LOCATED_AT]->(loc:Location)<-[:LOCATED_AT]-(n2:NPC)
+            WHERE n1.id < n2.id  // 避免重复计算
+            AND n1.hp > 0 AND n2.hp > 0
+            
+            // 检查敌对关系
+            MATCH (n1)-[:BELONGS_TO]->(f1:Faction)-[:HOSTILE_TO]-(f2:Faction)<-[:BELONGS_TO]-(n2)
+            
+            // 只有当玩家不在这个房间时 (玩家在场走另一套逻辑)
+            WHERE NOT EXISTS {
+                MATCH (:Player)-[:LOCATED_AT]->(loc)
+            }
+            
+            // 简单的互相伤害逻辑 (在图数据库内直接结算)
+            SET n1.hp = n1.hp - n2.damage
+            SET n2.hp = n2.hp - n1.damage
+            
+            RETURN n1.name as fighter1, n2.name as fighter2, loc.name as place,
+                   n1.hp as hp1, n2.hp as hp2
+            """
+            
+            result = session.run(battle_query)
+            for record in result:
+                fighter1, fighter2 = record['fighter1'], record['fighter2']
+                place = record['place']
+                hp1, hp2 = record['hp1'], record['hp2']
+                
+                # 判断胜负
+                if hp1 <= 0 and hp2 <= 0:
+                    outcome = f"听说在 {place}，{fighter1} 和 {fighter2} 同归于尽了！"
+                elif hp1 <= 0:
+                    outcome = f"听说在 {place}，{fighter2} 杀死了 {fighter1}！"
+                elif hp2 <= 0:
+                    outcome = f"听说在 {place}，{fighter1} 杀死了 {fighter2}！"
+                else:
+                    outcome = f"听说在 {place}，{fighter1} 和 {fighter2} 打得两败俱伤！"
+                
+                events.append(outcome)
+                logger.info(f"[世界推演] 战斗: {fighter1} vs {fighter2} @ {place}")
+            
+            # -------------------------------------------------------
+            # 3. 死亡清理 (可选)
+            # -------------------------------------------------------
+            # 清理 HP <= 0 的 NPC（或者保留尸体？）
+            clean_query = """
+            MATCH (n:NPC)
+            WHERE n.hp <= 0
+            SET n.name = n.name + '的尸体'
+            REMOVE n:NPC
+            SET n:Corpse
+            RETURN n.name as name
+            """
+            
+            result = session.run(clean_query)
+            for record in result:
+                logger.info(f"[世界推演] {record['name']} 被标记为尸体")
+        
+        return events
