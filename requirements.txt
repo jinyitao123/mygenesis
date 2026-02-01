@@ -1,21 +1,8 @@
-# Project Genesis - 生成式仿真平台依赖
-
-# 核心依赖
+openai>=1.12.0
 neo4j>=5.15.0
-openai>=1.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+pgvector>=0.2.0
 python-dotenv>=1.0.0
 colorama>=0.4.6
-pydantic>=2.0.0
 requests>=2.31.0
-
-# 测试依赖
-pytest>=7.0.0
-pytest-asyncio>=0.21.0
-
-# 双脑架构 - 右脑 (PostgreSQL + pgvector)
-sqlalchemy>=2.0.0
-pgvector>=0.2.0
-psycopg2-binary>=2.9.0
-
-# 异步支持 (可选)
-# asyncpg>=0.29.0

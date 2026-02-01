@@ -1,44 +1,69 @@
-.worktrees/
-
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
 
-# Neo4j database files
-neo4j_data/
-neo4j_logs/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Environment variables
+# Environment
 .env
 .env.local
 .env.*.local
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+# Logs
+logs/
+*.log
+neo4j_logs/
+neo4j_data/
 
-# Testing
+# Test
 .pytest_cache/
 .coverage
 htmlcov/
-
-# Logs
-*.log
-logs/
+.tox/
+.nox/
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Project specific test files
+test_*.py
+test_brain_collaboration.py
+test_embedding_complete.py
+test_embedding_simple.py
+test_ollama_embedding.py
+test_vector_client_quick.py
+
+# Docker
+docker-compose.override.yml
 
 # Temporary files
 *.tmp

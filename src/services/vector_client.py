@@ -28,7 +28,7 @@ class Memory(Base):
     
     id = Column(Integer, primary_key=True)
     content = Column(Text, nullable=False)              # 记忆文本内容
-    embedding = Column(Vector(1536), nullable=False)    # OpenAI 向量 (text-embedding-3-small)
+    embedding = Column(Vector(768), nullable=False)    # 向量嵌入 (nomic-embed-text: 768维)
     metadata_ = Column("metadata", JSONB, default={})   # 元数据：{'source': 'dialogue', 'npc': '卫兵'}
     
     def __repr__(self):
@@ -86,14 +86,24 @@ class VectorClient:
     def _setup_database(self):
         """设置数据库：建表 + 启用 pgvector 扩展"""
         try:
-            # 启用 pgvector 扩展
             with self.engine.connect() as conn:
+                # 启用 pgvector 扩展
                 conn.exec_driver_sql("CREATE EXTENSION IF NOT EXISTS vector")
                 conn.commit()
+                
+                # 检查表是否存在
+                from sqlalchemy import inspect, text
+                inspector = inspect(self.engine)
+                
+                if 'memories' in inspector.get_table_names():
+                    logger.warning("删除旧的 memories 表以更新向量维度...")
+                    # 直接执行 DROP TABLE
+                    conn.execute(text("DROP TABLE IF EXISTS memories"))
+                    conn.commit()
             
-            # 自动建表
+            # 自动建表（在连接外，create_all 会自己管理连接）
             Base.metadata.create_all(self.engine)
-            logger.info("记忆表创建/验证完成")
+            logger.info("记忆表创建/验证完成 (维度: 768)")
             
         except Exception as e:
             logger.error(f"数据库设置失败: {e}")
@@ -107,18 +117,29 @@ class VectorClient:
             text: 输入文本
         
         Returns:
-            1536维向量
+            向量嵌入
         """
         # 清理文本
         text = text.replace("\n", " ").strip()
         
         try:
-            response = self.openai_client.embeddings.create(
-                input=[text],
-                model="text-embedding-3-small"
-            )
-            return response.data[0].embedding
+            # 尝试使用本地 Ollama 嵌入服务
+            from .embedding_service import get_embedding_service
+            embedding_service = get_embedding_service()
+            return embedding_service.get_embedding(text)
             
+        except ImportError:
+            logger.warning("本地嵌入服务未找到，尝试使用 OpenAI")
+            # 回退到 OpenAI
+            try:
+                response = self.openai_client.embeddings.create(
+                    input=[text],
+                    model="text-embedding-3-small"
+                )
+                return response.data[0].embedding
+            except Exception as e:
+                logger.error(f"OpenAI 嵌入也失败: {e}")
+                raise ValueError("无法生成嵌入向量，请检查 Ollama 或 OpenAI 配置")
         except Exception as e:
             logger.error(f"生成嵌入失败: {e}")
             raise
