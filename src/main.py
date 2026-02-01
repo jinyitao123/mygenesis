@@ -47,11 +47,19 @@ def display_status(status: dict) -> None:
     
     player = status.get("player", {})
     location = status.get("location", {})
+    faction = status.get("player_faction", {})
     exits = status.get("exits", [])
     entities = status.get("entities", [])
     
     print("\n" + "=" * 50)
     print(f"📍 位置: {Fore.BLUE}{location.get('name', '未知')}{Style.RESET_ALL}")
+    
+    # 新增：显示阵营
+    if faction:
+        print(f"🏛️  阵营: {Fore.CYAN}{faction.get('name')}{Style.RESET_ALL}")
+    else:
+        print(f"🏛️  阵营: {Fore.WHITE}无党派浪人{Style.RESET_ALL}")
+        
     print(f"📝 描述: {location.get('description', '无')}")
     
     if exits:
@@ -87,14 +95,23 @@ def check_game_over(status: dict) -> tuple[bool, Optional[str]]:
 
 
 def simulation_step(db: GraphClient, status: dict) -> None:
-    """执行世界推演步骤"""
-    entities = status.get("entities", [])
+    """智能推演步骤 (v0.2)"""
+    player_id = status['player']['id']
     
-    for entity in entities:
-        if entity.get("damage", 0) > 0:
-            damage = entity.get('damage', 5)
-            db.update_player_hp(-damage)
-            print(Fore.RED + f">>> {entity.get('name', '敌人')} 攻击了你！造成 {damage} 点伤害！")
+    # ★ 使用图逻辑查询，而非简单的 Python if-else
+    hostile_events = db.run_smart_simulation(player_id)
+    
+    for event in hostile_events:
+        name = event['name']
+        damage = event.get('damage', 5)
+        disposition = event.get('disposition')
+        
+        if disposition == 'aggressive':
+            print(Fore.RED + f">>> ⚔️ {name} (天生好战) 向你扑来！造成 {damage} 点伤害！")
+        else:
+            print(Fore.RED + f">>> ⚔️ {name} 发现了敌对阵营的你，发起攻击！造成 {damage} 点伤害！")
+            
+        db.update_player_hp(-damage)
 
 
 def main():
@@ -162,9 +179,11 @@ def main():
         if user_input.lower() in ["help", "帮助", "?"]:
             print(Fore.CYAN + """
 可用指令：
-- 移动: "去书房" / "移动到厨房" / "逃向出口"
+- 移动: "去书房" / "移动到厨房"
+- 对话: "对话卫兵" / "询问老板"
 - 观察: "查看" / "环顾四周" / "检查尸体"
 - 战斗: "攻击僵尸" / "打敌人"
+- 等待: "等待" / "静观其变"
 - 其他: "help" 显示帮助，"quit" 退出
             """)
             continue
@@ -188,11 +207,36 @@ def main():
             success, msg = db.execute_move(target)
             print(Fore.YELLOW + f"系统: {msg}")
         
+        elif intent == "TALK":
+            # ★ 新增：对话系统
+            npc_data = db.get_npc_dialogue(target)
+            if npc_data:
+                dialogue = npc_data.get('dialogue', '...')
+                disposition = npc_data.get('disposition', 'neutral')
+                
+                # 根据性情显示不同颜色
+                if disposition == 'friendly':
+                    print(Fore.GREEN + f"💬 [{target}] 友善地说: {dialogue}")
+                elif disposition == 'aggressive':
+                    print(Fore.RED + f"💬 [{target}] 敌视地说: {dialogue}")
+                else:
+                    print(Fore.CYAN + f"💬 [{target}] 说道: {dialogue}")
+            else:
+                print(Fore.YELLOW + "系统: 你对着空气说话，没人理你。")
+        
+        elif intent == "INSPECT":
+            # ★ 新增：观察系统
+            print(Fore.WHITE + f"🔍 你仔细观察了 {target}...")
+            # TODO: 实现详细观察逻辑
+        
         elif intent == "ATTACK":
             print(Fore.RED + f">>> 你向 {target} 发起攻击！")
         
         elif intent == "LOOK":
             pass
+        
+        elif intent == "WAIT":
+            print(Fore.WHITE + "⏳ 你静观其变...")
         
         elif intent == "UNKNOWN":
             print(Fore.YELLOW + "我不理解这个指令。输入 'help' 查看帮助。")
