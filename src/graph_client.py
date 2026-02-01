@@ -73,14 +73,28 @@ class GraphClient:
         
         Args:
             session: Neo4j 会话
-            node: 节点数据，必须包含 id, label, properties
+            node: 节点数据，包含 id, label, 和其他属性
         """
         node_id = node.get("id")
         label = node.get("label", "Entity")
-        properties = node.get("properties", {})
         
         if not node_id:
             raise ValueError("节点必须包含 id 字段")
+        
+        # 兼容两种格式：
+        # 1. 标准格式: {id, label, properties: {...}}
+        # 2. LLM格式: {id, label, name, hp, ...} (属性直接平铺)
+        if "properties" in node:
+            properties = node["properties"]
+        else:
+            # 从节点中提取除 id 和 label 外的所有属性
+            properties = {k: v for k, v in node.items() if k not in ["id", "label"]}
+        
+        # 设置默认值
+        if label == "Player" and "hp" not in properties:
+            properties["hp"] = 100
+        if label == "NPC" and "damage" not in properties:
+            properties["damage"] = 5
         
         # 构建 Cypher 查询
         query = f"CREATE (n:{label} {{id: $id}}) SET n += $props"
@@ -91,17 +105,24 @@ class GraphClient:
         
         Args:
             session: Neo4j 会话
-            edge: 边数据，必须包含 source, target, type
+            edge: 边数据，包含 source, target, type/label
         """
         source_id = edge.get("source")
         target_id = edge.get("target")
-        rel_type = edge.get("type", "RELATED_TO")
-        properties = edge.get("properties", {})
+        # 兼容 type 和 label 两种字段名
+        rel_type = edge.get("type") or edge.get("label", "RELATED_TO")
+        
+        # 兼容两种属性格式
+        if "properties" in edge:
+            properties = edge["properties"]
+        else:
+            properties = {k: v for k, v in edge.items() 
+                         if k not in ["source", "target", "type", "label"]}
         
         if not source_id or not target_id:
             raise ValueError("关系必须包含 source 和 target 字段")
         
-        # 构建 Cypher 查询：匹配源节点和目标节点，然后创建关系
+        # 构建 Cypher 查询
         query = f"""
         MATCH (a), (b)
         WHERE a.id = $source_id AND b.id = $target_id
