@@ -96,9 +96,13 @@ class GraphClient:
         if label == "NPC" and "damage" not in properties:
             properties["damage"] = 5
         
-        # 构建 Cypher 查询
-        query = f"CREATE (n:{label} {{id: $id}}) SET n += $props"
-        session.run(query, id=node_id, props=properties)
+        # 合并 id 到 properties
+        all_props = {"id": node_id}
+        all_props.update(properties)
+        
+        # 使用参数化查询一次性创建带所有属性的节点
+        query = f"CREATE (n:{label} $props)"
+        session.run(query, props=all_props)
     
     def _create_edge(self, session, edge: Dict[str, Any]) -> None:
         """创建单个关系（内部方法）
@@ -112,6 +116,9 @@ class GraphClient:
         # 兼容 type 和 label 两种字段名
         rel_type = edge.get("type") or edge.get("label", "RELATED_TO")
         
+        if not source_id or not target_id:
+            raise ValueError("关系必须包含 source 和 target 字段")
+        
         # 兼容两种属性格式
         if "properties" in edge:
             properties = edge["properties"]
@@ -119,17 +126,20 @@ class GraphClient:
             properties = {k: v for k, v in edge.items() 
                          if k not in ["source", "target", "type", "label"]}
         
-        if not source_id or not target_id:
-            raise ValueError("关系必须包含 source 和 target 字段")
-        
-        # 构建 Cypher 查询
-        query = f"""
-        MATCH (a), (b)
-        WHERE a.id = $source_id AND b.id = $target_id
-        CREATE (a)-[r:{rel_type}]->(b)
-        SET r += $props
-        """
-        session.run(query, source_id=source_id, target_id=target_id, props=properties)
+        # 构建 Cypher 查询 - 使用 ON CREATE SET 确保属性被设置
+        if properties:
+            query = f"""
+            MATCH (a {{id: $source_id}}), (b {{id: $target_id}})
+            CREATE (a)-[r:{rel_type}]->(b)
+            SET r = $props
+            """
+            session.run(query, source_id=source_id, target_id=target_id, props=properties)
+        else:
+            query = f"""
+            MATCH (a {{id: $source_id}}), (b {{id: $target_id}})
+            CREATE (a)-[r:{rel_type}]->(b)
+            """
+            session.run(query, source_id=source_id, target_id=target_id)
 
     def get_player_status(self) -> Optional[Dict[str, Any]]:
         """获取玩家当前状态及周围环境 (v0.2 包含 Faction)
