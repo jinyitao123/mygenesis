@@ -148,9 +148,27 @@ def main():
         world_json = llm.generate_world_schema(scenario)
         db.clear_world()
         db.create_world(world_json)
-        print(Fore.GREEN + f">>> 世界已实例化：{len(world_json.get('nodes', []))} 实体，{len(world_json.get('edges', []))} 关系\n")
+        print(Fore.GREEN + f">>> 世界已实例化：{len(world_json.get('nodes', []))} 实体，{len(world_json.get('edges', []))} 关系")
+        
+        # 验证玩家是否有位置，如果没有则设置默认位置
+        test_status = db.get_player_status()
+        if not test_status:
+            print(Fore.YELLOW + ">>> 初始化玩家位置...")
+            # 找到第一个地点并放置玩家
+            with db.driver.session() as session:
+                session.run("""
+                    MATCH (p:Player), (l:Location)
+                    WHERE NOT (p)-[:LOCATED_AT]->()
+                    WITH p, l
+                    LIMIT 1
+                    CREATE (p)-[:LOCATED_AT]->(l)
+                """)
+        
+        print()
     except Exception as e:
         print(Fore.RED + f"世界生成失败: {e}")
+        import traceback
+        traceback.print_exc()
         return 1
     
     # 4. 游戏主循环
