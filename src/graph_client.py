@@ -111,7 +111,7 @@ class GraphClient:
         session.run(query, source_id=source_id, target_id=target_id, props=properties)
 
     def get_player_status(self) -> Optional[Dict[str, Any]]:
-        """获取玩家当前状态及周围环境
+        """获取玩家当前状态及周围环境 (v0.2 包含 Faction)
         
         查询玩家位置、当前地点描述、可通行出口、同区域实体等。
         这是游戏主循环的核心查询，为 LLM 意图解析提供上下文。
@@ -120,6 +120,7 @@ class GraphClient:
             包含以下字段的字典：
             - player: 玩家属性字典
             - location: 当前位置属性字典
+            - player_faction: 玩家阵营
             - exits: 可通行出口列表
             - entities: 同区域实体列表（NPC、物品等）
             None: 如果找不到玩家实体
@@ -128,12 +129,14 @@ class GraphClient:
         MATCH (p:Player)-[:LOCATED_AT]->(loc:Location)
         WITH p, loc
         LIMIT 1
+        OPTIONAL MATCH (p)-[:BELONGS_TO]->(pf:Faction)
         OPTIONAL MATCH (loc)-[:CONNECTED_TO]-(exits:Location)
         OPTIONAL MATCH (entity)-[:LOCATED_AT]->(loc)
         WHERE entity.id <> p.id AND (entity:NPC OR entity:Item)
         RETURN 
             p AS player,
             loc AS location,
+            pf AS player_faction,
             collect(DISTINCT exits) AS exits,
             collect(DISTINCT entity) AS entities
         """
@@ -147,6 +150,7 @@ class GraphClient:
             return {
                 "player": dict(result["player"]),
                 "location": dict(result["location"]),
+                "player_faction": dict(result["player_faction"]) if result["player_faction"] else None,
                 "exits": [dict(n) for n in result["exits"] if n],
                 "entities": [dict(n) for n in result["entities"] if n]
             }
@@ -203,3 +207,57 @@ class GraphClient:
             )
             action = "恢复" if delta > 0 else "失去"
             logger.info(f"玩家 {action} {abs(delta)} 点生命值")
+    
+    def get_npc_dialogue(self, npc_name: str) -> Optional[Dict]:
+        """获取 NPC 的对话和性情
+        
+        Args:
+            npc_name: NPC 的中文名称
+        
+        Returns:
+            包含 dialogue 和 disposition 的字典，如果未找到返回 None
+        """
+        with self.driver.session() as session:
+            result = session.run("""
+                MATCH (n:NPC {name: $name})
+                RETURN n.dialogue as dialogue, n.disposition as disposition
+            """, name=npc_name).single()
+            return dict(result) if result else None
+    
+    def run_smart_simulation(self, player_id: str) -> List[Dict]:
+        """
+        ★ v0.2 核心：基于图谱关系的智能推演
+        
+        规则：只有当 NPC 所属的阵营与玩家阵营存在 HOSTILE_TO 关系时，
+        或者 NPC 的 disposition 为 aggressive 时，才发起攻击。
+        
+        Args:
+            player_id: 玩家节点 ID
+        
+        Returns:
+            攻击事件列表，每个事件包含 name, damage, disposition
+        """
+        with self.driver.session() as session:
+            query = """
+            // 1. 找到玩家和其阵营
+            MATCH (p:Player {id: $pid})
+            OPTIONAL MATCH (p)-[:BELONGS_TO]->(pf:Faction)
+            
+            // 2. 找到同房间的活着的 NPC
+            WITH p, pf
+            MATCH (p)-[:LOCATED_AT]->(loc)<-[:LOCATED_AT]-(n:NPC)
+            WHERE n.hp > 0
+            
+            // 3. 查找 NPC 的阵营及其敌对关系
+            OPTIONAL MATCH (n)-[:BELONGS_TO]->(nf:Faction)
+            OPTIONAL MATCH (nf)-[hostile:HOSTILE_TO]->(pf)
+            
+            // 4. 判定攻击条件：有敌对关系 OR NPC个性就是好战
+            WITH n, hostile
+            WHERE hostile IS NOT NULL OR n.disposition = 'aggressive'
+            
+            RETURN n.name as name, n.damage as damage, n.disposition as disposition
+            """
+            
+            results = session.run(query, pid=player_id)
+            return [dict(record) for record in results]
