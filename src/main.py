@@ -95,10 +95,10 @@ def check_game_over(status: dict) -> tuple[bool, Optional[str]]:
 
 
 def simulation_step(db: GraphClient, status: dict) -> None:
-    """智能推演步骤 (v0.2)"""
+    """智能推演步骤 (v0.3 - 全局推演)"""
     player_id = status['player']['id']
     
-    # ★ 使用图逻辑查询，而非简单的 Python if-else
+    # 1. 处理玩家身边的即时危机 (v0.2 原有逻辑)
     hostile_events = db.run_smart_simulation(player_id)
     
     for event in hostile_events:
@@ -112,6 +112,17 @@ def simulation_step(db: GraphClient, status: dict) -> None:
             print(Fore.RED + f">>> ⚔️ {name} 发现了敌对阵营的你，发起攻击！造成 {damage} 点伤害！")
             
         db.update_player_hp(-damage)
+    
+    # 2. ★ v0.3 新增：处理全世界的演变 (全局推演)
+    print(Fore.BLACK + Style.BRIGHT + ">>> ⏳ 世界时间正在流逝...")
+    global_events = db.run_global_tick()
+    
+    # 3. ★ v0.3 新增：消息系统 (江湖传闻)
+    if global_events:
+        print(Fore.WHITE + "\n📰 【江湖传闻】")
+        for news in global_events[:5]:  # 最多显示5条，避免刷屏
+            print(Fore.WHITE + f"  • {news}")
+        print("")
 
 
 def main():
