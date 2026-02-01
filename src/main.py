@@ -237,19 +237,23 @@ def main():
             print(Fore.YELLOW + f"系统: {msg}")
         
         elif intent == "TALK":
-            # ★ 新增：对话系统
-            npc_data = db.get_npc_dialogue(target)
+            # ★ 生成式对话系统 (RAG-based)
+            npc_data = db.get_npc_details(target)
             if npc_data:
-                dialogue = npc_data.get('dialogue', '...')
-                disposition = npc_data.get('disposition', 'neutral')
+                print(Fore.BLACK + Style.BRIGHT + f">>> 🤖 AI正在生成{target}的回复...")
+                
+                # 使用 LLM 实时生成对话（基于人设）
+                player_data = status.get('player', {})
+                reply = llm.generate_npc_response(user_input, npc_data, player_data)
                 
                 # 根据性情显示不同颜色
+                disposition = npc_data.get('disposition', 'neutral')
                 if disposition == 'friendly':
-                    print(Fore.GREEN + f"💬 [{target}] 友善地说: {dialogue}")
+                    print(Fore.GREEN + f"💬 [{target}] 热情地说: {reply}")
                 elif disposition == 'aggressive':
-                    print(Fore.RED + f"💬 [{target}] 敌视地说: {dialogue}")
+                    print(Fore.RED + f"💬 [{target}] 恶狠狠地说: {reply}")
                 else:
-                    print(Fore.CYAN + f"💬 [{target}] 说道: {dialogue}")
+                    print(Fore.CYAN + f"💬 [{target}] 淡淡地说: {reply}")
             else:
                 print(Fore.YELLOW + "系统: 你对着空气说话，没人理你。")
         
