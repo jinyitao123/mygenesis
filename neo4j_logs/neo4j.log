@@ -1,0 +1,21 @@
+2026-02-01 07:58:34.803+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-02-01 07:58:34.816+0000 INFO  Starting...
+2026-02-01 07:58:35.367+0000 INFO  This instance is ServerId{666d85af} (666d85af-fe25-4850-927c-8dd07eb2702e)
+2026-02-01 07:58:36.087+0000 INFO  ======== Neo4j 2025.12.1 ========
+2026-02-01 07:58:49.938+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-02-01 07:59:04.192+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-02-01 07:59:04.715+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-02-01 07:59:04.716+0000 INFO  Remote interface available at http://localhost:7474/
+2026-02-01 07:59:04.718+0000 INFO  id: 7C9909C7B4655D08179722AF66E76A14825FF1959F0BBF62C9D86245C3874CDF
+2026-02-01 07:59:04.719+0000 INFO  name: system
+2026-02-01 07:59:04.720+0000 INFO  creationDate: 2026-02-01T07:58:37.266Z
+2026-02-01 07:59:04.720+0000 INFO  Started.
+2026-02-01 08:01:03.466+0000 WARN  [bolt-15] The client is unauthorized due to authentication failure.
+2026-02-01 08:01:03.483+0000 WARN  [bolt-16] The client is unauthorized due to authentication failure.
+2026-02-01 08:01:03.499+0000 WARN  [bolt-17] The client is unauthorized due to authentication failure.
+2026-02-01 08:01:13.479+0000 WARN  [bolt-18] The client is unauthorized due to authentication failure.
+2026-02-01 08:01:13.498+0000 WARN  [bolt-19] The client has provided incorrect authentication details too many times in a row.
+2026-02-01 08:01:13.522+0000 WARN  [bolt-20] The client has provided incorrect authentication details too many times in a row.
+2026-02-01 08:01:19.361+0000 WARN  [bolt-21] The client is unauthorized due to authentication failure.
+2026-02-01 08:01:19.391+0000 WARN  [bolt-22] The client is unauthorized due to authentication failure.
+2026-02-01 08:01:19.405+0000 WARN  [bolt-23] The client is unauthorized due to authentication failure.
