@@ -35,7 +35,7 @@
       >
         <div class="p-4 h-full overflow-y-auto">
           <h3 class="font-semibold mb-4">对象类型 ({{ sidebarData?.object_types?.length || 0 }})</h3>
-          <div id="objectTypes" class="space-y-2 mb-6 max-h-60 overflow-y-auto">
+          <div id="objectTypes" class="space-y-2 mb-6 overflow-y-auto max-h-[40vh]">
             <div v-if="sidebarData?.object_types?.length > 0">
               <div 
                 v-for="type in sidebarData.object_types" 
@@ -63,7 +63,7 @@
           </div>
           
           <h3 class="font-semibold mb-4">动作规则 ({{ sidebarData?.action_rules?.length || 0 }})</h3>
-          <div id="actionRules" class="space-y-2 mb-6 max-h-40 overflow-y-auto">
+          <div id="actionRules" class="space-y-2 mb-6">
             <div v-if="sidebarData?.action_rules?.length > 0">
               <div 
                 v-for="rule in sidebarData.action_rules" 
@@ -84,7 +84,7 @@
           </div>
           
           <h3 class="font-semibold mb-4">种子数据 ({{ sidebarData?.seed_data?.length || 0 }})</h3>
-          <div id="seedData" class="space-y-2 mb-6 max-h-40 overflow-y-auto">
+          <div id="seedData" class="space-y-2 mb-6">
             <div v-if="sidebarData?.seed_data?.length > 0">
               <div 
                 v-for="(seed, index) in sidebarData.seed_data" 
@@ -100,12 +100,6 @@
             </div>
           </div>
           
-          <div class="mt-6">
-            <h3 class="font-semibold mb-2">属性面板</h3>
-            <div id="propertyPanel" class="text-sm text-gray-400 p-3 bg-gray-900 rounded">
-              选择元素以编辑属性
-            </div>
-          </div>
         </div>
       </ResizablePanel>
       

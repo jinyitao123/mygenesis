@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 flex items-end justify-center px-4 py-6 pointer-events-none sm:p-6 sm:items-start sm:justify-end z-50">
+  <div class="notification-container">
     <transition-group
       enter-active-class="transform ease-out duration-300 transition"
       enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
@@ -98,71 +98,107 @@ export interface NotificationAction {
 }
 
 export interface NotificationItem {
-  id: number
+  id: string
   title: string
   message?: string
   type: 'success' | 'error' | 'warning' | 'info'
-  autoClose?: boolean
   duration?: number
-  progress?: number
+  autoClose?: boolean
   actions?: NotificationAction[]
+  progress: number
 }
 
 const notifications = ref<NotificationItem[]>([])
-let nextId = 1
 
-// 添加通知
-const addNotification = (notification: Omit<NotificationItem, 'id'>) => {
-  const id = nextId++
+let notificationId = 0
+const progressIntervals = new Map<string, number>()
+
+const addNotification = (notification: Omit<NotificationItem, 'id' | 'progress'>): string => {
+  const id = `notification-${++notificationId}`
   const newNotification: NotificationItem = {
+    ...notification,
     id,
-    autoClose: true,
-    duration: 5000,
     progress: 100,
-    ...notification
+    autoClose: notification.autoClose ?? true,
+    duration: notification.duration ?? 5000
   }
   
   notifications.value.push(newNotification)
   
-  // 自动关闭
-  if (newNotification.autoClose && newNotification.duration) {
-    const startTime = Date.now()
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime
-      const remaining = Math.max(0, newNotification.duration! - elapsed)
-      newNotification.progress = (remaining / newNotification.duration!) * 100
-      
-      if (remaining <= 0) {
-        clearInterval(interval)
-        removeNotification(id)
-      }
-    }, 50)
+  if (newNotification.autoClose) {
+    startProgressTimer(id, newNotification.duration!)
   }
   
   return id
 }
 
-// 移除通知
-const removeNotification = (id: number) => {
+const removeNotification = (id: string) => {
   const index = notifications.value.findIndex(n => n.id === id)
   if (index !== -1) {
     notifications.value.splice(index, 1)
+    clearProgressTimer(id)
   }
 }
 
-// 清空所有通知
-const clearNotifications = () => {
-  notifications.value = []
+const startProgressTimer = (id: string, duration: number) => {
+  const startTime = Date.now()
+  const endTime = startTime + duration
+  
+  const interval = setInterval(() => {
+    const now = Date.now()
+    const remaining = endTime - now
+    const progress = Math.max(0, (remaining / duration) * 100)
+    
+    const notification = notifications.value.find(n => n.id === id)
+    if (notification) {
+      notification.progress = progress
+    }
+    
+    if (remaining <= 0) {
+      removeNotification(id)
+    }
+  }, 100)
+  
+  progressIntervals.set(id, interval as unknown as number)
 }
 
-// 导出方法供全局使用
+const clearProgressTimer = (id: string) => {
+  const interval = progressIntervals.get(id)
+  if (interval) {
+    clearInterval(interval)
+    progressIntervals.delete(id)
+  }
+}
+
+onUnmounted(() => {
+  progressIntervals.forEach((interval) => {
+    clearInterval(interval)
+  })
+  progressIntervals.clear()
+})
+
 defineExpose({
-  addNotification,
-  removeNotification,
-  clearNotifications
+  addNotification
 })
 </script>
 
 <style scoped>
-/* 自定义样式 */
+.notification-container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  pointer-events: none;
+  z-index: 50;
+}
+
+@media (min-width: 640px) {
+  .notification-container {
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 1.5rem;
+  }
+}
 </style>

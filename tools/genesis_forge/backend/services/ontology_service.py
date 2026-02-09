@@ -165,6 +165,9 @@ class OntologyService:
             if not success:
                 return False, errors
             
+            if ontology is None:
+                return False, ["本体数据为空"]
+            
             # 验证实体数据
             if validate:
                 valid, validation_errors = self._validate_entity(entity_type, entity_data, ontology)
@@ -211,18 +214,22 @@ class OntologyService:
             return False, [error_msg]
     
     def _validate_entity(self, entity_type: str, entity_data: Dict[str, Any], 
-                        ontology: OntologyModel) -> Tuple[bool, List[str]]:
+                        ontology: Optional[OntologyModel]) -> Tuple[bool, List[str]]:
         """验证实体数据"""
         errors = []
         
         try:
+            if ontology is None:
+                return False, ["本体数据为空"]
+            
             if entity_type == 'object_type':
                 # 验证对象类型
                 obj_def = ObjectTypeDefinition(**entity_data)
                 
                 # 检查type_key格式
-                if not obj_def.type_key.isupper() or '_' not in obj_def.type_key:
-                    errors.append("type_key必须使用大写下划线格式 (如: NPC_GUARD)")
+                # 检查type_key格式
+                if not obj_def.type_key.isupper():
+                    errors.append("type_key必须使用大写格式 (如: TRUCK 或 NPC_GUARD)")
                 
                 # 检查属性定义
                 for prop_name, prop_schema in obj_def.properties.items():
@@ -263,9 +270,12 @@ class OntologyService:
         except Exception as e:
             return False, [f"实体验证失败: {str(e)}"]
     
-    def _save_ontology(self, ontology: OntologyModel, domain: str) -> Tuple[bool, List[str]]:
+    def _save_ontology(self, ontology: Optional[OntologyModel], domain: str) -> Tuple[bool, List[str]]:
         """保存本体到文件"""
         try:
+            if ontology is None:
+                return False, ["本体数据为空，无法保存"]
+            
             # 创建版本备份
             self._create_version_backup(domain, ontology)
             
@@ -286,9 +296,13 @@ class OntologyService:
             logger.error(error_msg)
             return False, [error_msg]
     
-    def _create_version_backup(self, domain: str, ontology: OntologyModel):
+    def _create_version_backup(self, domain: str, ontology: Optional[OntologyModel]):
         """创建版本备份"""
         try:
+            if ontology is None:
+                logger.warning(f"无法为领域 {domain} 创建版本备份：本体数据为空")
+                return
+            
             # 生成版本ID
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             content_hash = hashlib.md5(
@@ -445,6 +459,9 @@ class OntologyService:
             if not success:
                 return False, None, errors
             
+            if ontology is None:
+                return False, None, ["本体数据为空"]
+            
             if format == "json":
                 # 导出为JSON
                 export_data = ontology.dict()
@@ -517,7 +534,7 @@ class OntologyService:
         return dom.toprettyxml(indent="  ")
     
     def search_entities(self, domain: str, query: str, 
-                       entity_types: List[str] = None) -> Dict[str, List[Dict]]:
+                       entity_types: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         搜索实体
         
@@ -534,6 +551,9 @@ class OntologyService:
             success, ontology, errors = self.load_schema(domain)
             if not success:
                 return {"error": errors}
+            
+            if ontology is None:
+                return {"error": ["本体数据为空"]}
             
             if entity_types is None:
                 entity_types = ['object_type', 'relationship', 'action_type']

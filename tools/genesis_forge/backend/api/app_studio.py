@@ -130,35 +130,29 @@ def studio():
     # 从 Session 获取当前领域
     current_domain = RequestContext.get_current_domain()
     
-    # 验证领域是否存在
     if current_domain not in DOMAIN_PACKS:
         current_domain = "supply_chain"
         RequestContext.set_current_domain(current_domain)
     
-    # 获取当前领域配置
     files_content = domain_manager.get_domain_files(current_domain)
     
     current_domain_info = DOMAIN_PACKS.get(current_domain, {})
     
-    # 解析侧边栏数据
     object_types = []
     action_rules = []
     seed_data = []
     
     try:
-        # 解析对象类型
         if files_content.get('schema'):
             schema_data = json.loads(files_content['schema'])
             if 'object_types' in schema_data:
                 object_types = schema_data['object_types']
         
-        # 解析动作规则
         if files_content.get('actions'):
             actions_data = json.loads(files_content['actions'])
             if 'actions' in actions_data:
                 action_rules = actions_data['actions']
         
-        # 解析种子数据
         if files_content.get('seed'):
             seed_json = json.loads(files_content['seed'])
             if 'entities' in seed_json:
@@ -179,38 +173,31 @@ def studio():
 @app.route('/editor')
 def editor():
     """编辑器页面 - 本体编辑器 IDE (兼容性路由)"""
-    # 从 Session 获取当前领域
     current_domain = RequestContext.get_current_domain()
     
-    # 验证领域是否存在
     if current_domain not in DOMAIN_PACKS:
         current_domain = "supply_chain"
         RequestContext.set_current_domain(current_domain)
     
-    # 获取当前领域配置
     files_content = domain_manager.get_domain_files(current_domain)
     
     current_domain_info = DOMAIN_PACKS.get(current_domain, {})
     
-    # 解析侧边栏数据
     object_types = []
     action_rules = []
     seed_data = []
     
     try:
-        # 解析对象类型
         if files_content.get('schema'):
             schema_data = json.loads(files_content['schema'])
             if 'object_types' in schema_data:
                 object_types = schema_data['object_types']
         
-        # 解析动作规则
         if files_content.get('actions'):
             actions_data = json.loads(files_content['actions'])
             if 'actions' in actions_data:
                 action_rules = actions_data['actions']
         
-        # 解析种子数据
         if files_content.get('seed'):
             seed_json = json.loads(files_content['seed'])
             if 'entities' in seed_json:
@@ -230,7 +217,6 @@ def editor():
 
 # ========== 原子服务API端点 ==========
 
-# 1. 本体管理服务 (OntologyService)
 @app.route('/api/v1/ontology/validate', methods=['POST'])
 def validate_ontology():
     """验证本体完整性"""
@@ -239,7 +225,6 @@ def validate_ontology():
         if not data:
             return jsonify({"error": "没有提供数据"}), 400
         
-        # 验证JSON Schema
         valid, errors = validation_engine.validate_json_schema(data, OntologyModel)
         
         if valid:
@@ -262,10 +247,8 @@ def validate_ontology():
 def check_ontology_integrity():
     """检查本体完整性"""
     try:
-        # 获取当前领域
         current_domain = RequestContext.get_current_domain()
         
-        # 获取当前领域文件
         files_content = domain_manager.get_domain_files(current_domain)
         logger.info(f"获取领域 {current_domain} 的文件，keys: {list(files_content.keys())}")
         
@@ -280,26 +263,19 @@ def check_ontology_integrity():
                 "message": f"领域 {current_domain} 没有Schema定义"
             }), 400
         
-        # 解析并验证 - 支持XML和JSON格式
         schema_data = {}
         
         try:
-            # 首先尝试解析为JSON
             schema_data = json.loads(schema_content)
             logger.info(f"Schema是JSON格式，成功解析")
         except json.JSONDecodeError:
-            # 如果不是JSON，尝试解析为XML
             logger.info(f"Schema是XML格式，尝试从XML中提取本体数据")
             try:
-                # 使用XML转换器从XML中提取数据
                 from backend.core.xml_converter import XMLConverter
                 
-                # XML文件包含对象类型定义，需要转换为OntologyModel格式
-                # 首先，尝试从XML中提取基本信息
                 import xml.etree.ElementTree as ET
                 root = ET.fromstring(schema_content)
                 
-                # 构建基本的schema数据 - 符合OntologyModel要求
                 schema_data = {
                     "domain": current_domain,
                     "object_types": {},
@@ -309,19 +285,14 @@ def check_ontology_integrity():
                     "domain_concepts": []
                 }
                 
-                # 从XML中提取对象类型 - 符合ObjectTypeDefinition模型
                 for obj_elem in root.findall(".//ObjectType"):
                     obj_name = obj_elem.get("name")
                     if obj_name:
-                        # 转换type_key为大写下划线格式
-                        # 如果已经是全大写且没有空格，保持原样（如TRUCK、WAREHOUSE）
-                        # 否则转换为大写下划线格式
                         if obj_name.isupper() and ' ' not in obj_name:
                             type_key = obj_name
                         else:
                             type_key = obj_name.upper().replace(' ', '_').replace('-', '_')
                         
-                        # 构建符合ObjectTypeDefinition要求的数据结构
                         obj_def = {
                             "type_key": type_key,  # 必须是大写下划线格式
                             "name": obj_name,
@@ -331,11 +302,9 @@ def check_ontology_integrity():
                             "tags": []
                         }
                         
-                        # 提取属性 - 符合PropertyDefinition模型
                         for prop_elem in obj_elem.findall(".//Property"):
                             prop_name = prop_elem.get("name")
                             if prop_name:
-                                # 构建符合PropertyDefinition要求的数据结构
                                 obj_def["properties"][prop_name] = {
                                     "name": prop_name,  # 必需字段
                                     "type": prop_elem.get("type", "string"),
@@ -347,13 +316,11 @@ def check_ontology_integrity():
                         
                         schema_data["object_types"][obj_name] = obj_def
                 
-                # 从XML中提取关系类型 - 符合RelationshipDefinition模型
                 link_types_elem = root.find(".//LinkTypes")
                 if link_types_elem is not None:
                     for link_elem in link_types_elem.findall(".//LinkType"):
                         link_name = link_elem.get("name")
                         if link_name:
-                            # 构建符合RelationshipDefinition要求的数据结构
                             schema_data["relationships"][link_name] = {
                                 "relation_type": link_name,  # 必需字段
                                 "name": link_name,
@@ -373,12 +340,9 @@ def check_ontology_integrity():
                     "message": f"领域 {current_domain} 的Schema既不是有效的JSON也不是有效的XML格式: {str(xml_error)}"
                 }), 400
         
-        # 确保数据符合OntologyModel要求
-        # 1. 添加domain字段（如果缺失）
         if "domain" not in schema_data:
             schema_data["domain"] = current_domain
         
-        # 2. 转换relationships为字典（如果是列表）
         if "relationships" in schema_data and isinstance(schema_data["relationships"], list):
             relationships_dict = {}
             for rel in schema_data["relationships"]:
@@ -388,7 +352,6 @@ def check_ontology_integrity():
                         relationships_dict[rel_name] = rel
             schema_data["relationships"] = relationships_dict
         
-        # 3. 转换objectTypes为字典（如果是列表）
         if "objectTypes" in schema_data and isinstance(schema_data["objectTypes"], list):
             object_types_dict = {}
             for obj in schema_data["objectTypes"]:
@@ -398,7 +361,6 @@ def check_ontology_integrity():
                         object_types_dict[obj_name] = obj
             schema_data["objectTypes"] = object_types_dict
         
-        # 4. 确保其他字段存在
         if "object_types" not in schema_data and "objectTypes" in schema_data:
             schema_data["object_types"] = schema_data["objectTypes"]
         
@@ -416,17 +378,13 @@ def check_ontology_integrity():
         except Exception as model_error:
             logger.error(f"OntologyModel创建失败: {model_error}")
             
-            # 对于Pydantic验证错误，提取详细信息
             error_message = str(model_error)
             error_details = []
             
-            # 尝试从错误消息中提取结构化信息
             if "validation errors for OntologyModel" in error_message:
-                # 这是一个Pydantic验证错误
                 lines = error_message.split('\n')
                 for line in lines:
                     if 'type=value_error' in line or 'type=missing' in line:
-                        # 提取字段名和错误信息
                         parts = line.strip().split()
                         if parts:
                             field_name = parts[0]
@@ -450,7 +408,6 @@ def check_ontology_integrity():
                 "schema_data_keys": list(schema_data.keys())
             }), 400
         
-        # 验证完整性
         errors = validation_engine.validate_reference_integrity(
             schema_data, ontology
         )
@@ -471,7 +428,6 @@ def check_ontology_integrity():
         logger.error(f"完整性检查失败: {e}")
         return jsonify({"error": f"完整性检查失败: {str(e)}"}), 500
 
-# 2. 世界仿真服务 (WorldService)
 @app.route('/api/v1/world/preview', methods=['GET'])
 def preview_world():
     """预览世界图谱"""
@@ -501,7 +457,6 @@ def validate_connectivity():
     try:
         loader = Neo4jLoader()
         
-        # 检查是否有孤岛节点
         query = """
         MATCH (n)
         WHERE NOT (n)--()
@@ -548,11 +503,9 @@ def reset_world():
         data = request.json or {}
         domain = data.get('domain', RequestContext.get_current_domain())
         
-        # 验证领域访问权限
         if not DomainContextManager.validate_domain_access(domain, domain_manager.list_domains()):
             raise DomainNotFoundError(domain)
         
-        # 获取指定领域的seed数据
         files_content = domain_manager.get_domain_files(domain)
         seed_content = files_content.get("seed", "")
         
@@ -562,11 +515,9 @@ def reset_world():
                 "message": "没有初始世界数据"
             }), 400
         
-        # 清空Neo4j并重新加载
         loader = Neo4jLoader()
         loader.delete_all_nodes()
         
-        # 重新加载seed数据
         stats = loader.load_to_neo4j(seed_content, clear_existing=False)
         
         return jsonify({
@@ -585,7 +536,6 @@ def reset_world():
         logger.error(f"世界重置失败: {e}")
         return jsonify({"error": f"世界重置失败: {str(e)}"}), 500
 
-# 3. 智能辅助服务 (CopilotService)
 @app.route('/api/v1/copilot/generate', methods=['POST'])
 def copilot_generate():
     """AI Copilot生成内容"""
@@ -601,7 +551,6 @@ def copilot_generate():
         if not prompt:
             return jsonify({"error": "没有提供提示词"}), 400
         
-        # 调用AI Copilot
         result = ai_copilot.generate_content(prompt, content_type, context)
         
         return jsonify(result)
@@ -613,7 +562,6 @@ def copilot_generate():
             "error": f"AI生成失败: {str(e)}"
         }), 500
 
-# AI Copilot兼容性路由
 @app.route('/api/copilot/generate', methods=['POST'])
 def copilot_generate_compat():
     """AI Copilot生成内容 (兼容性路由)"""
@@ -629,7 +577,6 @@ def copilot_generate_compat():
         if not prompt:
             return jsonify({"error": "没有提供提示词"}), 400
         
-        # 调用AI Copilot
         result = ai_copilot.generate_content(prompt, content_type, context)
         
         return jsonify(result)
@@ -641,7 +588,6 @@ def copilot_generate_compat():
             "error": f"AI生成失败: {str(e)}"
         }), 500
 
-# 简化的AI生成路由
 @app.route('/api/ai_generate', methods=['POST'])
 def ai_generate():
     """AI生成内容 (简化路由)"""
@@ -657,11 +603,9 @@ def ai_generate():
         if not prompt:
             return jsonify({"error": "没有提供提示词"}), 400
         
-        # 验证领域访问权限
         if not DomainContextManager.validate_domain_access(domain, domain_manager.list_domains()):
             raise DomainNotFoundError(domain)
         
-        # 构建上下文
         context = {
             'domain': domain,
             'schema': domain_manager.get_domain_files(domain).get('schema', ''),
@@ -669,7 +613,6 @@ def ai_generate():
         }
         
         try:
-            # 调用AI Copilot
             result = ai_copilot.generate_content(prompt, content_type, context)
             
             content = result.get("content", result.get("result", ""))
@@ -684,7 +627,6 @@ def ai_generate():
         except Exception as ai_error:
             logger.warning(f"AI服务调用失败，使用模拟结果: {ai_error}")
         
-        # AI服务失败时返回模拟结果
         mock_result = generate_mock_result(prompt, content_type)
         return jsonify({
             "status": "success",
@@ -812,7 +754,6 @@ def suggest_actions():
         logger.error(f"动作推荐失败: {e}")
         return jsonify({"error": f"动作推荐失败: {str(e)}"}), 500
 
-# 4. 规则引擎服务 (RuleExecutionService)
 @app.route('/api/v1/rules/simulate', methods=['POST'])
 def simulate_action():
     """模拟运行动作"""
@@ -827,7 +768,6 @@ def simulate_action():
         if not action_id:
             return jsonify({"error": "没有提供动作ID"}), 400
         
-        # 创建模拟事件
         event = Event(
             event_type=EventType.USER_INTENT,
             source="simulation",
@@ -837,7 +777,6 @@ def simulate_action():
             }
         )
         
-        # 处理事件
         results = rule_engine.process_event(event, parameters)
         
         return jsonify({
@@ -862,7 +801,6 @@ def validate_rule():
         if not cypher_query:
             return jsonify({"error": "没有提供Cypher查询"}), 400
         
-        # 验证Cypher语法
         valid, errors = validation_engine.validate_cypher_query(cypher_query)
         
         if valid:
@@ -881,7 +819,6 @@ def validate_rule():
         logger.error(f"规则验证失败: {e}")
         return jsonify({"error": f"规则验证失败: {str(e)}"}), 500
 
-# 5. Git-Ops服务
 @app.route('/api/v1/git/status', methods=['GET'])
 def git_status():
     """获取Git状态"""
@@ -927,7 +864,6 @@ def hot_reload():
         data = request.json or {}
         domain_name = data.get('domain', RequestContext.get_current_domain())
         
-        # 验证领域访问权限
         if not DomainContextManager.validate_domain_access(domain_name, domain_manager.list_domains()):
             raise DomainNotFoundError(domain_name)
         
@@ -942,7 +878,6 @@ def hot_reload():
         logger.error(f"热重载失败: {e}")
         return jsonify({"error": f"热重载失败: {str(e)}"}), 500
 
-# 6. 领域管理服务
 @app.route('/api/v1/domains', methods=['GET'])
 def list_domains_api():
     """获取所有领域"""
@@ -980,7 +915,6 @@ def git_rollback():
         
         commit_id = data.get('commit_id', 'HEAD~1')
         
-        # 执行Git回滚
         success, output = git_ops._run_git_command(['reset', '--hard', commit_id])
         
         if success:
@@ -1017,7 +951,6 @@ def git_branches():
 def git_diff():
     """获取文件差异"""
     try:
-        # 获取特定文件的差异或所有文件的差异
         file_path = request.args.get('file', '')
         
         if file_path:
@@ -1050,7 +983,6 @@ def git_revert():
         if not file_path:
             return jsonify({"error": "需要提供文件路径"}), 400
         
-        # 执行Git撤销
         success, output = git_ops._run_git_command(['checkout', '--', file_path])
         
         if success:
@@ -1077,7 +1009,6 @@ def switch_domain_api(domain_name):
         success = domain_manager.activate_domain(domain_name)
         
         if success:
-            # 使用 Session 存储当前领域，而不是全局变量
             RequestContext.set_current_domain(domain_name)
             
             return jsonify({
@@ -1092,7 +1023,6 @@ def switch_domain_api(domain_name):
         logger.error(f"切换领域失败: {e}")
         return jsonify({"error": f"切换领域失败: {str(e)}"}), 500
 
-# 兼容性路由 - 支持旧版本前端
 @app.route('/api/domains', methods=['GET'])
 def list_domains_compat():
     """获取所有可用领域模组 (兼容性路由)"""
@@ -1132,7 +1062,6 @@ def switch_domain_compat(domain_name):
         success = domain_manager.activate_domain(domain_name)
         
         if success:
-            # 使用 Session 存储当前领域
             RequestContext.set_current_domain(domain_name)
             
             return jsonify({
@@ -1152,7 +1081,6 @@ def switch_domain_compat(domain_name):
 def get_domain_config_compat(domain_name):
     """获取领域模组配置 (兼容性路由)"""
     try:
-        # 路径遍历防护
         if not DomainContextManager.validate_domain_access(domain_name, domain_manager.list_domains()):
             raise PathTraversalError(domain_name, "Domain not in allowed list")
         
@@ -1173,7 +1101,6 @@ def get_domain_config_compat(domain_name):
 def save_domain_config_compat(domain_name):
     """保存领域模组配置 (兼容性路由) - 原子性保存"""
     try:
-        # 路径遍历防护
         if not DomainContextManager.validate_domain_access(domain_name, domain_manager.list_domains()):
             raise PathTraversalError(domain_name, "Domain not in allowed list")
         
@@ -1181,11 +1108,9 @@ def save_domain_config_compat(domain_name):
         if not data:
             return jsonify({"error": "没有提供数据"}), 400
         
-        # 提取要保存的文件
         file_types = []
         new_contents = {}
         
-        # 导入XML转换器
         try:
             from backend.core.xml_converter import XMLConverter
         except ImportError:
@@ -1196,25 +1121,19 @@ def save_domain_config_compat(domain_name):
             content = data.get(file_type, "")
             if content:
                 try:
-                    # 尝试解析JSON内容
                     json_data = json.loads(content)
                     
-                    # 根据文件类型转换为XML
                     if file_type == "schema":
-                        # 本体数据转换为object_types.xml
                         xml_content = XMLConverter.convert_ontology_to_xml(json_data, domain_name)
                     elif file_type == "seed":
-                        # 种子数据转换为seed_data.xml
                         xml_content = XMLConverter.convert_seed_data_to_xml(json_data, domain_name)
                     else:
-                        # 其他文件类型保持原样
                         xml_content = content
                     
                     file_types.append(file_type)
                     new_contents[file_type] = xml_content
                     
                 except json.JSONDecodeError:
-                    # 如果不是JSON，保持原样
                     file_types.append(file_type)
                     new_contents[file_type] = content
                 except Exception as e:
@@ -1224,11 +1143,9 @@ def save_domain_config_compat(domain_name):
         if not file_types:
             return jsonify({"error": "没有要保存的文件内容"}), 400
         
-        # 判断是否需要同步到 Neo4j
         sync_to_neo4j = data.get('sync_to_neo4j', False)
         neo4j_loader_instance = Neo4jLoader() if sync_to_neo4j else None
         
-        # 使用原子性保存
         result = save_domain_config_atomic(
             domain_manager=domain_manager,
             domain_name=domain_name,
@@ -1250,7 +1167,6 @@ def save_domain_config_compat(domain_name):
         logger.error(f"保存领域配置失败: {e}")
         return jsonify({"error": f"保存领域配置失败: {str(e)}"}), 500
 
-# 7. 仿真启动服务
 @app.route('/api/launch_simulation', methods=['POST'])
 def launch_simulation():
     """启动领域仿真"""
@@ -1258,17 +1174,14 @@ def launch_simulation():
         data = request.json or {}
         domain_name = data.get('domain', RequestContext.get_current_domain())
         
-        # 验证领域访问权限
         if not DomainContextManager.validate_domain_access(domain_name, domain_manager.list_domains()):
             raise DomainNotFoundError(domain_name)
         
-        # 获取当前领域配置
         files_content = domain_manager.get_domain_files(domain_name)
         
         logger.info(f"Launch simulation for domain: {domain_name}")
         logger.info(f"Files content keys: {list(files_content.keys())}")
         
-        # 检查是否有文件内容
         has_content = False
         for file_type, content in files_content.items():
             if content and content.strip():
@@ -1279,8 +1192,6 @@ def launch_simulation():
         if not has_content:
             logger.info(f"No content found for domain: {domain_name}")
         
-        # 这里可以添加仿真启动逻辑
-        # 例如：启动独立的仿真进程、初始化仿真环境等
         
         return jsonify({
             "status": "success",
@@ -1304,7 +1215,6 @@ def launch_simulation():
 def upload_csv():
     """上传CSV文件并转换为本体"""
     try:
-        # 检查是否有文件
         if 'file' not in request.files:
             return jsonify({"error": "没有上传文件"}), 400
         
@@ -1315,15 +1225,12 @@ def upload_csv():
         domain = request.form.get('domain', RequestContext.get_current_domain())
         action = request.form.get('action', 'csv_to_ontology')
         
-        # 验证文件类型
         filename = file.filename or ''
         if not filename.lower().endswith('.csv'):
             return jsonify({"error": "只支持CSV文件"}), 400
         
-        # 读取CSV内容
         csv_content = file.read().decode('utf-8')
         
-        # 调用AI分析CSV并生成本体 - 使用object_type内容类型
         ai_response = ai_copilot.generate_content(
             prompt=f"""请将以下CSV数据转换为本体结构：
 文件: {filename}
@@ -1344,16 +1251,13 @@ def upload_csv():
             }
         )
         
-        # 解析AI响应
         content = ai_response.get('content', '')
         
-        # 尝试提取JSON格式的本体定义
         import re
         json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
         if json_match:
             ontology_json = json_match.group(1)
         else:
-            # 如果没有找到JSON块，使用整个内容
             ontology_json = content
         
         return jsonify({
@@ -1383,14 +1287,12 @@ def save_ontology():
         domain = data.get('domain', RequestContext.get_current_domain())
         ontology_xml = data.get('ontology_xml', '')
         
-        # 路径遍历防护
         if not DomainContextManager.validate_domain_access(domain, domain_manager.list_domains()):
             raise PathTraversalError(domain, "Domain not in allowed list")
         
         if not ontology_xml:
             return jsonify({"status": "error", "message": "没有提供本体数据"}), 400
         
-        # 保存到领域目录
         success = domain_manager.save_domain_file(domain, "seed", ontology_xml)
         
         if success:
@@ -1416,7 +1318,6 @@ def save_ontology():
             "message": f"保存失败: {str(e)}"
         }), 500
 
-# 8. 图谱数据服务 (保留原有API兼容性)
 @app.route('/api/graph', methods=['GET'])
 def get_graph():
     """获取图谱数据"""
@@ -1452,7 +1353,6 @@ def get_graph_stats():
             "message": str(e)
         }), 500
 
-# 编辑器API端点
 @app.route('/api/editor/save', methods=['POST'])
 def editor_save():
     """保存文件内容"""
@@ -1463,19 +1363,15 @@ def editor_save():
         if not file_path or content is None:
             return jsonify({"error": "缺少文件路径或内容"}), 400
         
-        # 解析文件路径，确定保存位置
         if file_path.startswith('objects/'):
-            # 保存对象类型
             type_key = file_path.replace('objects/', '').replace('.json', '')
             current_domain = RequestContext.get_current_domain()
             files_content = domain_manager.get_domain_files(current_domain)
             
-            # 更新schema中的对象类型
             if files_content.get('schema'):
                 schema_data = json.loads(files_content['schema'])
                 object_types = schema_data.get('object_types', [])
                 
-                # 查找并更新或添加对象类型
                 updated = False
                 for i, obj in enumerate(object_types):
                     if obj.get('type_key') == type_key:
@@ -1511,7 +1407,6 @@ def save_object():
         if not type_key:
             return jsonify({"error": "缺少类型键"}), 400
         
-        # 构建对象类型数据
         object_data = {
             "type_key": type_key,
             "name": display_name or type_key,
@@ -1521,7 +1416,6 @@ def save_object():
             "tags": []
         }
         
-        # 处理属性
         property_names = request.form.getlist('property_name[]')
         property_types = request.form.getlist('property_type[]')
         property_defaults = request.form.getlist('property_default[]')
@@ -1535,12 +1429,10 @@ def save_object():
                 
                 properties[prop_name] = prop_type
                 if prop_default:
-                    # 这里可以添加默认值处理逻辑
                     pass
         
         object_data["properties"] = properties
         
-        # 保存到领域
         current_domain = RequestContext.get_current_domain()
         files_content = domain_manager.get_domain_files(current_domain)
         
@@ -1548,7 +1440,6 @@ def save_object():
             schema_data = json.loads(files_content['schema'])
             object_types = schema_data.get('object_types', [])
             
-            # 查找并更新或添加对象类型
             updated = False
             for i, obj in enumerate(object_types):
                 if obj.get('type_key') == type_key:
@@ -1582,7 +1473,6 @@ def editor_validate():
         if not content:
             return jsonify({"error": "没有提供内容"}), 400
         
-        # 尝试解析JSON
         try:
             data = json.loads(content)
             return jsonify({
@@ -1602,7 +1492,6 @@ def editor_validate():
         logger.error(f"验证失败: {e}")
         return jsonify({"error": f"验证失败: {str(e)}"}), 500
 
-# 测试页面
 @app.route('/test')
 def test_page():
     """测试页面"""
@@ -1623,18 +1512,15 @@ def api_test():
     """测试API"""
     return "<div class='p-4 bg-green-100 rounded'>HTMX 请求成功！时间: " + datetime.now().strftime("%H:%M:%S") + "</div>"
 
-# 静态文件服务
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     """提供静态文件"""
     return send_from_directory(BASE_DIR / 'static', filename)
 
-# 导入HTMX路由
 try:
-    # 使用绝对导入
     import sys
     sys.path.insert(0, str(Path(__file__).parent))
-    from htmx_routes import register_htmx_routes
+    from api.routes.htmx_routes import register_htmx_routes
     app = register_htmx_routes(app, domain_manager, validation_engine, ai_copilot, git_ops, rule_engine)
     logger.info("HTMX路由注册成功")
 except ImportError as e:
@@ -1642,7 +1528,6 @@ except ImportError as e:
 except Exception as e:
     logger.error(f"HTMX路由注册失败: {e}")
 
-# 性能监控端点
 @app.route('/api/performance/metrics', methods=['POST'])
 def receive_performance_metrics():
     """接收前端性能指标数据"""
@@ -1651,10 +1536,8 @@ def receive_performance_metrics():
         if not data:
             return jsonify({"error": "没有提供数据"}), 400
         
-        # 记录性能数据
         logger.info(f"性能指标接收: {data.get('url', '未知URL')}")
         
-        # 提取关键指标
         metrics = data.get('metrics', {})
         page_load = metrics.get('pageLoad', {})
         

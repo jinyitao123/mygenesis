@@ -78,8 +78,9 @@ class ObjectTypeDefinition(BaseModel):
     @validator('type_key')
     def validate_type_key(cls, v):
         # 强制使用大写下划线格式
-        if not v.isupper() or '_' not in v:
-            raise ValueError('type_key必须使用大写下划线格式 (如: NPC_GUARD)')
+        # 允许大写下划线格式或纯大写格式
+        if not v.isupper():
+            raise ValueError("type_key必须使用大写格式 (如: TRUCK 或 NPC_GUARD)")
         return v
 
 
