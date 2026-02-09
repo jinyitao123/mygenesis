@@ -1,0 +1,63 @@
+{
+  "domain_id": "healthcare",
+  "name": "医疗健康系统",
+  "description": "医疗健康管理领域模块，包含病人、医生、药品等医疗实体",
+  "version": "1.0.0",
+  "author": "Genesis Forge Team",
+  "created_at": "2026-02-05",
+  
+  "ui_config": {
+    "primary_color": "#ef4444",
+    "secondary_color": "#8b5cf6",
+    "accent_color": "#10b981",
+    "background_color": "#F5F5F5",
+    "text_color": "#333333",
+    "font_family": "Microsoft YaHei, sans-serif",
+    "icon_set": "emoji"
+  },
+  
+  "features": {
+    "object_types": ["PATIENT", "DOCTOR", "MEDICATION", "APPOINTMENT", "MEDICAL_RECORD"],
+    "action_types": ["PROC_SCHEDULE_APPOINTMENT", "PROC_PRESCRIBE_MEDICATION", "PROC_DIAGNOSE", "PROC_ADMIT_PATIENT"],
+    "relation_types": ["TREATED_BY", "PRESCRIBED", "HAS_APPOINTMENT", "HAS_RECORD", "BELONGS_TO_DEPARTMENT"],
+    "supported_csv_columns": ["id", "name", "type", "status", "age", "department", "medication_name"]
+  },
+  
+  "default_objects": [
+    {
+      "id": "patient_001",
+      "name": "病人李四",
+      "type": "PATIENT",
+      "age": 45,
+      "status": "住院",
+      "department": "内科"
+    },
+    {
+      "id": "doctor_001",
+      "name": "张医生",
+      "type": "DOCTOR",
+      "department": "内科",
+      "specialty": "心血管"
+    }
+  ],
+  
+  "templates": {
+    "csv_import": {
+      "filename": "healthcare_data.csv",
+      "columns": ["id", "name", "type", "status", "department", "properties_json"],
+      "example": "patient_001,病人李四,PATIENT,住院,内科,{\"age\":45,\"blood_type\":\"A+\"}"
+    },
+    "cypher_queries": {
+      "find_patients_by_department": "MATCH (p:PATIENT) WHERE p.department = $dept RETURN p.id, p.name, p.status",
+      "get_doctor_appointments": "MATCH (d:DOCTOR)-[:HAS_APPOINTMENT]->(a:APPOINTMENT) RETURN d, a",
+      "find_medication_interactions": "MATCH (m1:MEDICATION)-[:INTERACTS_WITH]->(m2) RETURN m1, m2"
+    }
+  },
+  
+  "validation_rules": {
+    "patient_age": "age >= 0 AND age <= 150",
+    "blood_pressure_systolic": "systolic >= 70 AND systolic <= 250",
+    "blood_pressure_diastolic": "diastolic >= 40 AND diastolic <= 150",
+    "temperature": "temperature >= 35 AND temperature <= 42"
+  }
+}

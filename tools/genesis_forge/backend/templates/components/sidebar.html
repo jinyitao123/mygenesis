@@ -1,0 +1,141 @@
+<div x-data="{ 
+    expanded: { 
+        'object_types': true, 
+        'action_rules': true, 
+        'seed_data': true,
+        'templates': false
+    },
+    selectedFile: null
+}">
+    <!-- 对象类型 -->
+    <div class="mb-4">
+        <div class="flex items-center justify-between mb-1 cursor-pointer"
+             @click="expanded.object_types = !expanded.object_types">
+            <div class="flex items-center">
+                <i class="fas fa-cube text-studio-accent mr-2"></i>
+                <span :class="{ 'text-studio-text-secondary': $store.app.sidebarCollapsed }">对象类型</span>
+            </div>
+            <i class="fas text-sm" :class="expanded.object_types ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+        </div>
+        
+        <div x-show="expanded.object_types &amp;&amp; !$store.app.sidebarCollapsed" class="ml-6 space-y-1">
+            {% for obj in object_types %}
+            <div class="flex items-center justify-between group hover:bg-studio-panel px-2 py-1 rounded cursor-pointer"
+                 :class="{ 'bg-studio-panel': selectedFile === '{{ obj.type_key }}' }"
+                 @click="selectedFile = '{{ obj.type_key }}'; 
+                         htmx.ajax('GET', '/studio/editor/object/{{ obj.type_key }}', { target: '#editor-container', swap: 'innerHTML' });
+                         $dispatch('file-selected', { file: { path: '{{ obj.type_key }}', type: 'object' } })">
+                <div class="flex items-center">
+                    <i class="fas fa-file-code text-studio-text-secondary mr-2 text-sm"></i>
+                    <span class="text-sm truncate">{{ obj.type_key }}</span>
+                </div>
+                <div class="opacity-0 group-hover:opacity-100">
+                    <i class="fas fa-edit text-xs text-studio-text-secondary"></i>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <div class="text-studio-text-secondary text-sm px-2 py-1 cursor-pointer hover:text-studio-accent"
+                 @click="htmx.ajax('GET', '/studio/editor/new/object', { target: '#editor-container', swap: 'innerHTML' })">
+                <i class="fas fa-plus mr-1"></i> 新建对象类型
+            </div>
+        </div>
+    </div>
+    
+    <!-- 动作规则 -->
+    <div class="mb-4">
+        <div class="flex items-center justify-between mb-1 cursor-pointer"
+             @click="expanded.action_rules = !expanded.action_rules">
+            <div class="flex items-center">
+                <i class="fas fa-bolt text-studio-warning mr-2"></i>
+                <span :class="{ 'text-studio-text-secondary': $store.app.sidebarCollapsed }">动作规则</span>
+            </div>
+            <i class="fas text-sm" :class="expanded.action_rules ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+        </div>
+        
+        <div x-show="expanded.action_rules &amp;&amp; !$store.app.sidebarCollapsed" class="ml-6 space-y-1">
+            {% for action in action_rules %}
+            <div class="flex items-center justify-between group hover:bg-studio-panel px-2 py-1 rounded cursor-pointer"
+                 :class="{ 'bg-studio-panel': selectedFile === '{{ action.action_id }}' }"
+                 @click="selectedFile = '{{ action.action_id }}'; 
+                         htmx.ajax('GET', '/studio/editor/action/{{ action.action_id }}', { target: '#editor-container', swap: 'innerHTML' });
+                         $dispatch('file-selected', { file: { path: '{{ action.action_id }}', type: 'action' } })">
+                <div class="flex items-center">
+                    <i class="fas fa-file-alt text-studio-text-secondary mr-2 text-sm"></i>
+                    <span class="text-sm truncate">{{ action.action_id }}</span>
+                </div>
+                <div class="opacity-0 group-hover:opacity-100">
+                    <i class="fas fa-edit text-xs text-studio-text-secondary"></i>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <div class="text-studio-text-secondary text-sm px-2 py-1 cursor-pointer hover:text-studio-accent"
+                 @click="htmx.ajax('GET', '/studio/editor/new/action', { target: '#editor-container', swap: 'innerHTML' })">
+                <i class="fas fa-plus mr-1"></i> 新建动作规则
+            </div>
+        </div>
+    </div>
+    
+    <!-- 种子数据 -->
+    <div class="mb-4">
+        <div class="flex items-center justify-between mb-1 cursor-pointer"
+             @click="expanded.seed_data = !expanded.seed_data">
+            <div class="flex items-center">
+                <i class="fas fa-database text-studio-success mr-2"></i>
+                <span :class="{ 'text-studio-text-secondary': $store.app.sidebarCollapsed }">种子数据</span>
+            </div>
+            <i class="fas text-sm" :class="expanded.seed_data ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+        </div>
+        
+        <div x-show="expanded.seed_data &amp;&amp; !$store.app.sidebarCollapsed" class="ml-6 space-y-1">
+            {% for seed in seed_data %}
+            <div class="flex items-center justify-between group hover:bg-studio-panel px-2 py-1 rounded cursor-pointer"
+                 :class="{ 'bg-studio-panel': selectedFile === '{{ seed.name }}' }"
+                 @click="selectedFile = '{{ seed.name }}'; 
+                         htmx.ajax('GET', '/studio/editor/seed/{{ seed.name }}', { target: '#editor-container', swap: 'innerHTML' });
+                         $dispatch('file-selected', { file: { path: '{{ seed.name }}', type: 'seed' } })">
+                <div class="flex items-center">
+                    <i class="fas fa-seedling text-studio-text-secondary mr-2 text-sm"></i>
+                    <span class="text-sm truncate">{{ seed.name }}</span>
+                </div>
+                <div class="opacity-0 group-hover:opacity-100">
+                    <i class="fas fa-edit text-xs text-studio-text-secondary"></i>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <div class="text-studio-text-secondary text-sm px-2 py-1 cursor-pointer hover:text-studio-accent"
+                 @click="htmx.ajax('GET', '/studio/editor/new/seed', { target: '#editor-container', swap: 'innerHTML' })">
+                <i class="fas fa-plus mr-1"></i> 新建种子数据
+            </div>
+        </div>
+    </div>
+    
+    <!-- 模板库 -->
+    <div>
+        <div class="flex items-center justify-between mb-1 cursor-pointer"
+             @click="expanded.templates = !expanded.templates">
+            <div class="flex items-center">
+                <i class="fas fa-layer-group text-studio-text-secondary mr-2"></i>
+                <span :class="{ 'text-studio-text-secondary': $store.app.sidebarCollapsed }">模板库</span>
+            </div>
+            <i class="fas text-sm" :class="expanded.templates ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+        </div>
+        
+        <div x-show="expanded.templates &amp;&amp; !$store.app.sidebarCollapsed" class="ml-6 space-y-1">
+            <div class="text-studio-text-secondary text-sm px-2 py-1 cursor-pointer hover:text-studio-accent"
+                 @click="htmx.ajax('GET', '/studio/template/npc', { target: '#editor-container', swap: 'innerHTML' })">
+                <i class="fas fa-user mr-1"></i> NPC模板
+            </div>
+            <div class="text-studio-text-secondary text-sm px-2 py-1 cursor-pointer hover:text-studio-accent"
+                 @click="htmx.ajax('GET', '/studio/template/item', { target: '#editor-container', swap: 'innerHTML' })">
+                <i class="fas fa-cube mr-1"></i> 物品模板
+            </div>
+            <div class="text-studio-text-secondary text-sm px-2 py-1 cursor-pointer hover:text-studio-accent"
+                 @click="htmx.ajax('GET', '/studio/template/location', { target: '#editor-container', swap: 'innerHTML' })">
+                <i class="fas fa-map-marker-alt mr-1"></i> 地点模板
+            </div>
+        </div>
+    </div>
+</div>

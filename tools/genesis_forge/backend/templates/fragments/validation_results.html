@@ -1,0 +1,96 @@
+{% if errors %}
+<div class="space-y-2">
+    <div class="flex items-center justify-between mb-2">
+        <h3 class="font-bold text-studio-error">
+            <i class="fas fa-exclamation-circle mr-2"></i>发现 {{ errors|length }} 个验证错误
+        </h3>
+        <button class="text-sm text-studio-text-secondary hover:text-studio-text"
+                @click="document.body.dispatchEvent(new CustomEvent('clear-validation'))">
+            清空
+        </button>
+    </div>
+    
+    {% for error in errors %}
+    <div class="p-3 bg-red-900/30 border border-red-700/50 rounded-lg">
+        <div class="flex items-start">
+            <i class="fas fa-times-circle text-red-400 mt-0.5 mr-2"></i>
+            <div class="flex-1">
+                <div class="font-medium mb-1">{{ error.message }}</div>
+                {% if error.location %}
+                <div class="text-sm text-red-300/80 font-mono mb-1">{{ error.location }}</div>
+                {% endif %}
+                {% if error.details %}
+                <div class="text-sm text-red-300/60">{{ error.details }}</div>
+                {% endif %}
+                {% if error.suggestion %}
+                <div class="mt-2 p-2 bg-red-900/20 rounded text-sm">
+                    <div class="font-medium text-red-300">建议：</div>
+                    <div class="text-red-300/80">{{ error.suggestion }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% if error.line %}
+            <button class="text-sm text-studio-accent hover:underline ml-2"
+                    @click="goToLine({{ error.line }})">
+                跳转到行 {{ error.line }}
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-8 text-studio-text-secondary">
+    <i class="fas fa-check-circle text-3xl text-studio-success mb-3"></i>
+    <p class="text-lg">验证通过</p>
+    <p class="text-sm mt-1">没有发现错误</p>
+</div>
+{% endif %}
+
+<script>
+function goToLine(lineNumber) {
+    if (window.monacoEditor) {
+        window.monacoEditor.revealLineInCenter(lineNumber);
+        window.monacoEditor.setPosition({ lineNumber: lineNumber, column: 1 });
+        
+        // 添加行高亮
+        const decorations = window.monacoEditor.deltaDecorations([], [
+            {
+                range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+                options: {
+                    isWholeLine: true,
+                    className: 'error-line-highlight',
+                    linesDecorationsClassName: 'error-line-decoration'
+                }
+            }
+        ]);
+        
+        // 3秒后清除高亮
+        setTimeout(() => {
+            window.monacoEditor.deltaDecorations(decorations, []);
+        }, 3000);
+    }
+}
+
+// 监听清空验证事件
+document.addEventListener('clear-validation', function() {
+    const container = document.getElementById('validation-results');
+    if (container) {
+        container.innerHTML = '<div class="text-studio-text-secondary">无验证错误</div>';
+    }
+});
+
+// 添加CSS样式
+const style = document.createElement('style');
+style.textContent = `
+    .error-line-highlight {
+        background-color: rgba(239, 68, 68, 0.2) !important;
+    }
+    .error-line-decoration {
+        background-color: #ef4444 !important;
+        width: 3px !important;
+        margin-left: 5px;
+    }
+`;
+document.head.appendChild(style);
+</script>

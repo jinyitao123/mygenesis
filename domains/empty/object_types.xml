@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<ObjectTypes domain="unknown">
+    <ObjectType name="Entity" color="#3b82f6" icon="cube" primary_key="id">
+        <Property name="description" type="enum" description=""/>
+        <Property name="alignment" type="enum" description=""/>
+        <Property name="capacity" type="int" description=""/>
+        <Property name="current_load" type="int" description=""/>
+    </ObjectType>
+    <LinkTypes>
+        <LinkType name="BELONGS_TO" source="Entity" target="Faction" color="#64748b"/>
+        <LinkType name="DOCKED_AT" source="Entity" target="Warehouse" color="#64748b"/>
+        <LinkType name="LOCATED_AT" source="Entity" target="Location" color="#64748b"/>
+        <LinkType name="REPORTS_TO" source="Entity" target="Employee" color="#64748b"/>
+    </LinkTypes>
+</ObjectTypes>

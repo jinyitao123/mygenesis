@@ -1,0 +1,353 @@
+<div id="editor-container" class="h-full p-4">
+    <!-- 默认编辑器占位符 -->
+    <div class="h-full flex items-center justify-center text-studio-text-secondary">
+        <div class="text-center">
+            <i class="fas fa-code text-4xl mb-4"></i>
+            <p class="text-lg mb-2">选择左侧文件开始编辑</p>
+            <p class="text-sm">或创建新的对象类型、动作规则、种子数据</p>
+        </div>
+    </div>
+</div>
+
+<!-- Monaco Editor 模板 -->
+<template id="monaco-template">
+    <div class="h-full flex flex-col">
+        <!-- 编辑器工具栏 -->
+        <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2">
+                <span class="font-medium" id="editor-title">未命名文件</span>
+                <span class="text-xs px-2 py-1 rounded bg-studio-panel" id="file-type">JSON</span>
+                <div class="status-dot status-dot-success" id="saved-indicator"></div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button class="btn-icon" title="格式化" @click="formatCode()">
+                    <i class="fas fa-indent"></i>
+                </button>
+                <button class="btn-icon" title="验证" @click="validateCode()">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+                <button class="btn btn-primary btn-sm" 
+                         hx-post="/api/editor/save"
+                        hx-include="#editor-form"
+                        hx-swap="none">
+                    <i class="fas fa-save mr-1"></i>保存
+                </button>
+            </div>
+        </div>
+        
+        <!-- 编辑器表单（用于HTMX提交） -->
+        <form id="editor-form" class="hidden">
+            <input type="hidden" name="file_path" id="file-path">
+            <textarea name="content" id="editor-content"></textarea>
+        </form>
+        
+        <!-- Monaco Editor 容器 -->
+        <div id="monaco-editor" class="flex-1 border border-studio-border rounded-lg overflow-hidden"></div>
+        
+        <!-- 状态栏 -->
+        <div class="flex items-center justify-between mt-2 text-xs text-studio-text-secondary">
+            <div class="flex items-center space-x-4">
+                <span id="cursor-position">行 1, 列 1</span>
+                <span id="file-size">0 字符</span>
+                <span id="language-mode">JSON</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span id="save-status">已保存</span>
+                <i class="fas fa-keyboard" title="快捷键: Ctrl+S 保存"></i>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- 对象类型编辑器模板 -->
+<template id="object-editor-template">
+    <div class="h-full flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold">对象类型编辑器</h2>
+            <div class="flex items-center space-x-2">
+                <button class="btn btn-secondary" @click="previewInGraph()">
+                    <i class="fas fa-eye mr-1"></i>图谱预览
+                </button>
+                <button class="btn btn-primary" 
+                         hx-post="/api/editor/save/object"
+                        hx-include="#object-form"
+                        hx-swap="none">
+                    <i class="fas fa-save mr-1"></i>保存对象类型
+                </button>
+            </div>
+        </div>
+        
+        <form id="object-form" class="flex-1 overflow-y-auto">
+            <div class="grid grid-cols-2 gap-4">
+                <!-- 基本信息 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">类型键</label>
+                        <input type="text" name="type_key" 
+                               class="w-full px-3 py-2 bg-studio-panel border border-studio-border rounded focus:outline-none focus:ring-2 focus:ring-studio-accent"
+                               required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-1">显示名称</label>
+                        <input type="text" name="display_name" 
+                               class="w-full px-3 py-2 bg-studio-panel border border-studio-border rounded focus:outline-none focus:ring-2 focus:ring-studio-accent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-1">描述</label>
+                        <textarea name="description" rows="3"
+                                  class="w-full px-3 py-2 bg-studio-panel border border-studio-border rounded focus:outline-none focus:ring-2 focus:ring-studio-accent"></textarea>
+                    </div>
+                </div>
+                
+                <!-- 属性定义 -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium">属性定义</label>
+                        <button type="button" class="text-sm text-studio-accent hover:underline" @click="addProperty()">
+                            <i class="fas fa-plus mr-1"></i>添加属性
+                        </button>
+                    </div>
+                    
+                    <div id="properties-container" class="space-y-2">
+                        <!-- 属性行将通过JS动态添加 -->
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</template>
+
+<script>
+// Monaco Editor 初始化
+function initMonacoEditor(content, language = 'json', filePath = null) {
+    require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.45.0/min/vs' } });
+    
+    require(['vs/editor/editor.main'], function() {
+        const container = document.getElementById('monaco-editor');
+        if (!container) return;
+        
+        // 清理现有编辑器
+        if (window.monacoEditor) {
+            window.monacoEditor.dispose();
+        }
+        
+        // 创建新编辑器
+        window.monacoEditor = monaco.editor.create(container, {
+            value: content,
+            language: language,
+            theme: 'vs-dark',
+            fontSize: 14,
+            fontFamily: 'JetBrains Mono, Monaco, Consolas, monospace',
+            minimap: { enabled: true },
+            scrollBeyondLastLine: false,
+            wordWrap: 'on',
+            formatOnPaste: true,
+            formatOnType: true,
+            automaticLayout: true
+        });
+        
+        // 更新隐藏的textarea用于HTMX提交
+        const textarea = document.getElementById('editor-content');
+        if (textarea) {
+            textarea.value = content;
+            
+            // 监听内容变化
+            window.monacoEditor.onDidChangeModelContent(() => {
+                const newValue = window.monacoEditor.getValue();
+                textarea.value = newValue;
+                
+                // 标记为脏数据
+                document.body.dispatchEvent(new CustomEvent('dirty-state-changed', {
+                    detail: { isDirty: true }
+                }));
+                
+                // 更新文件大小
+                updateFileStats(newValue);
+            });
+        }
+        
+        // 监听光标位置变化
+        window.monacoEditor.onDidChangeCursorPosition((e) => {
+            const position = document.getElementById('cursor-position');
+            if (position) {
+                position.textContent = `行 ${e.position.lineNumber}, 列 ${e.position.column}`;
+            }
+        });
+        
+        // 添加快捷键：Ctrl+S 保存
+        window.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+             document.querySelector('[hx-post="/api/editor/save"]').click();
+        });
+        
+        // 初始文件统计
+        updateFileStats(content);
+        
+        // 更新UI
+        if (filePath) {
+            const title = document.getElementById('editor-title');
+            if (title) {
+                const parts = filePath.split('/');
+                title.textContent = parts[parts.length - 1];
+            }
+            
+            const pathInput = document.getElementById('file-path');
+            if (pathInput) {
+                pathInput.value = filePath;
+            }
+        }
+        
+        // 设置语言模式显示
+        const languageMode = document.getElementById('language-mode');
+        if (languageMode) {
+            languageMode.textContent = language.toUpperCase();
+        }
+    });
+}
+
+// 更新文件统计信息
+function updateFileStats(content) {
+    const fileSize = document.getElementById('file-size');
+    if (fileSize) {
+        const charCount = content.length;
+        const lineCount = content.split('\n').length;
+        fileSize.textContent = `${charCount} 字符, ${lineCount} 行`;
+    }
+}
+
+// 格式化代码
+function formatCode() {
+    if (window.monacoEditor) {
+        window.monacoEditor.getAction('editor.action.formatDocument').run();
+    }
+}
+
+        // 验证代码
+function validateCode() {
+    if (window.monacoEditor) {
+        const content = window.monacoEditor.getValue();
+        htmx.ajax('POST', '/api/editor/validate', {
+            values: { content: content },
+            target: '#validation-results'
+        });
+    }
+}
+
+// 对象类型编辑器函数
+function addProperty() {
+    const container = document.getElementById('properties-container');
+    if (!container) return;
+    
+    const propertyId = `property_${Date.now()}`;
+    const propertyHtml = `
+        <div class="flex items-center space-x-2 p-2 bg-studio-panel rounded" id="${propertyId}">
+            <input type="text" name="property_name[]" placeholder="属性名" 
+                   class="flex-1 px-2 py-1 bg-studio-bg border border-studio-border rounded text-sm">
+            <select name="property_type[]" class="px-2 py-1 bg-studio-bg border border-studio-border rounded text-sm">
+                <option value="string">字符串</option>
+                <option value="number">数字</option>
+                <option value="boolean">布尔值</option>
+                <option value="array">数组</option>
+                <option value="object">对象</option>
+            </select>
+            <input type="text" name="property_default[]" placeholder="默认值" 
+                   class="flex-1 px-2 py-1 bg-studio-bg border border-studio-border rounded text-sm">
+            <button type="button" class="text-studio-error hover:text-red-400" @click="document.getElementById('${propertyId}').remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', propertyHtml);
+}
+
+function previewInGraph() {
+    // 触发图谱刷新事件
+    document.body.dispatchEvent(new CustomEvent('reload-graph'));
+    // 切换到图谱视图
+    Alpine.store('app').activeTab = 'graph';
+}
+
+// HTMX事件处理
+document.addEventListener('DOMContentLoaded', function() {
+    // 监听编辑器加载请求
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        const target = evt.detail.target;
+        
+        // 如果是编辑器容器，初始化Monaco
+        if (target.id === 'editor-container') {
+            const newContent = target.querySelector('[data-editor-content]');
+            if (newContent) {
+                const content = newContent.getAttribute('data-editor-content');
+                const language = newContent.getAttribute('data-editor-language') || 'json';
+                const filePath = newContent.getAttribute('data-editor-path');
+                
+                // 使用模板创建编辑器界面
+                const template = document.getElementById('monaco-template');
+                if (template) {
+                    target.innerHTML = template.innerHTML;
+                    initMonacoEditor(content, language, filePath);
+                }
+            }
+            
+            // 如果是对象类型编辑器
+            const objectEditor = target.querySelector('[data-object-editor]');
+            if (objectEditor) {
+                const template = document.getElementById('object-editor-template');
+                if (template) {
+                    target.innerHTML = template.innerHTML;
+                    
+                    // 填充现有数据
+                    const data = JSON.parse(objectEditor.getAttribute('data-object-data') || '{}');
+                    const form = document.getElementById('object-form');
+                    if (form && data) {
+                        Object.keys(data).forEach(key => {
+                            const input = form.querySelector(`[name="${key}"]`);
+                            if (input) {
+                                input.value = data[key] || '';
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    });
+    
+    // 监听保存成功
+    document.body.addEventListener('save-success', function() {
+        const indicator = document.getElementById('saved-indicator');
+        if (indicator) {
+            indicator.className = 'status-dot status-dot-success';
+        }
+        
+        const saveStatus = document.getElementById('save-status');
+        if (saveStatus) {
+            saveStatus.textContent = '已保存';
+            saveStatus.className = 'text-studio-success';
+        }
+    });
+    
+    // 监听内容变化（脏数据）
+    document.body.addEventListener('dirty-state-changed', function(evt) {
+        const isDirty = evt.detail.isDirty;
+        
+        const indicator = document.getElementById('saved-indicator');
+        if (indicator) {
+            indicator.className = isDirty ? 'status-dot status-dot-warning' : 'status-dot status-dot-success';
+        }
+        
+        const saveStatus = document.getElementById('save-status');
+        if (saveStatus) {
+            if (isDirty) {
+                saveStatus.textContent = '未保存';
+                saveStatus.className = 'text-studio-warning';
+            } else {
+                saveStatus.textContent = '已保存';
+                saveStatus.className = 'text-studio-success';
+            }
+        }
+    });
+});
+</script>

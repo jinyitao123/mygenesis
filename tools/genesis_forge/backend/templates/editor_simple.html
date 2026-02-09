@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN" x-data="{ activeTab: 'editor', sidebarCollapsed: false }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简化编辑器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white h-screen">
+    <div class="flex flex-col h-screen">
+        <!-- 顶部工具栏 -->
+        <header class="bg-gray-800 p-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-xl font-bold">简化编辑器</h1>
+                <div class="flex space-x-2">
+                    <button @click="sidebarCollapsed = !sidebarCollapsed" class="px-3 py-1 bg-gray-700 rounded">
+                        <i class="fas" :class="sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+                    </button>
+                    <button class="px-3 py-1 bg-blue-600 rounded">保存</button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- 主内容 -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- 侧边栏 -->
+            <aside class="bg-gray-800 w-64 transition-all duration-300" :class="{ 'w-16': sidebarCollapsed }">
+                <div class="p-4">
+                    <div class="mb-4" x-data="{ expanded: true }">
+                        <div class="flex justify-between items-center cursor-pointer" @click="expanded = !expanded">
+                            <span :class="{ 'text-gray-400': sidebarCollapsed }">对象类型</span>
+                            <i class="fas" :class="expanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                        </div>
+                        <div x-show="expanded &amp;&amp; !sidebarCollapsed" class="ml-4 mt-2">
+                            <div class="text-sm text-gray-300 hover:text-white cursor-pointer py-1">
+                                <i class="fas fa-cube mr-2"></i>WAREHOUSE
+                            </div>
+                            <div class="text-sm text-gray-300 hover:text-white cursor-pointer py-1">
+                                <i class="fas fa-cube mr-2"></i>PRODUCT
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- 主工作区 -->
+            <main class="flex-1 p-4">
+                <!-- 标签页 -->
+                <div class="flex border-b border-gray-700 mb-4">
+                    <button class="px-4 py-2" :class="{ 'border-b-2 border-blue-500': activeTab === 'editor' }" 
+                            @click="activeTab = 'editor'">
+                        编辑器
+                    </button>
+                    <button class="px-4 py-2" :class="{ 'border-b-2 border-blue-500': activeTab === 'graph' }" 
+                            @click="activeTab = 'graph'">
+                        图谱
+                    </button>
+                </div>
+                
+                <!-- 编辑器内容 -->
+                <div x-show="activeTab === 'editor'" class="h-full">
+                    <div class="bg-gray-800 p-4 rounded h-64">
+                        <h3 class="mb-2">代码编辑器区域</h3>
+                        <textarea class="w-full h-48 bg-gray-900 text-white p-2 rounded font-mono" 
+                                  placeholder="在这里编辑代码..."></textarea>
+                    </div>
+                </div>
+                
+                <!-- 图谱内容 -->
+                <div x-show="activeTab === 'graph'" class="h-full">
+                    <div class="bg-gray-800 p-4 rounded h-64 flex items-center justify-center">
+                        <div class="text-center">
+                            <i class="fas fa-project-diagram text-4xl text-gray-400 mb-2"></i>
+                            <p>图谱可视化区域</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        
+        <!-- 底部状态栏 -->
+        <footer class="bg-gray-800 p-2 text-sm text-gray-400">
+            <div class="flex justify-between">
+                <span>就绪</span>
+                <span>Alpine.js 测试页面</span>
+            </div>
+        </footer>
+    </div>
+    
+    <script>
+        document.addEventListener('alpine:init', () => {
+            console.log('Alpine.js 初始化成功');
+            Alpine.store('app', {
+                activeTab: 'editor',
+                sidebarCollapsed: false
+            });
+        });
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('页面加载完成');
+        });
+    </script>
+</body>
+</html>

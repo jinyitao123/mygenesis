@@ -1,0 +1,24 @@
+{
+  "name": "可视化编辑_2026-02-09",
+  "description": "通过可视化编辑器创建的本体",
+  "version": "1.0.0",
+  "createdAt": "2026-02-09T04:05:40.833Z",
+  "objectTypes": [
+    {
+      "name": "VisualNode",
+      "description": "可视化节点",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "节点标签"
+        },
+        "type": {
+          "type": "string",
+          "description": "节点类型"
+        }
+      }
+    }
+  ],
+  "relationships": [],
+  "rules": []
+}

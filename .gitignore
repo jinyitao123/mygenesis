@@ -40,6 +40,7 @@ venv.bak/
 # Logs
 logs/
 *.log
+src/logs/
 neo4j_logs/
 neo4j_data/
 
@@ -53,6 +54,14 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Temporary and session files
+SESSION_CONTEXT.md
+NEW_SESSION_PROMPT.md
+diagnose_log_viewer.py
+fix_emoji.py
+test_web_log.py
+start_game.py
 
 # Project specific test files
 test_*.py

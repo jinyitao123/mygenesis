@@ -1,0 +1,2819 @@
+<!DOCTYPE html>
+<html lang="zh-CN" x-data="{ isDirty: false, sidebarCollapsed: false, bottomPanelOpen: false }" 
+      @htmx:before-request="if(isDirty && !confirm('有未保存的更改，确定要离开吗？')) event.preventDefault()">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genesis Forge Studio - 可视化仿真世界构建平台</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'studio-bg': '#0f172a',
+                        'studio-sidebar': '#1e293b',
+                        'studio-panel': '#334155',
+                        'studio-border': '#475569',
+                        'studio-text': '#f1f5f9',
+                        'studio-text-secondary': '#94a3b8',
+                        'studio-accent': '#3b82f6',
+                        'studio-success': '#10b981',
+                        'studio-warning': '#f59e0b',
+                        'studio-error': '#ef4444'
+                    },
+                    fontFamily: {
+                        'mono': ['JetBrains Mono', 'Monaco', 'Consolas', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
+    
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- 安全的Alpine.js辅助函数 -->
+    <script src="/static/js/alpine-helpers.js"></script>
+    
+    <!-- 懒加载工具 -->
+    <script src="/static/js/lazy-loader.js"></script>
+    
+    <!-- 性能监控 -->
+    <script src="/static/js/performance-monitor.js"></script>
+    
+    <!-- 资源提示 -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    
+    <!-- Font Awesome (延迟加载) -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    
+    <!-- Monaco Editor Loader (延迟加载) -->
+    <link rel="preload" href="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js" as="script">
+    
+    <!-- Cytoscape.js (将通过懒加载按需加载) -->
+    
+    <!-- NProgress (加载进度条 - 延迟加载) -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.css"></noscript>
+    
+    <style>
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        
+        /* 拖拽样式 */
+        .draggable {
+            cursor: grab;
+        }
+        .draggable:active {
+            cursor: grabbing;
+        }
+        
+        /* 代码编辑器样式 */
+        .monaco-editor {
+            border-radius: 0.375rem;
+            overflow: hidden;
+        }
+        
+        /* 图谱容器 */
+        .cy-container {
+            border-radius: 0.375rem;
+            overflow: hidden;
+        }
+        
+        /* 动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+        }
+        .btn-primary {
+            @apply bg-studio-accent hover:bg-blue-600 text-white;
+        }
+        .btn-secondary {
+            @apply bg-studio-panel hover:bg-slate-600 text-studio-text;
+        }
+        .btn-success {
+            @apply bg-studio-success hover:bg-emerald-600 text-white;
+        }
+        .btn-warning {
+            @apply bg-studio-warning hover:bg-amber-600 text-white;
+        }
+        .btn-error {
+            @apply bg-studio-error hover:bg-red-600 text-white;
+        }
+        
+        /* 图标按钮 */
+        .btn-icon {
+            @apply p-2 rounded-lg hover:bg-studio-panel transition-colors duration-200;
+        }
+        
+        /* 标签页样式 */
+        .tab-active {
+            @apply border-b-2 border-studio-accent text-studio-accent;
+        }
+        
+        /* 状态指示器 */
+        .status-dot {
+            @apply w-2 h-2 rounded-full;
+        }
+        .status-dot-success {
+            @apply bg-studio-success;
+        }
+        .status-dot-warning {
+            @apply bg-studio-warning;
+        }
+        .status-dot-error {
+            @apply bg-studio-error;
+        }
+    </style>
+</head>
+<body class="bg-studio-bg text-studio-text h-screen overflow-hidden" hx-boost="true">
+    
+    <!-- 顶部进度条 -->
+    <div id="nprogress-container"></div>
+    
+    <!-- 全局通知容器 -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    
+    <!-- 主应用容器 -->
+    <div class="flex flex-col h-screen">
+        
+<!-- 顶部工具栏 -->
+<header class="border-b border-studio-border bg-studio-sidebar">
+    <div class="flex items-center justify-between px-4 py-2">
+        <!-- 左侧：Logo和面包屑 -->
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center">
+                <i class="fas fa-hammer text-studio-accent text-xl mr-2"></i>
+                <span class="font-bold text-lg">Genesis Forge</span>
+                <span class="text-studio-text-secondary text-sm ml-2">Studio Edition</span>
+            </div>
+            
+            <div class="flex items-center text-sm">
+                <span class="text-studio-text-secondary">供应链物流系统</span>
+                <i class="fas fa-chevron-right mx-2 text-studio-text-secondary text-xs"></i>
+                <span id="breadcrumb-current" class="text-studio-text">工作区</span>
+            </div>
+        </div>
+        
+        <!-- 中间：全局搜索框 -->
+        <div class="flex-1 max-w-2xl mx-4">
+            <div class="relative">
+                <input type="text" 
+                       placeholder="搜索文件或输入命令 (如: >reload, >validate)..."
+                       class="w-full px-4 py-2 bg-studio-panel border border-studio-border rounded-lg focus:outline-none focus:ring-2 focus:ring-studio-accent"
+                       @keydown.enter="handleCommand($event.target.value)">
+                <i class="fas fa-search absolute right-3 top-2.5 text-studio-text-secondary"></i>
+            </div>
+        </div>
+        
+        <!-- 右侧：状态指示器和操作按钮 -->
+        <div class="flex items-center space-x-3">
+            <!-- Git状态 -->
+            <div class="flex items-center space-x-2 px-3 py-1.5 bg-studio-panel rounded-lg">
+                <i class="fas fa-code-branch text-studio-text-secondary"></i>
+                <span class="text-sm" id="git-branch">main</span>
+                <div class="status-dot status-dot-success"></div>
+            </div>
+            
+            <!-- 内存占用 -->
+            <div class="text-sm text-studio-text-secondary px-3 py-1.5 bg-studio-panel rounded-lg">
+                <i class="fas fa-memory mr-1"></i>
+                <span id="memory-usage">128MB</span>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <button class="btn btn-secondary" data-save-button
+                    hx-post="/api/save"
+                    hx-include="[name='content']"
+                    hx-swap="none">
+                <i class="fas fa-save mr-2"></i>保存
+            </button>
+            
+            <button class="btn btn-primary"
+                    hx-post="/api/deploy"
+                    hx-swap="none">
+                <i class="fas fa-rocket mr-2"></i>部署
+            </button>
+            
+            <button class="btn btn-secondary"
+                    hx-post="/api/htmx/hot-reload"
+                    hx-swap="none">
+                <i class="fas fa-sync-alt mr-2"></i>热重载
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- 主内容区域 -->
+<div class="flex flex-1 overflow-hidden">
+    <!-- 左侧边栏 -->
+    <aside class="w-64 border-r border-studio-border bg-studio-sidebar flex flex-col"
+           :class="{ 'w-16': $store.app.sidebarCollapsed }"
+           x-data="{ 
+               expandedSections: { 'object_types': true, 'action_rules': true, 'seed_data': true },
+               dragItem: null
+           }">
+        
+        <!-- 折叠按钮 -->
+        <div class="p-2 border-b border-studio-border flex justify-end">
+            <button class="btn-icon" @click="$store.app.sidebarCollapsed = !$store.app.sidebarCollapsed">
+                <i class="fas" :class="$store.app.sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+            </button>
+        </div>
+        
+        <!-- 资源树 -->
+        <div class="flex-1 overflow-y-auto p-2">
+            <div x-data="{ 
+    expanded: { 
+        'object_types': true, 
+        'action_rules': true, 
+        'seed_data': true,
+        'templates': false
+    },
+    selectedFile: null
+}">
+    <!-- 对象类型 -->
+    <div class="mb-4">
+        <div class="flex items-center justify-between mb-1 cursor-pointer"
+             @click="expanded.object_types = !expanded.object_types">
+            <div class="flex items-center">
+                <i class="fas fa-cube text-studio-accent mr-2"></i>
+                <span :class="{ 'text-studio-text-secondary': $store.app.sidebarCollapsed }">对象类型</span>
+            </div>
+            <i class="fas text-sm" :class="expanded.object_types ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+        </div>
+        
+        <div x-show="expanded.object_types && !$store.app.sidebarCollapsed" class="ml-6 space-y-1">
+            
+            
+            <div class="text-studio-text-secondary text-sm px-2 py-1 cursor-pointer hover:text-studio-accent"
+                 @click="htmx.ajax('GET', '/studio/editor/new/object', { target: '#editor-container', swap: 'innerHTML' })">
+                <i class="fas fa-plus mr-1"></i> 新建对象类型
+            </div>
+        </div>
+    </div>
+    
+    <!-- 动作规则 -->
+    <div class="mb-4">
+        <div class="flex items-center justify-between mb-1 cursor-pointer"
+             @click="expanded.action_rules = !expanded.action_rules">
+            <div class="flex items-center">
+                <i class="fas fa-bolt text-studio-warning mr-2"></i>
+                <span :class="{ 'text-studio-text-secondary': $store.app.sidebarCollapsed }">动作规则</span>
+            </div>
+            <i class="fas text-sm" :class="expanded.action_rules ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+        </div>
+        
+        <div x-show="expanded.action_rules && !$store.app.sidebarCollapsed" class="ml-6 space-y-1">
+            
+            
+            <div class="text-studio-text-secondary text-sm px-2 py-1 cursor-pointer hover:text-studio-accent"
+                 @click="htmx.ajax('GET', '/studio/editor/new/action', { target: '#editor-container', swap: 'innerHTML' })">
+                <i class="fas fa-plus mr-1"></i> 新建动作规则
+            </div>
+        </div>
+    </div>
+    
+    <!-- 种子数据 -->
+    <div class="mb-4">
+        <div class="flex items-center justify-between mb-1 cursor-pointer"
+             @click="expanded.seed_data = !expanded.seed_data">
+            <div class="flex items-center">
+                <i class="fas fa-database text-studio-success mr-2"></i>
+                <span :class="{ 'text-studio-text-secondary': $store.app.sidebarCollapsed }">种子数据</span>
+            </div>
+            <i class="fas text-sm" :class="expanded.seed_data ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+        </div>
+        
+        <div x-show="expanded.seed_data && !$store.app.sidebarCollapsed" class="ml-6 space-y-1">
+            
+            
+            <div class="text-studio-text-secondary text-sm px-2 py-1 cursor-pointer hover:text-studio-accent"
+                 @click="htmx.ajax('GET', '/studio/editor/new/seed', { target: '#editor-container', swap: 'innerHTML' })">
+                <i class="fas fa-plus mr-1"></i> 新建种子数据
+            </div>
+        </div>
+    </div>
+    
+    <!-- 模板库 -->
+    <div>
+        <div class="flex items-center justify-between mb-1 cursor-pointer"
+             @click="expanded.templates = !expanded.templates">
+            <div class="flex items-center">
+                <i class="fas fa-layer-group text-studio-text-secondary mr-2"></i>
+                <span :class="{ 'text-studio-text-secondary': $store.app.sidebarCollapsed }">模板库</span>
+            </div>
+            <i class="fas text-sm" :class="expanded.templates ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+        </div>
+        
+        <div x-show="expanded.templates && !$store.app.sidebarCollapsed" class="ml-6 space-y-1">
+            <div class="text-studio-text-secondary text-sm px-2 py-1 cursor-pointer hover:text-studio-accent"
+                 @click="htmx.ajax('GET', '/studio/template/npc', { target: '#editor-container', swap: 'innerHTML' })">
+                <i class="fas fa-user mr-1"></i> NPC模板
+            </div>
+            <div class="text-studio-text-secondary text-sm px-2 py-1 cursor-pointer hover:text-studio-accent"
+                 @click="htmx.ajax('GET', '/studio/template/item', { target: '#editor-container', swap: 'innerHTML' })">
+                <i class="fas fa-cube mr-1"></i> 物品模板
+            </div>
+            <div class="text-studio-text-secondary text-sm px-2 py-1 cursor-pointer hover:text-studio-accent"
+                 @click="htmx.ajax('GET', '/studio/template/location', { target: '#editor-container', swap: 'innerHTML' })">
+                <i class="fas fa-map-marker-alt mr-1"></i> 地点模板
+            </div>
+        </div>
+    </div>
+</div>
+        </div>
+        
+        <!-- 资产库 -->
+        <div class="border-t border-studio-border p-2">
+            <div class="text-sm font-medium mb-2 text-studio-text-secondary">资产库</div>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="draggable p-2 bg-studio-panel rounded text-center cursor-pointer"
+                     draggable="true"
+                     @dragstart="dragItem = { type: 'entity', template: 'NPC' }">
+                    <i class="fas fa-user text-studio-accent mb-1"></i>
+                    <div class="text-xs">NPC</div>
+                </div>
+                <div class="draggable p-2 bg-studio-panel rounded text-center cursor-pointer"
+                     draggable="true"
+                     @dragstart="dragItem = { type: 'entity', template: 'ITEM' }">
+                    <i class="fas fa-cube text-studio-success mb-1"></i>
+                    <div class="text-xs">物品</div>
+                </div>
+                <div class="draggable p-2 bg-studio-panel rounded text-center cursor-pointer"
+                     draggable="true"
+                     @dragstart="dragItem = { type: 'entity', template: 'LOCATION' }">
+                    <i class="fas fa-map-marker-alt text-studio-warning mb-1"></i>
+                    <div class="text-xs">地点</div>
+                </div>
+                <div class="draggable p-2 bg-studio-panel rounded text-center cursor-pointer"
+                     draggable="true"
+                     @dragstart="dragItem = { type: 'relationship', template: 'HAS' }">
+                    <i class="fas fa-link text-studio-error mb-1"></i>
+                    <div class="text-xs">关系</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- 主工作区 -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <!-- 标签页导航 -->
+        <div class="border-b border-studio-border bg-studio-sidebar">
+            <div class="flex">
+                <button class="px-4 py-3 font-medium"
+                        :class="{ 'tab-active': $store.app.activeTab === 'editor' }"
+                        @click="$store.app.activeTab = 'editor'">
+                    <i class="fas fa-code mr-2"></i>代码编辑器
+                </button>
+                <button class="px-4 py-3 font-medium"
+                        :class="{ 'tab-active': $store.app.activeTab === 'graph' }"
+                        @click="$store.app.activeTab = 'graph'">
+                    <i class="fas fa-project-diagram mr-2"></i>图谱可视化
+                </button>
+                <button class="px-4 py-3 font-medium"
+                        :class="{ 'tab-active': $store.app.activeTab === 'split' }"
+                        @click="$store.app.activeTab = 'split'">
+                    <i class="fas fa-columns mr-2"></i>分屏视图
+                </button>
+            </div>
+        </div>
+        
+        <!-- 编辑器容器 -->
+        <div class="flex-1 overflow-hidden">
+            <!-- 代码编辑器视图 -->
+            <div x-show="$store.app.activeTab === 'editor'" class="h-full">
+                <div id="editor-container" class="h-full p-4">
+    <!-- 默认编辑器占位符 -->
+    <div class="h-full flex items-center justify-center text-studio-text-secondary">
+        <div class="text-center">
+            <i class="fas fa-code text-4xl mb-4"></i>
+            <p class="text-lg mb-2">选择左侧文件开始编辑</p>
+            <p class="text-sm">或创建新的对象类型、动作规则、种子数据</p>
+        </div>
+    </div>
+</div>
+
+<!-- Monaco Editor 模板 -->
+<template id="monaco-template">
+    <div class="h-full flex flex-col">
+        <!-- 编辑器工具栏 -->
+        <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2">
+                <span class="font-medium" id="editor-title">未命名文件</span>
+                <span class="text-xs px-2 py-1 rounded bg-studio-panel" id="file-type">JSON</span>
+                <div class="status-dot status-dot-success" id="saved-indicator"></div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button class="btn-icon" title="格式化" @click="formatCode()">
+                    <i class="fas fa-indent"></i>
+                </button>
+                <button class="btn-icon" title="验证" @click="validateCode()">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+                <button class="btn btn-primary btn-sm" 
+                        hx-post="/api/save"
+                        hx-include="#editor-form"
+                        hx-swap="none">
+                    <i class="fas fa-save mr-1"></i>保存
+                </button>
+            </div>
+        </div>
+        
+        <!-- 编辑器表单（用于HTMX提交） -->
+        <form id="editor-form" class="hidden">
+            <input type="hidden" name="file_path" id="file-path">
+            <textarea name="content" id="editor-content"></textarea>
+        </form>
+        
+        <!-- Monaco Editor 容器 -->
+        <div id="monaco-editor" class="flex-1 border border-studio-border rounded-lg overflow-hidden"></div>
+        
+        <!-- 状态栏 -->
+        <div class="flex items-center justify-between mt-2 text-xs text-studio-text-secondary">
+            <div class="flex items-center space-x-4">
+                <span id="cursor-position">行 1, 列 1</span>
+                <span id="file-size">0 字符</span>
+                <span id="language-mode">JSON</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span id="save-status">已保存</span>
+                <i class="fas fa-keyboard" title="快捷键: Ctrl+S 保存"></i>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- 对象类型编辑器模板 -->
+<template id="object-editor-template">
+    <div class="h-full flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold">对象类型编辑器</h2>
+            <div class="flex items-center space-x-2">
+                <button class="btn btn-secondary" @click="previewInGraph()">
+                    <i class="fas fa-eye mr-1"></i>图谱预览
+                </button>
+                <button class="btn btn-primary" 
+                        hx-post="/api/save/object"
+                        hx-include="#object-form"
+                        hx-swap="none">
+                    <i class="fas fa-save mr-1"></i>保存对象类型
+                </button>
+            </div>
+        </div>
+        
+        <form id="object-form" class="flex-1 overflow-y-auto">
+            <div class="grid grid-cols-2 gap-4">
+                <!-- 基本信息 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">类型键</label>
+                        <input type="text" name="type_key" 
+                               class="w-full px-3 py-2 bg-studio-panel border border-studio-border rounded focus:outline-none focus:ring-2 focus:ring-studio-accent"
+                               required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-1">显示名称</label>
+                        <input type="text" name="display_name" 
+                               class="w-full px-3 py-2 bg-studio-panel border border-studio-border rounded focus:outline-none focus:ring-2 focus:ring-studio-accent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-1">描述</label>
+                        <textarea name="description" rows="3"
+                                  class="w-full px-3 py-2 bg-studio-panel border border-studio-border rounded focus:outline-none focus:ring-2 focus:ring-studio-accent"></textarea>
+                    </div>
+                </div>
+                
+                <!-- 属性定义 -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium">属性定义</label>
+                        <button type="button" class="text-sm text-studio-accent hover:underline" @click="addProperty()">
+                            <i class="fas fa-plus mr-1"></i>添加属性
+                        </button>
+                    </div>
+                    
+                    <div id="properties-container" class="space-y-2">
+                        <!-- 属性行将通过JS动态添加 -->
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</template>
+
+<script>
+// Monaco Editor 初始化
+function initMonacoEditor(content, language = 'json', filePath = null) {
+    require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.45.0/min/vs' } });
+    
+    require(['vs/editor/editor.main'], function() {
+        const container = document.getElementById('monaco-editor');
+        if (!container) return;
+        
+        // 清理现有编辑器
+        if (window.monacoEditor) {
+            window.monacoEditor.dispose();
+        }
+        
+        // 创建新编辑器
+        window.monacoEditor = monaco.editor.create(container, {
+            value: content,
+            language: language,
+            theme: 'vs-dark',
+            fontSize: 14,
+            fontFamily: 'JetBrains Mono, Monaco, Consolas, monospace',
+            minimap: { enabled: true },
+            scrollBeyondLastLine: false,
+            wordWrap: 'on',
+            formatOnPaste: true,
+            formatOnType: true,
+            automaticLayout: true
+        });
+        
+        // 更新隐藏的textarea用于HTMX提交
+        const textarea = document.getElementById('editor-content');
+        if (textarea) {
+            textarea.value = content;
+            
+            // 监听内容变化
+            window.monacoEditor.onDidChangeModelContent(() => {
+                const newValue = window.monacoEditor.getValue();
+                textarea.value = newValue;
+                
+                // 标记为脏数据
+                document.body.dispatchEvent(new CustomEvent('dirty-state-changed', {
+                    detail: { isDirty: true }
+                }));
+                
+                // 更新文件大小
+                updateFileStats(newValue);
+            });
+        }
+        
+        // 监听光标位置变化
+        window.monacoEditor.onDidChangeCursorPosition((e) => {
+            const position = document.getElementById('cursor-position');
+            if (position) {
+                position.textContent = `行 ${e.position.lineNumber}, 列 ${e.position.column}`;
+            }
+        });
+        
+        // 添加快捷键：Ctrl+S 保存
+        window.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+            document.querySelector('[hx-post="/api/save"]').click();
+        });
+        
+        // 初始文件统计
+        updateFileStats(content);
+        
+        // 更新UI
+        if (filePath) {
+            const title = document.getElementById('editor-title');
+            if (title) {
+                const parts = filePath.split('/');
+                title.textContent = parts[parts.length - 1];
+            }
+            
+            const pathInput = document.getElementById('file-path');
+            if (pathInput) {
+                pathInput.value = filePath;
+            }
+        }
+        
+        // 设置语言模式显示
+        const languageMode = document.getElementById('language-mode');
+        if (languageMode) {
+            languageMode.textContent = language.toUpperCase();
+        }
+    });
+}
+
+// 更新文件统计信息
+function updateFileStats(content) {
+    const fileSize = document.getElementById('file-size');
+    if (fileSize) {
+        const charCount = content.length;
+        const lineCount = content.split('\n').length;
+        fileSize.textContent = `${charCount} 字符, ${lineCount} 行`;
+    }
+}
+
+// 格式化代码
+function formatCode() {
+    if (window.monacoEditor) {
+        window.monacoEditor.getAction('editor.action.formatDocument').run();
+    }
+}
+
+// 验证代码
+function validateCode() {
+    if (window.monacoEditor) {
+        const content = window.monacoEditor.getValue();
+        htmx.ajax('POST', '/api/validate', {
+            values: { content: content },
+            target: '#validation-results'
+        });
+    }
+}
+
+// 对象类型编辑器函数
+function addProperty() {
+    const container = document.getElementById('properties-container');
+    if (!container) return;
+    
+    const propertyId = `property_${Date.now()}`;
+    const propertyHtml = `
+        <div class="flex items-center space-x-2 p-2 bg-studio-panel rounded" id="${propertyId}">
+            <input type="text" name="property_name[]" placeholder="属性名" 
+                   class="flex-1 px-2 py-1 bg-studio-bg border border-studio-border rounded text-sm">
+            <select name="property_type[]" class="px-2 py-1 bg-studio-bg border border-studio-border rounded text-sm">
+                <option value="string">字符串</option>
+                <option value="number">数字</option>
+                <option value="boolean">布尔值</option>
+                <option value="array">数组</option>
+                <option value="object">对象</option>
+            </select>
+            <input type="text" name="property_default[]" placeholder="默认值" 
+                   class="flex-1 px-2 py-1 bg-studio-bg border border-studio-border rounded text-sm">
+            <button type="button" class="text-studio-error hover:text-red-400" @click="document.getElementById('${propertyId}').remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', propertyHtml);
+}
+
+function previewInGraph() {
+    // 触发图谱刷新事件
+    document.body.dispatchEvent(new CustomEvent('reload-graph'));
+    // 切换到图谱视图
+    Alpine.store('app').activeTab = 'graph';
+}
+
+// HTMX事件处理
+document.addEventListener('DOMContentLoaded', function() {
+    // 监听编辑器加载请求
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        const target = evt.detail.target;
+        
+        // 如果是编辑器容器，初始化Monaco
+        if (target.id === 'editor-container') {
+            const newContent = target.querySelector('[data-editor-content]');
+            if (newContent) {
+                const content = newContent.getAttribute('data-editor-content');
+                const language = newContent.getAttribute('data-editor-language') || 'json';
+                const filePath = newContent.getAttribute('data-editor-path');
+                
+                // 使用模板创建编辑器界面
+                const template = document.getElementById('monaco-template');
+                if (template) {
+                    target.innerHTML = template.innerHTML;
+                    initMonacoEditor(content, language, filePath);
+                }
+            }
+            
+            // 如果是对象类型编辑器
+            const objectEditor = target.querySelector('[data-object-editor]');
+            if (objectEditor) {
+                const template = document.getElementById('object-editor-template');
+                if (template) {
+                    target.innerHTML = template.innerHTML;
+                    
+                    // 填充现有数据
+                    const data = JSON.parse(objectEditor.getAttribute('data-object-data') || '{}');
+                    const form = document.getElementById('object-form');
+                    if (form && data) {
+                        Object.keys(data).forEach(key => {
+                            const input = form.querySelector(`[name="${key}"]`);
+                            if (input) {
+                                input.value = data[key] || '';
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    });
+    
+    // 监听保存成功
+    document.body.addEventListener('save-success', function() {
+        const indicator = document.getElementById('saved-indicator');
+        if (indicator) {
+            indicator.className = 'status-dot status-dot-success';
+        }
+        
+        const saveStatus = document.getElementById('save-status');
+        if (saveStatus) {
+            saveStatus.textContent = '已保存';
+            saveStatus.className = 'text-studio-success';
+        }
+    });
+    
+    // 监听内容变化（脏数据）
+    document.body.addEventListener('dirty-state-changed', function(evt) {
+        const isDirty = evt.detail.isDirty;
+        
+        const indicator = document.getElementById('saved-indicator');
+        if (indicator) {
+            indicator.className = isDirty ? 'status-dot status-dot-warning' : 'status-dot status-dot-success';
+        }
+        
+        const saveStatus = document.getElementById('save-status');
+        if (saveStatus) {
+            if (isDirty) {
+                saveStatus.textContent = '未保存';
+                saveStatus.className = 'text-studio-warning';
+            } else {
+                saveStatus.textContent = '已保存';
+                saveStatus.className = 'text-studio-success';
+            }
+        }
+    });
+});
+</script>
+            </div>
+            
+            <!-- 图谱可视化视图 -->
+            <div x-show="$store.app.activeTab === 'graph'" class="h-full">
+                <div class="w-full h-full relative bg-studio-bg"
+     x-data="{
+         cy: null,
+         layout: 'cose',
+         selectedNode: null,
+         selectedEdge: null,
+         zoomLevel: 1,
+         isDraggingAsset: false,
+         dragAssetType: null,
+         
+         init() {
+             // 初始化Cytoscape
+             this.initCytoscape();
+             
+             // 监听图谱刷新事件
+             document.body.addEventListener('reload-graph', () => {
+                 this.refreshGraphData();
+             });
+             
+             // 监听拖拽事件
+             this.$el.addEventListener('dragover', (e) => {
+                 e.preventDefault();
+                 this.isDraggingAsset = true;
+             });
+             
+             this.$el.addEventListener('dragleave', () => {
+                 this.isDraggingAsset = false;
+             });
+             
+             this.$el.addEventListener('drop', (e) => {
+                 e.preventDefault();
+                 this.isDraggingAsset = false;
+                 
+                 const rect = this.$el.getBoundingClientRect();
+                 const x = e.clientX - rect.left;
+                 const y = e.clientY - rect.top;
+                 
+                 // 获取拖拽的资产类型
+                 const assetType = e.dataTransfer.getData('text/plain') || 'NPC';
+                 this.addNodeFromAsset(assetType, x, y);
+             });
+         },
+         
+          initCytoscape() {
+              // 检查Cytoscape.js是否已加载
+              if (typeof cytoscape === 'undefined') {
+                  console.warn('Cytoscape.js尚未加载，请先切换到图谱标签页');
+                  showToast('正在加载图谱引擎，请稍候...', 'info');
+                  return;
+              }
+              
+              // 防止重复初始化
+              if (this.cy) {
+                  return;
+              }
+              
+              this.cy = cytoscape({
+                 container: this.$refs.cyContainer,
+                 elements: [],
+                 style: [
+                     {
+                         selector: 'node',
+                         style: {
+                             'background-color': '#3b82f6',
+                             'label': 'data(label)',
+                             'text-valign': 'center',
+                             'text-halign': 'center',
+                             'color': '#f1f5f9',
+                             'font-size': '12px',
+                             'font-family': 'JetBrains Mono, monospace',
+                             'width': '40px',
+                             'height': '40px',
+                             'border-width': '2px',
+                             'border-color': '#1e293b'
+                         }
+                     },
+                     {
+                         selector: 'node:selected',
+                         style: {
+                             'border-width': '3px',
+                             'border-color': '#f59e0b'
+                         }
+                     },
+                     {
+                         selector: 'edge',
+                         style: {
+                             'width': 2,
+                             'line-color': '#64748b',
+                             'target-arrow-color': '#64748b',
+                             'target-arrow-shape': 'triangle',
+                             'curve-style': 'bezier',
+                             'label': 'data(label)',
+                             'color': '#94a3b8',
+                             'font-size': '10px',
+                             'font-family': 'JetBrains Mono, monospace',
+                             'text-rotation': 'autorotate'
+                         }
+                     },
+                     {
+                         selector: 'edge:selected',
+                         style: {
+                             'line-color': '#f59e0b',
+                             'target-arrow-color': '#f59e0b'
+                         }
+                     }
+                 ],
+                 layout: {
+                     name: this.layout,
+                     animate: true,
+                     animationDuration: 500
+                 }
+             });
+             
+             // 添加交互事件
+             this.setupGraphInteractions();
+         },
+         
+         setupGraphInteractions() {
+             // 节点选择
+             this.cy.on('tap', 'node', (evt) => {
+                 this.selectedNode = evt.target;
+                 this.selectedEdge = null;
+                 this.showNodeProperties(evt.target);
+             });
+             
+             // 边选择
+             this.cy.on('tap', 'edge', (evt) => {
+                 this.selectedEdge = evt.target;
+                 this.selectedNode = null;
+                 this.showEdgeProperties(evt.target);
+             });
+             
+             // 画布点击
+             this.cy.on('tap', (evt) => {
+                 if (evt.target === this.cy) {
+                     this.selectedNode = null;
+                     this.selectedEdge = null;
+                     this.hidePropertiesPanel();
+                 }
+             });
+             
+             // 拖拽创建连线
+             let sourceNode = null;
+             this.cy.on('drag', 'node', (evt) => {
+                 // 拖拽连线逻辑
+             });
+             
+             // 缩放监听
+             this.cy.on('zoom', (evt) => {
+                 this.zoomLevel = this.cy.zoom();
+             });
+         },
+         
+         refreshGraphData() {
+             fetch('/api/graph/data')
+                 .then(res => res.json())
+                 .then(data => {
+                     this.cy.json({ elements: data.elements });
+                     this.cy.layout({ name: this.layout, animate: true }).run();
+                     showToast('图谱数据已刷新', 'success');
+                 })
+                 .catch(err => {
+                     console.error('刷新图谱数据失败:', err);
+                     showToast('刷新失败', 'error');
+                 });
+         },
+         
+         addNodeFromAsset(assetType, x, y) {
+             const pos = this.cy.renderer().projectFromViewport({ x, y });
+             
+             const newNode = {
+                 group: 'nodes',
+                 data: {
+                     id: `${assetType}_${Date.now()}`,
+                     label: assetType,
+                     type: assetType
+                 },
+                 position: { x: pos.x, y: pos.y }
+             };
+             
+             this.cy.add(newNode);
+             
+             // 发送到后端保存
+             fetch('/api/graph/node', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify(newNode)
+             }).then(res => {
+                 if (res.ok) {
+                     showToast(`已添加 ${assetType} 节点`, 'success');
+                 }
+             });
+         },
+         
+         showNodeProperties(node) {
+             const panel = this.$refs.propertiesPanel;
+             if (!panel) return;
+             
+             const data = node.data();
+             panel.innerHTML = `
+                 <div class="p-4">
+                     <h3 class="font-bold mb-2">节点属性</h3>
+                     <div class="space-y-2">
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">ID</label>
+                             <div class="font-mono text-sm">${data.id}</div>
+                         </div>
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">类型</label>
+                             <div>${data.type || '未知'}</div>
+                         </div>
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">标签</label>
+                             <input type="text" value="${data.label || ''}" 
+                                    class="w-full px-2 py-1 bg-studio-panel border border-studio-border rounded text-sm"
+                                    @change="updateNodeLabel('${data.id}', $event.target.value)">
+                         </div>
+                         ${Object.entries(data)
+                             .filter(([key]) => !['id', 'label', 'type'].includes(key))
+                             .map(([key, value]) => `
+                                 <div>
+                                     <label class="text-sm text-studio-text-secondary">${key}</label>
+                                     <input type="text" value="${value}" 
+                                            class="w-full px-2 py-1 bg-studio-panel border border-studio-border rounded text-sm"
+                                            @change="updateNodeProperty('${data.id}', '${key}', $event.target.value)">
+                                 </div>
+                             `).join('')}
+                     </div>
+                     <div class="mt-4 pt-4 border-t border-studio-border">
+                         <button class="btn btn-error btn-sm w-full" @click="deleteNode('${data.id}')">
+                             <i class="fas fa-trash mr-1"></i>删除节点
+                         </button>
+                     </div>
+                 </div>
+             `;
+             
+             panel.classList.remove('hidden');
+         },
+         
+         showEdgeProperties(edge) {
+             const panel = this.$refs.propertiesPanel;
+             if (!panel) return;
+             
+             const data = edge.data();
+             panel.innerHTML = `
+                 <div class="p-4">
+                     <h3 class="font-bold mb-2">关系属性</h3>
+                     <div class="space-y-2">
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">源节点</label>
+                             <div class="font-mono text-sm">${data.source}</div>
+                         </div>
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">目标节点</label>
+                             <div class="font-mono text-sm">${data.target}</div>
+                         </div>
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">关系类型</label>
+                             <input type="text" value="${data.label || ''}" 
+                                    class="w-full px-2 py-1 bg-studio-panel border border-studio-border rounded text-sm"
+                                    @change="updateEdgeLabel('${data.id}', $event.target.value)">
+                         </div>
+                     </div>
+                     <div class="mt-4 pt-4 border-t border-studio-border">
+                         <button class="btn btn-error btn-sm w-full" @click="deleteEdge('${data.id}')">
+                             <i class="fas fa-trash mr-1"></i>删除关系
+                         </button>
+                     </div>
+                 </div>
+             `;
+             
+             panel.classList.remove('hidden');
+         },
+         
+         hidePropertiesPanel() {
+             const panel = this.$refs.propertiesPanel;
+             if (panel) {
+                 panel.classList.add('hidden');
+             }
+         },
+         
+         updateNodeLabel(nodeId, newLabel) {
+             const node = this.cy.getElementById(nodeId);
+             if (node) {
+                 node.data('label', newLabel);
+                 this.saveGraphChanges();
+             }
+         },
+         
+         updateNodeProperty(nodeId, key, value) {
+             const node = this.cy.getElementById(nodeId);
+             if (node) {
+                 const data = node.data();
+                 data[key] = value;
+                 node.data(data);
+                 this.saveGraphChanges();
+             }
+         },
+         
+         updateEdgeLabel(edgeId, newLabel) {
+             const edge = this.cy.getElementById(edgeId);
+             if (edge) {
+                 edge.data('label', newLabel);
+                 this.saveGraphChanges();
+             }
+         },
+         
+         deleteNode(nodeId) {
+             if (confirm('确定要删除这个节点吗？')) {
+                 this.cy.remove(this.cy.getElementById(nodeId));
+                 this.hidePropertiesPanel();
+                 this.saveGraphChanges();
+                 showToast('节点已删除', 'success');
+             }
+         },
+         
+         deleteEdge(edgeId) {
+             if (confirm('确定要删除这个关系吗？')) {
+                 this.cy.remove(this.cy.getElementById(edgeId));
+                 this.hidePropertiesPanel();
+                 this.saveGraphChanges();
+                 showToast('关系已删除', 'success');
+             }
+         },
+         
+         saveGraphChanges() {
+             // 标记为脏数据
+             document.body.dispatchEvent(new CustomEvent('dirty-state-changed', {
+                 detail: { isDirty: true }
+             }));
+             
+             // 可以在这里添加自动保存逻辑
+         },
+         
+         changeLayout(newLayout) {
+             this.layout = newLayout;
+             this.cy.layout({ name: newLayout, animate: true }).run();
+         },
+         
+         exportGraph() {
+             const json = this.cy.json();
+             const dataStr = JSON.stringify(json, null, 2);
+             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+             
+             const exportFileDefaultName = `graph_${new Date().toISOString().slice(0,10)}.json`;
+             
+             const linkElement = document.createElement('a');
+             linkElement.setAttribute('href', dataUri);
+             linkElement.setAttribute('download', exportFileDefaultName);
+             linkElement.click();
+             
+             showToast('图谱已导出', 'success');
+         }
+     }"
+     x-init="init()">
+    
+    <!-- 图谱容器 -->
+    <div x-ref="cyContainer" class="absolute inset-0 cy-container"></div>
+    
+    <!-- 工具栏 -->
+    <div class="absolute top-4 left-4 flex flex-col space-y-2">
+        <div class="bg-studio-sidebar/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+            <div class="flex flex-col space-y-2">
+                <button class="btn-icon" @click="cy.fit()" title="适应视图">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button class="btn-icon" @click="cy.reset()" title="重置视图">
+                    <i class="fas fa-home"></i>
+                </button>
+                <button class="btn-icon" @click="refreshGraphData()" title="刷新数据">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="btn-icon" @click="exportGraph()" title="导出图谱">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 布局选择器 -->
+        <div class="bg-studio-sidebar/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+            <div class="text-xs text-studio-text-secondary mb-1">布局</div>
+            <div class="flex flex-col space-y-1">
+                <button class="text-sm px-2 py-1 rounded hover:bg-studio-panel text-left"
+                        :class="{ 'bg-studio-accent': layout === 'cose' }"
+                        @click="changeLayout('cose')">
+                    COSE
+                </button>
+                <button class="text-sm px-2 py-1 rounded hover:bg-studio-panel text-left"
+                        :class="{ 'bg-studio-accent': layout === 'grid' }"
+                        @click="changeLayout('grid')">
+                    网格
+                </button>
+                <button class="text-sm px-2 py-1 rounded hover:bg-studio-panel text-left"
+                        :class="{ 'bg-studio-accent': layout === 'circle' }"
+                        @click="changeLayout('circle')">
+                    圆形
+                </button>
+                <button class="text-sm px-2 py-1 rounded hover:bg-studio-panel text-left"
+                        :class="{ 'bg-studio-accent': layout === 'concentric' }"
+                        @click="changeLayout('concentric')">
+                    同心圆
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 缩放控制 -->
+    <div class="absolute bottom-4 right-4 bg-studio-sidebar/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+        <div class="flex items-center space-x-2">
+            <button class="btn-icon" @click="cy.zoom(cy.zoom() * 1.2)" title="放大">
+                <i class="fas fa-search-plus"></i>
+            </button>
+            <span class="text-sm w-12 text-center" x-text="zoomLevel.toFixed(1) + 'x'"></span>
+            <button class="btn-icon" @click="cy.zoom(cy.zoom() * 0.8)" title="缩小">
+                <i class="fas fa-search-minus"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- 属性面板 -->
+    <div x-ref="propertiesPanel" class="absolute top-4 right-4 w-64 bg-studio-sidebar/90 backdrop-blur-sm rounded-lg shadow-lg hidden">
+        <!-- 内容通过JS动态填充 -->
+    </div>
+    
+    <!-- 拖拽提示 -->
+    <div x-show="isDraggingAsset" 
+         class="absolute inset-0 border-2 border-dashed border-studio-accent/50 bg-studio-accent/10 flex items-center justify-center pointer-events-none">
+        <div class="text-center p-4 bg-studio-sidebar/90 rounded-lg">
+            <i class="fas fa-plus text-2xl text-studio-accent mb-2"></i>
+            <p class="text-sm">释放以添加节点</p>
+        </div>
+    </div>
+    
+    <!-- 统计信息 -->
+    <div class="absolute bottom-4 left-4 bg-studio-sidebar/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+        <div class="text-xs space-y-1">
+            <div class="flex items-center justify-between">
+                <span class="text-studio-text-secondary">节点:</span>
+                <span x-text="cy ? cy.nodes().length : 0" class="font-mono"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-studio-text-secondary">关系:</span>
+                <span x-text="cy ? cy.edges().length : 0" class="font-mono"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 全局图谱函数
+function updateNodeLabel(nodeId, newLabel) {
+    Alpine.store('graph').updateNodeLabel(nodeId, newLabel);
+}
+
+function updateNodeProperty(nodeId, key, value) {
+    Alpine.store('graph').updateNodeProperty(nodeId, key, value);
+}
+
+function updateEdgeLabel(edgeId, newLabel) {
+    Alpine.store('graph').updateEdgeLabel(edgeId, newLabel);
+}
+
+function deleteNode(nodeId) {
+    Alpine.store('graph').deleteNode(nodeId);
+}
+
+function deleteEdge(edgeId) {
+    Alpine.store('graph').deleteEdge(edgeId);
+}
+
+// 初始化Alpine store
+document.addEventListener('alpine:init', () => {
+    Alpine.store('graph', {
+        cy: null,
+        selectedNode: null,
+        selectedEdge: null,
+        
+        // 方法将在组件初始化后设置
+        updateNodeLabel: () => {},
+        updateNodeProperty: () => {},
+        updateEdgeLabel: () => {},
+        deleteNode: () => {},
+        deleteEdge: () => {}
+    });
+});
+</script>
+            </div>
+            
+            <!-- 分屏视图 -->
+            <div x-show="$store.app.activeTab === 'split'" class="h-full flex">
+                <div class="flex-1 border-r border-studio-border">
+                    <div id="editor-container" class="h-full p-4">
+    <!-- 默认编辑器占位符 -->
+    <div class="h-full flex items-center justify-center text-studio-text-secondary">
+        <div class="text-center">
+            <i class="fas fa-code text-4xl mb-4"></i>
+            <p class="text-lg mb-2">选择左侧文件开始编辑</p>
+            <p class="text-sm">或创建新的对象类型、动作规则、种子数据</p>
+        </div>
+    </div>
+</div>
+
+<!-- Monaco Editor 模板 -->
+<template id="monaco-template">
+    <div class="h-full flex flex-col">
+        <!-- 编辑器工具栏 -->
+        <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2">
+                <span class="font-medium" id="editor-title">未命名文件</span>
+                <span class="text-xs px-2 py-1 rounded bg-studio-panel" id="file-type">JSON</span>
+                <div class="status-dot status-dot-success" id="saved-indicator"></div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button class="btn-icon" title="格式化" @click="formatCode()">
+                    <i class="fas fa-indent"></i>
+                </button>
+                <button class="btn-icon" title="验证" @click="validateCode()">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+                <button class="btn btn-primary btn-sm" 
+                        hx-post="/api/save"
+                        hx-include="#editor-form"
+                        hx-swap="none">
+                    <i class="fas fa-save mr-1"></i>保存
+                </button>
+            </div>
+        </div>
+        
+        <!-- 编辑器表单（用于HTMX提交） -->
+        <form id="editor-form" class="hidden">
+            <input type="hidden" name="file_path" id="file-path">
+            <textarea name="content" id="editor-content"></textarea>
+        </form>
+        
+        <!-- Monaco Editor 容器 -->
+        <div id="monaco-editor" class="flex-1 border border-studio-border rounded-lg overflow-hidden"></div>
+        
+        <!-- 状态栏 -->
+        <div class="flex items-center justify-between mt-2 text-xs text-studio-text-secondary">
+            <div class="flex items-center space-x-4">
+                <span id="cursor-position">行 1, 列 1</span>
+                <span id="file-size">0 字符</span>
+                <span id="language-mode">JSON</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span id="save-status">已保存</span>
+                <i class="fas fa-keyboard" title="快捷键: Ctrl+S 保存"></i>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- 对象类型编辑器模板 -->
+<template id="object-editor-template">
+    <div class="h-full flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold">对象类型编辑器</h2>
+            <div class="flex items-center space-x-2">
+                <button class="btn btn-secondary" @click="previewInGraph()">
+                    <i class="fas fa-eye mr-1"></i>图谱预览
+                </button>
+                <button class="btn btn-primary" 
+                        hx-post="/api/save/object"
+                        hx-include="#object-form"
+                        hx-swap="none">
+                    <i class="fas fa-save mr-1"></i>保存对象类型
+                </button>
+            </div>
+        </div>
+        
+        <form id="object-form" class="flex-1 overflow-y-auto">
+            <div class="grid grid-cols-2 gap-4">
+                <!-- 基本信息 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">类型键</label>
+                        <input type="text" name="type_key" 
+                               class="w-full px-3 py-2 bg-studio-panel border border-studio-border rounded focus:outline-none focus:ring-2 focus:ring-studio-accent"
+                               required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-1">显示名称</label>
+                        <input type="text" name="display_name" 
+                               class="w-full px-3 py-2 bg-studio-panel border border-studio-border rounded focus:outline-none focus:ring-2 focus:ring-studio-accent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-1">描述</label>
+                        <textarea name="description" rows="3"
+                                  class="w-full px-3 py-2 bg-studio-panel border border-studio-border rounded focus:outline-none focus:ring-2 focus:ring-studio-accent"></textarea>
+                    </div>
+                </div>
+                
+                <!-- 属性定义 -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium">属性定义</label>
+                        <button type="button" class="text-sm text-studio-accent hover:underline" @click="addProperty()">
+                            <i class="fas fa-plus mr-1"></i>添加属性
+                        </button>
+                    </div>
+                    
+                    <div id="properties-container" class="space-y-2">
+                        <!-- 属性行将通过JS动态添加 -->
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</template>
+
+<script>
+// Monaco Editor 初始化
+function initMonacoEditor(content, language = 'json', filePath = null) {
+    require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.45.0/min/vs' } });
+    
+    require(['vs/editor/editor.main'], function() {
+        const container = document.getElementById('monaco-editor');
+        if (!container) return;
+        
+        // 清理现有编辑器
+        if (window.monacoEditor) {
+            window.monacoEditor.dispose();
+        }
+        
+        // 创建新编辑器
+        window.monacoEditor = monaco.editor.create(container, {
+            value: content,
+            language: language,
+            theme: 'vs-dark',
+            fontSize: 14,
+            fontFamily: 'JetBrains Mono, Monaco, Consolas, monospace',
+            minimap: { enabled: true },
+            scrollBeyondLastLine: false,
+            wordWrap: 'on',
+            formatOnPaste: true,
+            formatOnType: true,
+            automaticLayout: true
+        });
+        
+        // 更新隐藏的textarea用于HTMX提交
+        const textarea = document.getElementById('editor-content');
+        if (textarea) {
+            textarea.value = content;
+            
+            // 监听内容变化
+            window.monacoEditor.onDidChangeModelContent(() => {
+                const newValue = window.monacoEditor.getValue();
+                textarea.value = newValue;
+                
+                // 标记为脏数据
+                document.body.dispatchEvent(new CustomEvent('dirty-state-changed', {
+                    detail: { isDirty: true }
+                }));
+                
+                // 更新文件大小
+                updateFileStats(newValue);
+            });
+        }
+        
+        // 监听光标位置变化
+        window.monacoEditor.onDidChangeCursorPosition((e) => {
+            const position = document.getElementById('cursor-position');
+            if (position) {
+                position.textContent = `行 ${e.position.lineNumber}, 列 ${e.position.column}`;
+            }
+        });
+        
+        // 添加快捷键：Ctrl+S 保存
+        window.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+            document.querySelector('[hx-post="/api/save"]').click();
+        });
+        
+        // 初始文件统计
+        updateFileStats(content);
+        
+        // 更新UI
+        if (filePath) {
+            const title = document.getElementById('editor-title');
+            if (title) {
+                const parts = filePath.split('/');
+                title.textContent = parts[parts.length - 1];
+            }
+            
+            const pathInput = document.getElementById('file-path');
+            if (pathInput) {
+                pathInput.value = filePath;
+            }
+        }
+        
+        // 设置语言模式显示
+        const languageMode = document.getElementById('language-mode');
+        if (languageMode) {
+            languageMode.textContent = language.toUpperCase();
+        }
+    });
+}
+
+// 更新文件统计信息
+function updateFileStats(content) {
+    const fileSize = document.getElementById('file-size');
+    if (fileSize) {
+        const charCount = content.length;
+        const lineCount = content.split('\n').length;
+        fileSize.textContent = `${charCount} 字符, ${lineCount} 行`;
+    }
+}
+
+// 格式化代码
+function formatCode() {
+    if (window.monacoEditor) {
+        window.monacoEditor.getAction('editor.action.formatDocument').run();
+    }
+}
+
+// 验证代码
+function validateCode() {
+    if (window.monacoEditor) {
+        const content = window.monacoEditor.getValue();
+        htmx.ajax('POST', '/api/validate', {
+            values: { content: content },
+            target: '#validation-results'
+        });
+    }
+}
+
+// 对象类型编辑器函数
+function addProperty() {
+    const container = document.getElementById('properties-container');
+    if (!container) return;
+    
+    const propertyId = `property_${Date.now()}`;
+    const propertyHtml = `
+        <div class="flex items-center space-x-2 p-2 bg-studio-panel rounded" id="${propertyId}">
+            <input type="text" name="property_name[]" placeholder="属性名" 
+                   class="flex-1 px-2 py-1 bg-studio-bg border border-studio-border rounded text-sm">
+            <select name="property_type[]" class="px-2 py-1 bg-studio-bg border border-studio-border rounded text-sm">
+                <option value="string">字符串</option>
+                <option value="number">数字</option>
+                <option value="boolean">布尔值</option>
+                <option value="array">数组</option>
+                <option value="object">对象</option>
+            </select>
+            <input type="text" name="property_default[]" placeholder="默认值" 
+                   class="flex-1 px-2 py-1 bg-studio-bg border border-studio-border rounded text-sm">
+            <button type="button" class="text-studio-error hover:text-red-400" @click="document.getElementById('${propertyId}').remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', propertyHtml);
+}
+
+function previewInGraph() {
+    // 触发图谱刷新事件
+    document.body.dispatchEvent(new CustomEvent('reload-graph'));
+    // 切换到图谱视图
+    Alpine.store('app').activeTab = 'graph';
+}
+
+// HTMX事件处理
+document.addEventListener('DOMContentLoaded', function() {
+    // 监听编辑器加载请求
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        const target = evt.detail.target;
+        
+        // 如果是编辑器容器，初始化Monaco
+        if (target.id === 'editor-container') {
+            const newContent = target.querySelector('[data-editor-content]');
+            if (newContent) {
+                const content = newContent.getAttribute('data-editor-content');
+                const language = newContent.getAttribute('data-editor-language') || 'json';
+                const filePath = newContent.getAttribute('data-editor-path');
+                
+                // 使用模板创建编辑器界面
+                const template = document.getElementById('monaco-template');
+                if (template) {
+                    target.innerHTML = template.innerHTML;
+                    initMonacoEditor(content, language, filePath);
+                }
+            }
+            
+            // 如果是对象类型编辑器
+            const objectEditor = target.querySelector('[data-object-editor]');
+            if (objectEditor) {
+                const template = document.getElementById('object-editor-template');
+                if (template) {
+                    target.innerHTML = template.innerHTML;
+                    
+                    // 填充现有数据
+                    const data = JSON.parse(objectEditor.getAttribute('data-object-data') || '{}');
+                    const form = document.getElementById('object-form');
+                    if (form && data) {
+                        Object.keys(data).forEach(key => {
+                            const input = form.querySelector(`[name="${key}"]`);
+                            if (input) {
+                                input.value = data[key] || '';
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    });
+    
+    // 监听保存成功
+    document.body.addEventListener('save-success', function() {
+        const indicator = document.getElementById('saved-indicator');
+        if (indicator) {
+            indicator.className = 'status-dot status-dot-success';
+        }
+        
+        const saveStatus = document.getElementById('save-status');
+        if (saveStatus) {
+            saveStatus.textContent = '已保存';
+            saveStatus.className = 'text-studio-success';
+        }
+    });
+    
+    // 监听内容变化（脏数据）
+    document.body.addEventListener('dirty-state-changed', function(evt) {
+        const isDirty = evt.detail.isDirty;
+        
+        const indicator = document.getElementById('saved-indicator');
+        if (indicator) {
+            indicator.className = isDirty ? 'status-dot status-dot-warning' : 'status-dot status-dot-success';
+        }
+        
+        const saveStatus = document.getElementById('save-status');
+        if (saveStatus) {
+            if (isDirty) {
+                saveStatus.textContent = '未保存';
+                saveStatus.className = 'text-studio-warning';
+            } else {
+                saveStatus.textContent = '已保存';
+                saveStatus.className = 'text-studio-success';
+            }
+        }
+    });
+});
+</script>
+                </div>
+                <div class="flex-1">
+                    <div class="w-full h-full relative bg-studio-bg"
+     x-data="{
+         cy: null,
+         layout: 'cose',
+         selectedNode: null,
+         selectedEdge: null,
+         zoomLevel: 1,
+         isDraggingAsset: false,
+         dragAssetType: null,
+         
+         init() {
+             // 初始化Cytoscape
+             this.initCytoscape();
+             
+             // 监听图谱刷新事件
+             document.body.addEventListener('reload-graph', () => {
+                 this.refreshGraphData();
+             });
+             
+             // 监听拖拽事件
+             this.$el.addEventListener('dragover', (e) => {
+                 e.preventDefault();
+                 this.isDraggingAsset = true;
+             });
+             
+             this.$el.addEventListener('dragleave', () => {
+                 this.isDraggingAsset = false;
+             });
+             
+             this.$el.addEventListener('drop', (e) => {
+                 e.preventDefault();
+                 this.isDraggingAsset = false;
+                 
+                 const rect = this.$el.getBoundingClientRect();
+                 const x = e.clientX - rect.left;
+                 const y = e.clientY - rect.top;
+                 
+                 // 获取拖拽的资产类型
+                 const assetType = e.dataTransfer.getData('text/plain') || 'NPC';
+                 this.addNodeFromAsset(assetType, x, y);
+             });
+         },
+         
+          initCytoscape() {
+              // 检查Cytoscape.js是否已加载
+              if (typeof cytoscape === 'undefined') {
+                  console.warn('Cytoscape.js尚未加载，请先切换到图谱标签页');
+                  showToast('正在加载图谱引擎，请稍候...', 'info');
+                  return;
+              }
+              
+              // 防止重复初始化
+              if (this.cy) {
+                  return;
+              }
+              
+              this.cy = cytoscape({
+                 container: this.$refs.cyContainer,
+                 elements: [],
+                 style: [
+                     {
+                         selector: 'node',
+                         style: {
+                             'background-color': '#3b82f6',
+                             'label': 'data(label)',
+                             'text-valign': 'center',
+                             'text-halign': 'center',
+                             'color': '#f1f5f9',
+                             'font-size': '12px',
+                             'font-family': 'JetBrains Mono, monospace',
+                             'width': '40px',
+                             'height': '40px',
+                             'border-width': '2px',
+                             'border-color': '#1e293b'
+                         }
+                     },
+                     {
+                         selector: 'node:selected',
+                         style: {
+                             'border-width': '3px',
+                             'border-color': '#f59e0b'
+                         }
+                     },
+                     {
+                         selector: 'edge',
+                         style: {
+                             'width': 2,
+                             'line-color': '#64748b',
+                             'target-arrow-color': '#64748b',
+                             'target-arrow-shape': 'triangle',
+                             'curve-style': 'bezier',
+                             'label': 'data(label)',
+                             'color': '#94a3b8',
+                             'font-size': '10px',
+                             'font-family': 'JetBrains Mono, monospace',
+                             'text-rotation': 'autorotate'
+                         }
+                     },
+                     {
+                         selector: 'edge:selected',
+                         style: {
+                             'line-color': '#f59e0b',
+                             'target-arrow-color': '#f59e0b'
+                         }
+                     }
+                 ],
+                 layout: {
+                     name: this.layout,
+                     animate: true,
+                     animationDuration: 500
+                 }
+             });
+             
+             // 添加交互事件
+             this.setupGraphInteractions();
+         },
+         
+         setupGraphInteractions() {
+             // 节点选择
+             this.cy.on('tap', 'node', (evt) => {
+                 this.selectedNode = evt.target;
+                 this.selectedEdge = null;
+                 this.showNodeProperties(evt.target);
+             });
+             
+             // 边选择
+             this.cy.on('tap', 'edge', (evt) => {
+                 this.selectedEdge = evt.target;
+                 this.selectedNode = null;
+                 this.showEdgeProperties(evt.target);
+             });
+             
+             // 画布点击
+             this.cy.on('tap', (evt) => {
+                 if (evt.target === this.cy) {
+                     this.selectedNode = null;
+                     this.selectedEdge = null;
+                     this.hidePropertiesPanel();
+                 }
+             });
+             
+             // 拖拽创建连线
+             let sourceNode = null;
+             this.cy.on('drag', 'node', (evt) => {
+                 // 拖拽连线逻辑
+             });
+             
+             // 缩放监听
+             this.cy.on('zoom', (evt) => {
+                 this.zoomLevel = this.cy.zoom();
+             });
+         },
+         
+         refreshGraphData() {
+             fetch('/api/graph/data')
+                 .then(res => res.json())
+                 .then(data => {
+                     this.cy.json({ elements: data.elements });
+                     this.cy.layout({ name: this.layout, animate: true }).run();
+                     showToast('图谱数据已刷新', 'success');
+                 })
+                 .catch(err => {
+                     console.error('刷新图谱数据失败:', err);
+                     showToast('刷新失败', 'error');
+                 });
+         },
+         
+         addNodeFromAsset(assetType, x, y) {
+             const pos = this.cy.renderer().projectFromViewport({ x, y });
+             
+             const newNode = {
+                 group: 'nodes',
+                 data: {
+                     id: `${assetType}_${Date.now()}`,
+                     label: assetType,
+                     type: assetType
+                 },
+                 position: { x: pos.x, y: pos.y }
+             };
+             
+             this.cy.add(newNode);
+             
+             // 发送到后端保存
+             fetch('/api/graph/node', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify(newNode)
+             }).then(res => {
+                 if (res.ok) {
+                     showToast(`已添加 ${assetType} 节点`, 'success');
+                 }
+             });
+         },
+         
+         showNodeProperties(node) {
+             const panel = this.$refs.propertiesPanel;
+             if (!panel) return;
+             
+             const data = node.data();
+             panel.innerHTML = `
+                 <div class="p-4">
+                     <h3 class="font-bold mb-2">节点属性</h3>
+                     <div class="space-y-2">
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">ID</label>
+                             <div class="font-mono text-sm">${data.id}</div>
+                         </div>
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">类型</label>
+                             <div>${data.type || '未知'}</div>
+                         </div>
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">标签</label>
+                             <input type="text" value="${data.label || ''}" 
+                                    class="w-full px-2 py-1 bg-studio-panel border border-studio-border rounded text-sm"
+                                    @change="updateNodeLabel('${data.id}', $event.target.value)">
+                         </div>
+                         ${Object.entries(data)
+                             .filter(([key]) => !['id', 'label', 'type'].includes(key))
+                             .map(([key, value]) => `
+                                 <div>
+                                     <label class="text-sm text-studio-text-secondary">${key}</label>
+                                     <input type="text" value="${value}" 
+                                            class="w-full px-2 py-1 bg-studio-panel border border-studio-border rounded text-sm"
+                                            @change="updateNodeProperty('${data.id}', '${key}', $event.target.value)">
+                                 </div>
+                             `).join('')}
+                     </div>
+                     <div class="mt-4 pt-4 border-t border-studio-border">
+                         <button class="btn btn-error btn-sm w-full" @click="deleteNode('${data.id}')">
+                             <i class="fas fa-trash mr-1"></i>删除节点
+                         </button>
+                     </div>
+                 </div>
+             `;
+             
+             panel.classList.remove('hidden');
+         },
+         
+         showEdgeProperties(edge) {
+             const panel = this.$refs.propertiesPanel;
+             if (!panel) return;
+             
+             const data = edge.data();
+             panel.innerHTML = `
+                 <div class="p-4">
+                     <h3 class="font-bold mb-2">关系属性</h3>
+                     <div class="space-y-2">
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">源节点</label>
+                             <div class="font-mono text-sm">${data.source}</div>
+                         </div>
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">目标节点</label>
+                             <div class="font-mono text-sm">${data.target}</div>
+                         </div>
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">关系类型</label>
+                             <input type="text" value="${data.label || ''}" 
+                                    class="w-full px-2 py-1 bg-studio-panel border border-studio-border rounded text-sm"
+                                    @change="updateEdgeLabel('${data.id}', $event.target.value)">
+                         </div>
+                     </div>
+                     <div class="mt-4 pt-4 border-t border-studio-border">
+                         <button class="btn btn-error btn-sm w-full" @click="deleteEdge('${data.id}')">
+                             <i class="fas fa-trash mr-1"></i>删除关系
+                         </button>
+                     </div>
+                 </div>
+             `;
+             
+             panel.classList.remove('hidden');
+         },
+         
+         hidePropertiesPanel() {
+             const panel = this.$refs.propertiesPanel;
+             if (panel) {
+                 panel.classList.add('hidden');
+             }
+         },
+         
+         updateNodeLabel(nodeId, newLabel) {
+             const node = this.cy.getElementById(nodeId);
+             if (node) {
+                 node.data('label', newLabel);
+                 this.saveGraphChanges();
+             }
+         },
+         
+         updateNodeProperty(nodeId, key, value) {
+             const node = this.cy.getElementById(nodeId);
+             if (node) {
+                 const data = node.data();
+                 data[key] = value;
+                 node.data(data);
+                 this.saveGraphChanges();
+             }
+         },
+         
+         updateEdgeLabel(edgeId, newLabel) {
+             const edge = this.cy.getElementById(edgeId);
+             if (edge) {
+                 edge.data('label', newLabel);
+                 this.saveGraphChanges();
+             }
+         },
+         
+         deleteNode(nodeId) {
+             if (confirm('确定要删除这个节点吗？')) {
+                 this.cy.remove(this.cy.getElementById(nodeId));
+                 this.hidePropertiesPanel();
+                 this.saveGraphChanges();
+                 showToast('节点已删除', 'success');
+             }
+         },
+         
+         deleteEdge(edgeId) {
+             if (confirm('确定要删除这个关系吗？')) {
+                 this.cy.remove(this.cy.getElementById(edgeId));
+                 this.hidePropertiesPanel();
+                 this.saveGraphChanges();
+                 showToast('关系已删除', 'success');
+             }
+         },
+         
+         saveGraphChanges() {
+             // 标记为脏数据
+             document.body.dispatchEvent(new CustomEvent('dirty-state-changed', {
+                 detail: { isDirty: true }
+             }));
+             
+             // 可以在这里添加自动保存逻辑
+         },
+         
+         changeLayout(newLayout) {
+             this.layout = newLayout;
+             this.cy.layout({ name: newLayout, animate: true }).run();
+         },
+         
+         exportGraph() {
+             const json = this.cy.json();
+             const dataStr = JSON.stringify(json, null, 2);
+             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+             
+             const exportFileDefaultName = `graph_${new Date().toISOString().slice(0,10)}.json`;
+             
+             const linkElement = document.createElement('a');
+             linkElement.setAttribute('href', dataUri);
+             linkElement.setAttribute('download', exportFileDefaultName);
+             linkElement.click();
+             
+             showToast('图谱已导出', 'success');
+         }
+     }"
+     x-init="init()">
+    
+    <!-- 图谱容器 -->
+    <div x-ref="cyContainer" class="absolute inset-0 cy-container"></div>
+    
+    <!-- 工具栏 -->
+    <div class="absolute top-4 left-4 flex flex-col space-y-2">
+        <div class="bg-studio-sidebar/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+            <div class="flex flex-col space-y-2">
+                <button class="btn-icon" @click="cy.fit()" title="适应视图">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button class="btn-icon" @click="cy.reset()" title="重置视图">
+                    <i class="fas fa-home"></i>
+                </button>
+                <button class="btn-icon" @click="refreshGraphData()" title="刷新数据">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="btn-icon" @click="exportGraph()" title="导出图谱">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 布局选择器 -->
+        <div class="bg-studio-sidebar/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+            <div class="text-xs text-studio-text-secondary mb-1">布局</div>
+            <div class="flex flex-col space-y-1">
+                <button class="text-sm px-2 py-1 rounded hover:bg-studio-panel text-left"
+                        :class="{ 'bg-studio-accent': layout === 'cose' }"
+                        @click="changeLayout('cose')">
+                    COSE
+                </button>
+                <button class="text-sm px-2 py-1 rounded hover:bg-studio-panel text-left"
+                        :class="{ 'bg-studio-accent': layout === 'grid' }"
+                        @click="changeLayout('grid')">
+                    网格
+                </button>
+                <button class="text-sm px-2 py-1 rounded hover:bg-studio-panel text-left"
+                        :class="{ 'bg-studio-accent': layout === 'circle' }"
+                        @click="changeLayout('circle')">
+                    圆形
+                </button>
+                <button class="text-sm px-2 py-1 rounded hover:bg-studio-panel text-left"
+                        :class="{ 'bg-studio-accent': layout === 'concentric' }"
+                        @click="changeLayout('concentric')">
+                    同心圆
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 缩放控制 -->
+    <div class="absolute bottom-4 right-4 bg-studio-sidebar/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+        <div class="flex items-center space-x-2">
+            <button class="btn-icon" @click="cy.zoom(cy.zoom() * 1.2)" title="放大">
+                <i class="fas fa-search-plus"></i>
+            </button>
+            <span class="text-sm w-12 text-center" x-text="zoomLevel.toFixed(1) + 'x'"></span>
+            <button class="btn-icon" @click="cy.zoom(cy.zoom() * 0.8)" title="缩小">
+                <i class="fas fa-search-minus"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- 属性面板 -->
+    <div x-ref="propertiesPanel" class="absolute top-4 right-4 w-64 bg-studio-sidebar/90 backdrop-blur-sm rounded-lg shadow-lg hidden">
+        <!-- 内容通过JS动态填充 -->
+    </div>
+    
+    <!-- 拖拽提示 -->
+    <div x-show="isDraggingAsset" 
+         class="absolute inset-0 border-2 border-dashed border-studio-accent/50 bg-studio-accent/10 flex items-center justify-center pointer-events-none">
+        <div class="text-center p-4 bg-studio-sidebar/90 rounded-lg">
+            <i class="fas fa-plus text-2xl text-studio-accent mb-2"></i>
+            <p class="text-sm">释放以添加节点</p>
+        </div>
+    </div>
+    
+    <!-- 统计信息 -->
+    <div class="absolute bottom-4 left-4 bg-studio-sidebar/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+        <div class="text-xs space-y-1">
+            <div class="flex items-center justify-between">
+                <span class="text-studio-text-secondary">节点:</span>
+                <span x-text="cy ? cy.nodes().length : 0" class="font-mono"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-studio-text-secondary">关系:</span>
+                <span x-text="cy ? cy.edges().length : 0" class="font-mono"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 全局图谱函数
+function updateNodeLabel(nodeId, newLabel) {
+    Alpine.store('graph').updateNodeLabel(nodeId, newLabel);
+}
+
+function updateNodeProperty(nodeId, key, value) {
+    Alpine.store('graph').updateNodeProperty(nodeId, key, value);
+}
+
+function updateEdgeLabel(edgeId, newLabel) {
+    Alpine.store('graph').updateEdgeLabel(edgeId, newLabel);
+}
+
+function deleteNode(nodeId) {
+    Alpine.store('graph').deleteNode(nodeId);
+}
+
+function deleteEdge(edgeId) {
+    Alpine.store('graph').deleteEdge(edgeId);
+}
+
+// 初始化Alpine store
+document.addEventListener('alpine:init', () => {
+    Alpine.store('graph', {
+        cy: null,
+        selectedNode: null,
+        selectedEdge: null,
+        
+        // 方法将在组件初始化后设置
+        updateNodeLabel: () => {},
+        updateNodeProperty: () => {},
+        updateEdgeLabel: () => {},
+        deleteNode: () => {},
+        deleteEdge: () => {}
+    });
+});
+</script>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 底部面板 -->
+<div class="border-t border-studio-border bg-studio-sidebar"
+     :class="{ 'h-64': $store.app.bottomPanelOpen, 'h-8': !$store.app.bottomPanelOpen }"
+     x-data="{ activePanel: 'console' }">
+    
+    <!-- 面板标题栏 -->
+    <div class="flex items-center justify-between px-4 py-1 border-b border-studio-border cursor-pointer"
+         @click="$store.app.bottomPanelOpen = !$store.app.bottomPanelOpen">
+        <div class="flex items-center space-x-4">
+            <button class="text-sm font-medium px-3 py-1 rounded"
+                    :class="{ 'bg-studio-accent': activePanel === 'console' }"
+                    @click.stop="activePanel = 'console'">
+                <i class="fas fa-terminal mr-1"></i>控制台
+            </button>
+            <button class="text-sm font-medium px-3 py-1 rounded"
+                    :class="{ 'bg-studio-accent': activePanel === 'copilot' }"
+                    @click.stop="activePanel = 'copilot'"
+                    id="copilot-tab">
+                <i class="fas fa-robot mr-1"></i>AI Copilot
+            </button>
+            <button class="text-sm font-medium px-3 py-1 rounded"
+                    :class="{ 'bg-studio-accent': activePanel === 'validation' }"
+                    @click.stop="activePanel = 'validation'"
+                    id="validation-tab">
+                <i class="fas fa-check-circle mr-1"></i>验证结果
+            </button>
+        </div>
+        
+        <div class="flex items-center">
+            <button class="btn-icon">
+                <i class="fas" :class="$store.app.bottomPanelOpen ? 'fa-chevron-down' : 'fa-chevron-up'"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- 面板内容 -->
+    <div class="flex-1 overflow-hidden" x-show="$store.app.bottomPanelOpen">
+        <!-- 控制台面板 -->
+        <div x-show="activePanel === 'console'" class="h-full p-4 font-mono text-sm overflow-y-auto">
+            <div id="console-output">
+                <div class="text-studio-text-secondary">系统就绪...</div>
+            </div>
+        </div>
+        
+        <!-- AI Copilot面板 -->
+        <div x-show="activePanel === 'copilot'" class="h-full flex flex-col">
+            <div class="h-full flex flex-col"
+     x-data="{
+         messages: [],
+         inputText: '',
+         isLoading: false,
+         isConnected: false,
+         eventSource: null,
+         
+         init() {
+             this.connectSSE();
+             
+             // 加载历史消息
+             this.loadHistory();
+         },
+         
+         connectSSE() {
+             if (this.eventSource) {
+                 this.eventSource.close();
+             }
+             
+             this.eventSource = new EventSource('/api/copilot/stream');
+             
+             this.eventSource.onopen = () => {
+                 this.isConnected = true;
+                 console.log('SSE连接已建立');
+             };
+             
+             this.eventSource.onmessage = (event) => {
+                 const data = JSON.parse(event.data);
+                 this.handleSSEMessage(data);
+             
+              this.eventSource.onerror = (error) => {
+                  console.error('SSE连接错误:', error);
+                  this.isConnected = false;
+                  // 5秒后重连
+                  setTimeout(() => this.connectSSE(), 5000);
+              };
+        };
+             
+             this.eventSource.onerror = (error) => {
+                 console.error('SSE连接错误:', error);
+                 this.isConnected = false;
+                 
+                 // 尝试重新连接
+                 setTimeout(() => {
+                     if (!this.isConnected) {
+                         this.connectSSE();
+                     }
+                 }, 3000);
+             };
+         },
+         
+         handleSSEMessage(data) {
+             if (data.type === 'chunk') {
+                 // 流式文本块
+                 this.appendToLastMessage(data.content);
+             } else if (data.type === 'complete') {
+                 // 消息完成
+                 this.isLoading = false;
+                 this.markLastMessageComplete();
+             } else if (data.type === 'error') {
+                 // 错误消息
+                 this.addMessage({
+                     role: 'assistant',
+                     content: `错误: ${data.message}`,
+                     isComplete: true
+                 });
+                 this.isLoading = false;
+             } else if (data.type === 'code_suggestion') {
+                 // 代码建议
+                 this.addMessage({
+                     role: 'assistant',
+                     content: data.content,
+                     isComplete: true,
+                     isCode: true,
+                     language: data.language || 'cypher',
+                     action: data.action
+                 });
+             }
+         },
+         
+         addMessage(message) {
+             this.messages.push({
+                 ...message,
+                 id: Date.now(),
+                 timestamp: new Date().toLocaleTimeString()
+             });
+             
+             // 滚动到底部
+             this.$nextTick(() => {
+                 const container = this.$refs.messagesContainer;
+                 if (container) {
+                     container.scrollTop = container.scrollHeight;
+                 }
+             });
+             
+             // 保存到本地存储
+             this.saveHistory();
+         },
+         
+         appendToLastMessage(content) {
+             if (this.messages.length === 0) {
+                 this.addMessage({
+                     role: 'assistant',
+                     content: content,
+                     isComplete: false
+                 });
+                 return;
+             }
+             
+             const lastMessage = this.messages[this.messages.length - 1];
+             if (lastMessage.role === 'assistant' && !lastMessage.isComplete) {
+                 lastMessage.content += content;
+                 
+                 // 触发UI更新
+                 this.messages = [...this.messages];
+             } else {
+                 this.addMessage({
+                     role: 'assistant',
+                     content: content,
+                     isComplete: false
+                 });
+             }
+         },
+         
+         markLastMessageComplete() {
+             if (this.messages.length > 0) {
+                 const lastMessage = this.messages[this.messages.length - 1];
+                 if (lastMessage.role === 'assistant') {
+                     lastMessage.isComplete = true;
+                     this.messages = [...this.messages];
+                 }
+             }
+         },
+         
+         sendMessage() {
+             if (!this.inputText.trim() || this.isLoading) return;
+             
+             const userMessage = this.inputText.trim();
+             this.addMessage({
+                 role: 'user',
+                 content: userMessage,
+                 isComplete: true
+             });
+             
+             this.inputText = '';
+             this.isLoading = true;
+             
+             // 发送到后端
+             fetch('/api/copilot/chat', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({
+                     message: userMessage,
+                     context: this.getContext()
+                 })
+             }).catch(error => {
+                 console.error('发送消息失败:', error);
+                 this.addMessage({
+                     role: 'assistant',
+                     content: '抱歉，发送消息时出现错误。',
+                     isComplete: true
+                 });
+                 this.isLoading = false;
+             });
+         },
+         
+         getContext() {
+             // 获取当前编辑上下文
+             const context = {
+                 domain: Alpine.store('app').domain,
+                 currentFile: Alpine.store('app').currentFile,
+                 timestamp: new Date().toISOString()
+             };
+             
+             // 如果有Monaco编辑器，获取当前内容
+             if (window.monacoEditor) {
+                 context.editorContent = window.monacoEditor.getValue();
+             }
+             
+             return context;
+         },
+         
+         applyCodeSuggestion(code, language) {
+             if (window.monacoEditor) {
+                 const currentValue = window.monacoEditor.getValue();
+                 const newValue = currentValue + '\n\n' + code;
+                 window.monacoEditor.setValue(newValue);
+                 
+                 showToast('代码已插入到编辑器', 'success');
+             } else {
+                 // 复制到剪贴板
+                 navigator.clipboard.writeText(code).then(() => {
+                     showToast('代码已复制到剪贴板', 'success');
+                 });
+             }
+         },
+         
+         loadHistory() {
+             try {
+                 const saved = localStorage.getItem('copilot_history');
+                 if (saved) {
+                     this.messages = JSON.parse(saved);
+                 }
+             } catch (error) {
+                 console.error('加载历史记录失败:', error);
+             }
+         },
+         
+         saveHistory() {
+             try {
+                 // 只保存最近50条消息
+                 const recentMessages = this.messages.slice(-50);
+                 localStorage.setItem('copilot_history', JSON.stringify(recentMessages));
+             } catch (error) {
+                 console.error('保存历史记录失败:', error);
+             }
+         },
+         
+         clearHistory() {
+             if (confirm('确定要清空对话历史吗？')) {
+                 this.messages = [];
+                 localStorage.removeItem('copilot_history');
+                 showToast('对话历史已清空', 'success');
+             }
+         },
+         
+         handleKeyPress(event) {
+             if (event.key === 'Enter' && !event.shiftKey) {
+                 event.preventDefault();
+                 this.sendMessage();
+             }
+         }
+     }">
+    
+    <!-- 消息容器 -->
+    <div x-ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <template x-for="message in messages" :key="message.id">
+            <div :class="{
+                'flex justify-end': message.role === 'user',
+                'flex justify-start': message.role === 'assistant'
+            }">
+                <div :class="{
+                    'max-w-[80%] rounded-lg p-3': true,
+                    'bg-studio-accent text-white': message.role === 'user',
+                    'bg-studio-panel': message.role === 'assistant'
+                }">
+                    <!-- 用户消息 -->
+                    <div x-show="message.role === 'user'">
+                        <div class="font-medium mb-1">您</div>
+                        <div class="whitespace-pre-wrap" x-text="message.content"></div>
+                        <div class="text-xs opacity-70 mt-1 text-right" x-text="message.timestamp"></div>
+                    </div>
+                    
+                    <!-- AI消息 -->
+                    <div x-show="message.role === 'assistant'">
+                        <div class="flex items-center mb-1">
+                            <i class="fas fa-robot text-studio-accent mr-2"></i>
+                            <div class="font-medium">AI Copilot</div>
+                            <div class="ml-2 text-xs opacity-70" x-text="message.timestamp"></div>
+                            
+                            <!-- 加载指示器 -->
+                            <div x-show="!message.isComplete" class="ml-2">
+                                <div class="flex space-x-1">
+                                    <div class="w-1 h-1 bg-studio-accent rounded-full animate-pulse"></div>
+                                    <div class="w-1 h-1 bg-studio-accent rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                                    <div class="w-1 h-1 bg-studio-accent rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 普通文本消息 -->
+                        <div x-show="!message.isCode" class="whitespace-pre-wrap" x-text="message.content"></div>
+                        
+                        <!-- 代码建议 -->
+                        <div x-show="message.isCode" class="mt-2">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="text-sm font-mono" x-text="message.language ? message.language.toUpperCase() : ''"></div>
+                                <button class="text-xs text-studio-accent hover:underline"
+                                        @click="applyCodeSuggestion(message.content, message.language)">
+                                    <i class="fas fa-code mr-1"></i>应用到编辑器
+                                </button>
+                            </div>
+                            <pre class="bg-studio-bg p-3 rounded text-sm overflow-x-auto font-mono"
+                                 x-text="message.content"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+        
+        <!-- 空状态 -->
+        <div x-show="messages.length === 0" class="text-center text-studio-text-secondary py-8">
+            <i class="fas fa-robot text-3xl mb-3"></i>
+            <p class="text-lg mb-2">AI Copilot 就绪</p>
+            <p class="text-sm">我可以帮助您：</p>
+            <ul class="text-sm mt-2 space-y-1">
+                <li>• 生成对象类型定义</li>
+                <li>• 编写Cypher查询</li>
+                <li>• 优化现有代码</li>
+                <li>• 解释领域概念</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- 输入区域 -->
+    <div class="border-t border-studio-border p-4">
+        <div class="flex space-x-2">
+            <div class="flex-1 relative">
+                <textarea x-model="inputText"
+                          @keydown="handleKeyPress($event)"
+                          placeholder="输入您的问题或指令..."
+                          class="w-full px-4 py-3 bg-studio-panel border border-studio-border rounded-lg focus:outline-none focus:ring-2 focus:ring-studio-accent resize-none"
+                          rows="2"></textarea>
+                <div class="absolute bottom-2 right-2 text-xs text-studio-text-secondary">
+                    <span x-show="!isConnected" class="text-studio-warning">
+                        <i class="fas fa-unlink mr-1"></i>连接中...
+                    </span>
+                    <span x-show="isConnected" class="text-studio-success">
+                        <i class="fas fa-link mr-1"></i>已连接
+                    </span>
+                </div>
+            </div>
+            
+            <div class="flex flex-col space-y-2">
+                <button @click="sendMessage()"
+                        :disabled="!inputText.trim() || isLoading"
+                        :class="{
+                            'btn btn-primary': true,
+                            'opacity-50 cursor-not-allowed': !inputText.trim() || isLoading
+                        }">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+                
+                <button @click="clearHistory()"
+                        class="btn btn-secondary"
+                        title="清空历史">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 快捷指令 -->
+        <div class="mt-2 flex flex-wrap gap-1">
+            <button @click="inputText = '帮我创建一个NPC对象类型定义'"
+                    class="text-xs px-2 py-1 bg-studio-panel rounded hover:bg-slate-600">
+                创建NPC
+            </button>
+            <button @click="inputText = '生成一个查询所有节点的Cypher语句'"
+                    class="text-xs px-2 py-1 bg-studio-panel rounded hover:bg-slate-600">
+                Cypher查询
+            </button>
+            <button @click="inputText = '优化这段代码的性能'"
+                    class="text-xs px-2 py-1 bg-studio-panel rounded hover:bg-slate-600">
+                优化代码
+            </button>
+            <button @click="inputText = '解释供应链领域的概念'"
+                    class="text-xs px-2 py-1 bg-studio-panel rounded hover:bg-slate-600">
+                领域解释
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// 全局Copilot函数
+function askCopilot(question) {
+    const panel = document.querySelector('[x-data]');
+    if (panel && panel.__x) {
+        panel.__x.$data.inputText = question;
+        panel.__x.$data.sendMessage();
+        
+        // 切换到Copilot面板
+        Alpine.store('app').bottomPanelOpen = true;
+        const copilotTab = document.getElementById('copilot-tab');
+        if (copilotTab) {
+            copilotTab.click();
+        }
+    }
+}
+
+// 添加快捷键：Ctrl+Shift+C 打开Copilot
+document.addEventListener('keydown', function(event) {
+    if (event.ctrlKey && event.shiftKey && event.key === 'C') {
+        event.preventDefault();
+        Alpine.store('app').bottomPanelOpen = true;
+        const copilotTab = document.getElementById('copilot-tab');
+        if (copilotTab) {
+            copilotTab.click();
+            
+            // 聚焦输入框
+            const textarea = document.querySelector('[x-model=\"inputText\"]');
+            if (textarea) {
+                textarea.focus();
+            }
+        }
+    }
+});
+
+// 初始化Alpine store
+document.addEventListener('alpine:init', () => {
+    Alpine.store('copilot', {
+        ask: askCopilot
+    });
+});
+</script>
+        </div>
+        
+        <!-- 验证结果面板 -->
+        <div x-show="activePanel === 'validation'" class="h-full p-4 overflow-y-auto">
+            <div id="validation-results">
+                <div class="text-studio-text-secondary">无验证错误</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    </div>
+    
+    <!-- 全局脚本 -->
+    <script>
+        // 配置HTMX
+        htmx.config.useTemplateFragments = true;
+        
+        // 显示加载进度条
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            NProgress.start();
+        });
+        
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            NProgress.done();
+        });
+        
+        // 显示Toast通知
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const typeConfig = {
+                info: { icon: 'info-circle', color: 'blue' },
+                success: { icon: 'check-circle', color: 'green' },
+                warning: { icon: 'exclamation-triangle', color: 'yellow' },
+                error: { icon: 'exclamation-circle', color: 'red' }
+            };
+            
+            const config = typeConfig[type];
+            
+            toast.className = `px-4 py-3 rounded-lg shadow-lg animate-fadeIn bg-${config.color}-900 border border-${config.color}-700 text-${config.color}-300`;
+            toast.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${config.icon} mr-3"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => {
+                    if (container.contains(toast)) {
+                        container.removeChild(toast);
+                    }
+                }, 300);
+            }, duration);
+        }
+        
+        // 全局事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Genesis Forge Studio loaded');
+            
+            // 监听脏数据状态变化
+            document.body.addEventListener('dirty-state-changed', function(evt) {
+                const isDirty = evt.detail.isDirty;
+                Alpine.store('app').isDirty = isDirty;
+                
+                // 更新保存按钮状态
+                const saveBtn = document.querySelector('[data-save-button]');
+                if (saveBtn) {
+                    if (isDirty) {
+                        saveBtn.classList.add('btn-warning');
+                        saveBtn.classList.remove('btn-secondary');
+                        saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存*';
+                    } else {
+                        saveBtn.classList.remove('btn-warning');
+                        saveBtn.classList.add('btn-secondary');
+                        saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存';
+                    }
+                }
+            });
+            
+            // 监听验证错误
+            document.body.addEventListener('validation-error', function(evt) {
+                const errors = evt.detail.errors;
+                showToast(`发现 ${errors.length} 个验证错误`, 'error');
+                
+                // 自动打开底部面板
+                Alpine.store('app').bottomPanelOpen = true;
+                htmx.trigger('#validation-tab', 'click');
+            });
+            
+            // 监听保存成功
+            document.body.addEventListener('save-success', function(evt) {
+                showToast('保存成功', 'success');
+                document.body.dispatchEvent(new CustomEvent('dirty-state-changed', {
+                    detail: { isDirty: false }
+                }));
+            });
+        });
+        
+        // 全局Alpine store
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('app', {
+                isDirty: false,
+                sidebarCollapsed: false,
+                bottomPanelOpen: false,
+                activeTab: 'editor',
+                currentFile: null,
+                domain: 'supply_chain'
+            });
+        });
+    </script>
+    
+    
+<script>
+    // 处理命令输入
+    function handleCommand(cmd) {
+        if (cmd.startsWith('>')) {
+            const command = cmd.substring(1).trim().toLowerCase();
+            
+            switch(command) {
+                case 'reload':
+                    htmx.ajax('GET', '/api/reload', '#main-stage');
+                    showToast('重新加载中...', 'info');
+                    break;
+                case 'validate':
+                    htmx.ajax('POST', '/api/validate', '#validation-results');
+                    showToast('正在验证...', 'info');
+                    break;
+                case 'clear':
+                    document.getElementById('console-output').innerHTML = '<div class="text-studio-text-secondary">控制台已清空</div>';
+                    showToast('控制台已清空', 'success');
+                    break;
+                default:
+                    showToast(`未知命令: ${command}`, 'warning');
+            }
+            
+            // 清空输入框
+            event.target.value = '';
+        }
+    }
+    
+    // 初始化编辑器
+    document.addEventListener('DOMContentLoaded', function() {
+        // 更新面包屑
+        function updateBreadcrumb(filePath) {
+            const breadcrumb = document.getElementById('breadcrumb-current');
+            if (filePath) {
+                const parts = filePath.split('/');
+                breadcrumb.textContent = parts[parts.length - 1];
+            } else {
+                breadcrumb.textContent = '工作区';
+            }
+        }
+        
+        // 监听文件切换
+        document.body.addEventListener('file-selected', function(evt) {
+            const file = evt.detail.file;
+            Alpine.store('app').currentFile = file.path;
+            updateBreadcrumb(file.path);
+        });
+        
+        // 初始化控制台WebSocket (Socket.IO)
+        const socket = io();
+        
+        socket.on('connect', function() {
+            console.log('WebSocket连接成功');
+        });
+        
+        socket.on('console_output', function(data) {
+            const consoleOutput = document.getElementById('console-output');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'mb-1';
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${data.message}`;
+            consoleOutput.appendChild(logEntry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        });
+        
+        socket.on('message', function(data) {
+            console.log('WebSocket消息:', data);
+        });
+        
+        // 监听标签页切换，实现资源懒加载
+        let cytoscapeLoaded = false;
+        Alpine.effect(() => {
+            const activeTab = Alpine.store('app').activeTab;
+            
+            if (activeTab === 'graph' && !cytoscapeLoaded) {
+                console.log('检测到图谱标签页激活，开始懒加载Cytoscape.js...');
+                
+                // 懒加载Cytoscape.js
+                window.lazyLoader.loadScript(
+                    'https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js'
+                ).then(() => {
+                    console.log('✅ Cytoscape.js懒加载完成');
+                    cytoscapeLoaded = true;
+                    
+                    // 如果图谱容器已经存在，初始化图谱
+                    const graphPane = document.querySelector('[x-data*="graphPane"]');
+                    if (graphPane && graphPane.__x) {
+                        const graphComponent = graphPane.__x.$data;
+                        if (graphComponent && typeof graphComponent.initCytoscape === 'function') {
+                            graphComponent.initCytoscape();
+                        }
+                    }
+                }).catch(error => {
+                    console.error('❌ Cytoscape.js懒加载失败:', error);
+                });
+            }
+            
+            // 预加载其他标签页资源
+            if (activeTab === 'editor' && typeof monaco === 'undefined') {
+                // 预加载Monaco Editor（不阻塞）
+                window.lazyLoader.preloadResource(
+                    'https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js',
+                    'script'
+                );
+            }
+        });
+        
+        // 初始状态
+        updateBreadcrumb();
+    });
+</script>
+
+
+    <script>
+    // 全局错误处理
+    window.addEventListener('error', function(event) {
+        console.error('全局错误:', event.error);
+        
+        // 如果是Alpine表达式错误，尝试恢复
+        if (event.error && event.error.toString().includes('Alpine Expression Error')) {
+            console.warn('Alpine表达式错误，尝试重新初始化...');
+            // 可以在这里添加重新初始化的逻辑
+        }
+    });
+    
+    // 未处理的Promise拒绝
+    window.addEventListener('unhandledrejection', function(event) {
+        console.error('未处理的Promise拒绝:', event.reason);
+    });
+    </script>
+    
+</body>
+</html>

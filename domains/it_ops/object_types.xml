@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ObjectTypes domain="it_ops">
+  <!-- IT运维领域对象类型定义 -->
+  
+  <ObjectType name="Server" icon="server" color="#3b82f6" primary_key="hostname">
+    <Property name="hostname" type="string" required="true" description="服务器主机名"/>
+    <Property name="ip_address" type="string" description="IP地址"/>
+    <Property name="cpu_usage" type="float" default="0" description="CPU使用率(%)"/>
+    <Property name="memory_usage" type="float" default="0" description="内存使用率(%)"/>
+    <Property name="disk_usage" type="float" default="0" description="磁盘使用率(%)"/>
+    <Property name="status" type="string" enum="RUNNING,STOPPED,MAINTENANCE,ERROR" default="RUNNING" description="状态"/>
+    <Property name="os" type="string" description="操作系统"/>
+  </ObjectType>
+  
+  <ObjectType name="Application" icon="app" color="#10b981" primary_key="app_id">
+    <Property name="app_id" type="string" required="true" description="应用ID"/>
+    <Property name="name" type="string" description="应用名称"/>
+    <Property name="version" type="string" description="版本"/>
+    <Property name="port" type="int" description="端口"/>
+    <Property name="status" type="string" enum="RUNNING,STOPPED,DEPLOYING,ERROR" default="STOPPED" description="状态"/>
+    <Property name="uptime" type="int" default="0" description="运行时间(秒)"/>
+  </ObjectType>
+  
+  <ObjectType name="Database" icon="database" color="#8b5cf6" primary_key="db_id">
+    <Property name="db_id" type="string" required="true" description="数据库ID"/>
+    <Property name="name" type="string" description="数据库名称"/>
+    <Property name="type" type="string" enum="MYSQL,POSTGRESQL,MONGODB,REDIS,ELASTICSEARCH" description="数据库类型"/>
+    <Property name="size" type="float" default="0" description="大小(GB)"/>
+    <Property name="connections" type="int" default="0" description="连接数"/>
+    <Property name="status" type="string" enum="ONLINE,OFFLINE,BACKUP,ERROR" default="ONLINE" description="状态"/>
+  </ObjectType>
+  
+  <ObjectType name="NetworkDevice" icon="network" color="#f59e0b" primary_key="device_id">
+    <Property name="device_id" type="string" required="true" description="设备ID"/>
+    <Property name="name" type="string" description="设备名称"/>
+    <Property name="type" type="string" enum="ROUTER,SWITCH,FIREWALL,LOAD_BALANCER,WIFI_AP" description="设备类型"/>
+    <Property name="ip_address" type="string" description="IP地址"/>
+    <Property name="bandwidth" type="float" description="带宽(Mbps)"/>
+    <Property name="status" type="string" enum="ONLINE,OFFLINE,CONGESTED,ERROR" default="ONLINE" description="状态"/>
+  </ObjectType>
+  
+  <ObjectType name="Incident" icon="alert" color="#ef4444" primary_key="incident_id">
+    <Property name="incident_id" type="string" required="true" description="事件ID"/>
+    <Property name="title" type="string" description="事件标题"/>
+    <Property name="severity" type="string" enum="LOW,MEDIUM,HIGH,CRITICAL" description="严重程度"/>
+    <Property name="category" type="string" enum="HARDWARE,SOFTWARE,NETWORK,SECURITY,PERFORMANCE" description="类别"/>
+    <Property name="status" type="string" enum="OPEN,INVESTIGATING,RESOLVED,CLOSED" default="OPEN" description="状态"/>
+    <Property name="assignee" type="string" description="负责人"/>
+  </ObjectType>
+  
+  <ObjectType name="User" icon="user" color="#6366f1" primary_key="user_id">
+    <Property name="user_id" type="string" required="true" description="用户ID"/>
+    <Property name="username" type="string" description="用户名"/>
+    <Property name="email" type="string" description="邮箱"/>
+    <Property name="role" type="string" enum="ADMIN,OPERATOR,VIEWER" default="VIEWER" description="角色"/>
+    <Property name="department" type="string" description="部门"/>
+  </ObjectType>
+  
+  <ObjectType name="Backup" icon="backup" color="#64748b" primary_key="backup_id">
+    <Property name="backup_id" type="string" required="true" description="备份ID"/>
+    <Property name="target" type="string" description="备份目标"/>
+    <Property name="type" type="string" enum="FULL,INCREMENTAL,DIFFERENTIAL" default="FULL" description="备份类型"/>
+    <Property name="size" type="float" default="0" description="大小(GB)"/>
+    <Property name="status" type="string" enum="PENDING,RUNNING,COMPLETED,FAILED" default="PENDING" description="状态"/>
+    <Property name="timestamp" type="string" description="备份时间"/>
+  </ObjectType>
+  
+  <!-- 关系类型定义 -->
+  <LinkType name="RUNS_ON" source="Application" target="Server" color="#3b82f6" description="应用运行在服务器上"/>
+  <LinkType name="USES" source="Application" target="Database" color="#10b981" description="应用使用数据库"/>
+  <LinkType name="CONNECTED_TO" source="Server" target="NetworkDevice" color="#f59e0b" description="服务器连接到网络设备"/>
+  <LinkType name="AFFECTS" source="Server" target="Incident" color="#ef4444" description="服务器引发事件"/>
+  <LinkType name="AFFECTS" source="Application" target="Incident" color="#ef4444" description="应用引发事件"/>
+  <LinkType name="RESPONSIBLE_FOR" source="User" target="Incident" color="#6366f1" description="用户负责事件"/>
+  <LinkType name="BACKS_UP" source="Backup" target="Server" color="#64748b" description="备份服务器"/>
+  <LinkType name="BACKS_UP" source="Backup" target="Database" color="#64748b" description="备份数据库"/>
+</ObjectTypes>

@@ -1,0 +1,399 @@
+<div class="h-full flex flex-col"
+     x-data="{
+         messages: [],
+         inputText: '',
+         isLoading: false,
+         isConnected: false,
+         eventSource: null,
+         
+         init() {
+             this.connectSSE();
+             
+             // 加载历史消息
+             this.loadHistory();
+         },
+         
+         connectSSE() {
+             if (this.eventSource) {
+                 this.eventSource.close();
+             }
+             
+             this.eventSource = new EventSource('/api/copilot/stream');
+             
+             this.eventSource.onopen = () => {
+                 this.isConnected = true;
+                 console.log('SSE连接已建立');
+             };
+             
+             this.eventSource.onmessage = (event) => {
+                 const data = JSON.parse(event.data);
+                 this.handleSSEMessage(data);
+             };
+             
+             this.eventSource.onerror = (error) => {
+                 console.error('SSE连接错误:', error);
+                 this.isConnected = false;
+                 
+                 // 尝试重新连接
+                 setTimeout(() => {
+                     if (!this.isConnected) {
+                         this.connectSSE();
+                     }
+                 }, 3000);
+             };
+         },
+         
+         handleSSEMessage(data) {
+             if (data.type === 'chunk') {
+                 // 流式文本块
+                 this.appendToLastMessage(data.content);
+             } else if (data.type === 'complete') {
+                 // 消息完成
+                 this.isLoading = false;
+                 this.markLastMessageComplete();
+             } else if (data.type === 'error') {
+                 // 错误消息
+                 this.addMessage({
+                     role: 'assistant',
+                     content: `错误: ${data.message}`,
+                     isComplete: true
+                 });
+                 this.isLoading = false;
+             } else if (data.type === 'code_suggestion') {
+                 // 代码建议
+                 this.addMessage({
+                     role: 'assistant',
+                     content: data.content,
+                     isComplete: true,
+                     isCode: true,
+                     language: data.language || 'cypher',
+                     action: data.action
+                 });
+             }
+         },
+         
+         addMessage(message) {
+             this.messages.push({
+                 ...message,
+                 id: Date.now(),
+                 timestamp: new Date().toLocaleTimeString()
+             });
+             
+             // 滚动到底部
+             this.$nextTick(() => {
+                 const container = this.$refs.messagesContainer;
+                 if (container) {
+                     container.scrollTop = container.scrollHeight;
+                 }
+             });
+             
+             // 保存到本地存储
+             this.saveHistory();
+         },
+         
+         appendToLastMessage(content) {
+             if (this.messages.length === 0) {
+                 this.addMessage({
+                     role: 'assistant',
+                     content: content,
+                     isComplete: false
+                 });
+                 return;
+             }
+             
+             const lastMessage = this.messages[this.messages.length - 1];
+             if (lastMessage.role === 'assistant' && !lastMessage.isComplete) {
+                 lastMessage.content += content;
+                 
+                 // 触发UI更新
+                 this.messages = [...this.messages];
+             } else {
+                 this.addMessage({
+                     role: 'assistant',
+                     content: content,
+                     isComplete: false
+                 });
+             }
+         },
+         
+         markLastMessageComplete() {
+             if (this.messages.length > 0) {
+                 const lastMessage = this.messages[this.messages.length - 1];
+                 if (lastMessage.role === 'assistant') {
+                     lastMessage.isComplete = true;
+                     this.messages = [...this.messages];
+                 }
+             }
+         },
+         
+         sendMessage() {
+             if (!this.inputText.trim() || this.isLoading) return;
+             
+             const userMessage = this.inputText.trim();
+             this.addMessage({
+                 role: 'user',
+                 content: userMessage,
+                 isComplete: true
+             });
+             
+             this.inputText = '';
+             this.isLoading = true;
+             
+             // 发送到后端
+             fetch('/api/copilot/chat', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({
+                     message: userMessage,
+                     context: this.getContext()
+                 })
+             }).catch(error => {
+                 console.error('发送消息失败:', error);
+                 this.addMessage({
+                     role: 'assistant',
+                     content: '抱歉，发送消息时出现错误。',
+                     isComplete: true
+                 });
+                 this.isLoading = false;
+             });
+         },
+         
+         getContext() {
+             // 获取当前编辑上下文
+             const context = {
+                 domain: Alpine.store('app').domain,
+                 currentFile: Alpine.store('app').currentFile,
+                 timestamp: new Date().toISOString()
+             };
+             
+             // 如果有Monaco编辑器，获取当前内容
+             if (window.monacoEditor) {
+                 context.editorContent = window.monacoEditor.getValue();
+             }
+             
+             return context;
+         },
+         
+         applyCodeSuggestion(code, language) {
+             if (window.monacoEditor) {
+                 const currentValue = window.monacoEditor.getValue();
+                 const newValue = currentValue + '\n\n' + code;
+                 window.monacoEditor.setValue(newValue);
+                 
+                 showToast('代码已插入到编辑器', 'success');
+             } else {
+                 // 复制到剪贴板
+                 navigator.clipboard.writeText(code).then(() => {
+                     showToast('代码已复制到剪贴板', 'success');
+                 });
+             }
+         },
+         
+         loadHistory() {
+             try {
+                 const saved = localStorage.getItem('copilot_history');
+                 if (saved) {
+                     this.messages = JSON.parse(saved);
+                 }
+             } catch (error) {
+                 console.error('加载历史记录失败:', error);
+             }
+         },
+         
+         saveHistory() {
+             try {
+                 // 只保存最近50条消息
+                 const recentMessages = this.messages.slice(-50);
+                 localStorage.setItem('copilot_history', JSON.stringify(recentMessages));
+             } catch (error) {
+                 console.error('保存历史记录失败:', error);
+             }
+         },
+         
+         clearHistory() {
+             if (confirm('确定要清空对话历史吗？')) {
+                 this.messages = [];
+                 localStorage.removeItem('copilot_history');
+                 showToast('对话历史已清空', 'success');
+             }
+         },
+         
+         handleKeyPress(event) {
+             if (event.key === 'Enter' && !event.shiftKey) {
+                 event.preventDefault();
+                 this.sendMessage();
+             }
+         }
+     }">
+    
+    <!-- 消息容器 -->
+    <div x-ref="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <template x-for="message in messages" :key="message.id">
+            <div :class="{
+                'flex justify-end': message.role === 'user',
+                'flex justify-start': message.role === 'assistant'
+            }">
+                <div :class="{
+                    'max-w-[80%] rounded-lg p-3': true,
+                    'bg-studio-accent text-white': message.role === 'user',
+                    'bg-studio-panel': message.role === 'assistant'
+                }">
+                    <!-- 用户消息 -->
+                    <div x-show="message.role === 'user'">
+                        <div class="font-medium mb-1">您</div>
+                        <div class="whitespace-pre-wrap" x-text="message.content"></div>
+                        <div class="text-xs opacity-70 mt-1 text-right" x-text="message.timestamp"></div>
+                    </div>
+                    
+                    <!-- AI消息 -->
+                    <div x-show="message.role === 'assistant'">
+                        <div class="flex items-center mb-1">
+                            <i class="fas fa-robot text-studio-accent mr-2"></i>
+                            <div class="font-medium">AI Copilot</div>
+                            <div class="ml-2 text-xs opacity-70" x-text="message.timestamp"></div>
+                            
+                            <!-- 加载指示器 -->
+                            <div x-show="!message.isComplete" class="ml-2">
+                                <div class="flex space-x-1">
+                                    <div class="w-1 h-1 bg-studio-accent rounded-full animate-pulse"></div>
+                                    <div class="w-1 h-1 bg-studio-accent rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                                    <div class="w-1 h-1 bg-studio-accent rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 普通文本消息 -->
+                        <div x-show="!message.isCode" class="whitespace-pre-wrap" x-text="message.content"></div>
+                        
+                        <!-- 代码建议 -->
+                        <div x-show="message.isCode" class="mt-2">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="text-sm font-mono" x-text="message.language.toUpperCase()"></div>
+                                <button class="text-xs text-studio-accent hover:underline"
+                                        @click="applyCodeSuggestion(message.content, message.language)">
+                                    <i class="fas fa-code mr-1"></i>应用到编辑器
+                                </button>
+                            </div>
+                            <pre class="bg-studio-bg p-3 rounded text-sm overflow-x-auto font-mono"
+                                 x-text="message.content"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+        
+        <!-- 空状态 -->
+        <div x-show="messages.length === 0" class="text-center text-studio-text-secondary py-8">
+            <i class="fas fa-robot text-3xl mb-3"></i>
+            <p class="text-lg mb-2">AI Copilot 就绪</p>
+            <p class="text-sm">我可以帮助您：</p>
+            <ul class="text-sm mt-2 space-y-1">
+                <li>• 生成对象类型定义</li>
+                <li>• 编写Cypher查询</li>
+                <li>• 优化现有代码</li>
+                <li>• 解释领域概念</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- 输入区域 -->
+    <div class="border-t border-studio-border p-4">
+        <div class="flex space-x-2">
+            <div class="flex-1 relative">
+                <textarea x-model="inputText"
+                          @keydown="handleKeyPress($event)"
+                          placeholder="输入您的问题或指令..."
+                          class="w-full px-4 py-3 bg-studio-panel border border-studio-border rounded-lg focus:outline-none focus:ring-2 focus:ring-studio-accent resize-none"
+                          rows="2"></textarea>
+                <div class="absolute bottom-2 right-2 text-xs text-studio-text-secondary">
+                    <span x-show="!isConnected" class="text-studio-warning">
+                        <i class="fas fa-unlink mr-1"></i>连接中...
+                    </span>
+                    <span x-show="isConnected" class="text-studio-success">
+                        <i class="fas fa-link mr-1"></i>已连接
+                    </span>
+                </div>
+            </div>
+            
+            <div class="flex flex-col space-y-2">
+                <button @click="sendMessage()"
+                        :disabled="!inputText.trim() || isLoading"
+                        :class="{
+                            'btn btn-primary': true,
+                            'opacity-50 cursor-not-allowed': !inputText.trim() || isLoading
+                        }">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+                
+                <button @click="clearHistory()"
+                        class="btn btn-secondary"
+                        title="清空历史">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 快捷指令 -->
+        <div class="mt-2 flex flex-wrap gap-1">
+            <button @click="inputText = '帮我创建一个NPC对象类型定义'"
+                    class="text-xs px-2 py-1 bg-studio-panel rounded hover:bg-slate-600">
+                创建NPC
+            </button>
+            <button @click="inputText = '生成一个查询所有节点的Cypher语句'"
+                    class="text-xs px-2 py-1 bg-studio-panel rounded hover:bg-slate-600">
+                Cypher查询
+            </button>
+            <button @click="inputText = '优化这段代码的性能'"
+                    class="text-xs px-2 py-1 bg-studio-panel rounded hover:bg-slate-600">
+                优化代码
+            </button>
+            <button @click="inputText = '解释供应链领域的概念'"
+                    class="text-xs px-2 py-1 bg-studio-panel rounded hover:bg-slate-600">
+                领域解释
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// 全局Copilot函数
+function askCopilot(question) {
+    const panel = document.querySelector('[x-data]');
+    if (panel && panel.__x) {
+        panel.__x.$data.inputText = question;
+        panel.__x.$data.sendMessage();
+        
+        // 切换到Copilot面板
+        Alpine.store('app').bottomPanelOpen = true;
+        const copilotTab = document.getElementById('copilot-tab');
+        if (copilotTab) {
+            copilotTab.click();
+        }
+    }
+}
+
+// 添加快捷键：Ctrl+Shift+C 打开Copilot
+document.addEventListener('keydown', function(event) {
+    if (event.ctrlKey && event.shiftKey && event.key === 'C') {
+        event.preventDefault();
+        Alpine.store('app').bottomPanelOpen = true;
+        const copilotTab = document.getElementById('copilot-tab');
+        if (copilotTab) {
+            copilotTab.click();
+            
+            // 聚焦输入框
+            const textarea = document.querySelector('[x-model=\"inputText\"]');
+            if (textarea) {
+                textarea.focus();
+            }
+        }
+    }
+});
+
+// 初始化Alpine store
+document.addEventListener('alpine:init', () => {
+    Alpine.store('copilot', {
+        ask: askCopilot
+    });
+});
+</script>

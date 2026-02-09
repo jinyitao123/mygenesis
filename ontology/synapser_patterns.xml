@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SynapserPatterns>
+    <Version>1.0.0</Version>
+    <Description>IT运维系统 - 自然语言意图映射</Description>
+    
+    <!-- 服务器重启 -->
+    <Pattern action="SERVER_RESTART" requires_target="true" target_type="Server">
+        <Keywords>重启,重启服务器,restart,reboot</Keywords>
+        <Templates>
+            <Template>重启{server}</Template>
+            <Template>重启服务器{server}</Template>
+            <Template>restart {server}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 应用部署 -->
+    <Pattern action="DEPLOY_APPLICATION" requires_target="true" target_type="Application">
+        <Keywords>部署,发布,上线,deploy,release,deploy</Keywords>
+        <Templates>
+            <Template>部署{app}</Template>
+            <Template>发布{app}</Template>
+            <Template>deploy {app}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 事件解决 -->
+    <Pattern action="RESOLVE_INCIDENT" requires_target="true" target_type="Incident">
+        <Keywords>解决,处理,修复,resolve,fix,solve</Keywords>
+        <Templates>
+            <Template>解决{incident}</Template>
+            <Template>处理{incident}</Template>
+            <Template>resolve {incident}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 备份执行 -->
+    <Pattern action="EXECUTE_BACKUP" requires_target="true" target_type="Backup">
+        <Keywords>备份,备份操作,backup</Keywords>
+        <Templates>
+            <Template>执行{backup}</Template>
+            <Template>运行备份{backup}</Template>
+            <Template>execute backup {backup}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 事件指派 -->
+    <Pattern action="ASSIGN_INCIDENT" requires_target="true" target_type="User">
+        <Keywords>指派,分配,assign</Keywords>
+        <Templates>
+            <Template>指派{user}处理</Template>
+            <Template>分配给{user}</Template>
+            <Template>assign to {user}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 通用查询 -->
+    <Pattern action="ACT_INSPECT" requires_target="false" target_type="any">
+        <Keywords>查看,查询,检查,状态,信息,check,view,status,info</Keywords>
+        <Templates>
+            <Template>查看{server}状态</Template>
+            <Template>查询{app}信息</Template>
+            <Template>check status of {target}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 同义词库 - IT运维特定实体别名 -->
+    <Synonyms>
+        <SynonymGroup primary="服务器">
+            <Alias>server</Alias>
+            <Alias>主机</Alias>
+            <Alias>机器</Alias>
+        </SynonymGroup>
+        <SynonymGroup primary="应用">
+            <Alias>application</Alias>
+            <Alias>服务</Alias>
+            <Alias>程序</Alias>
+        </SynonymGroup>
+        <SynonymGroup primary="数据库">
+            <Alias>database</Alias>
+            <Alias>DB</Alias>
+            <Alias>数据存储</Alias>
+        </SynonymGroup>
+        <SynonymGroup primary="网络设备">
+            <Alias>交换机</Alias>
+            <Alias>router</Alias>
+            <Alias>路由器</Alias>
+        </SynonymGroup>
+        <SynonymGroup primary="事件">
+            <Alias>incident</Alias>
+            <Alias>故障</Alias>
+            <Alias>问题</Alias>
+        </SynonymGroup>
+    </Synonyms>
+</SynapserPatterns>

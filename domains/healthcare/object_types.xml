@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ObjectTypes domain="healthcare">
+  <!-- 医疗健康领域对象类型定义 -->
+  
+  <ObjectType name="Patient" icon="patient" color="#3b82f6" primary_key="patient_id">
+    <Property name="patient_id" type="string" required="true" description="患者ID"/>
+    <Property name="name" type="string" description="患者姓名"/>
+    <Property name="gender" type="string" enum="MALE,FEMALE,OTHER" description="性别"/>
+    <Property name="age" type="int" description="年龄"/>
+    <Property name="blood_type" type="string" enum="A,B,AB,O" description="血型"/>
+    <Property name="allergies" type="string" description="过敏史"/>
+    <Property name="status" type="string" enum="REGISTERED,ADMITTED,IN_TREATMENT,DISCHARGED" default="REGISTERED" description="状态"/>
+  </ObjectType>
+  
+  <ObjectType name="Doctor" icon="doctor" color="#10b981" primary_key="doctor_id">
+    <Property name="doctor_id" type="string" required="true" description="医生ID"/>
+    <Property name="name" type="string" description="医生姓名"/>
+    <Property name="specialty" type="string" description="专业领域"/>
+    <Property name="title" type="string" enum="RESIDENT,ATTENDING,CHIEF,SPECIALIST" description="职称"/>
+    <Property name="department" type="string" description="科室"/>
+    <Property name="status" type="string" enum="AVAILABLE,BUSY,OFF_DUTY" default="AVAILABLE" description="状态"/>
+  </ObjectType>
+  
+  <ObjectType name="Nurse" icon="nurse" color="#8b5cf6" primary_key="nurse_id">
+    <Property name="nurse_id" type="string" required="true" description="护士ID"/>
+    <Property name="name" type="string" description="护士姓名"/>
+    <Property name="department" type="string" description="所属科室"/>
+    <Property name="shift" type="string" enum="DAY,NIGHT,SWING" description="班次"/>
+    <Property name="status" type="string" enum="AVAILABLE,BUSY,ON_BREAK" default="AVAILABLE" description="状态"/>
+  </ObjectType>
+  
+  <ObjectType name="Ward" icon="ward" color="#f59e0b" primary_key="ward_id">
+    <Property name="ward_id" type="string" required="true" description="病房ID"/>
+    <Property name="name" type="string" description="病房名称"/>
+    <Property name="capacity" type="int" description="床位容量"/>
+    <Property name="occupied" type="int" default="0" description="已占用床位"/>
+    <Property name="floor" type="int" description="楼层"/>
+    <Property name="type" type="string" enum="GENERAL,ICU,ER,RECOVERY,PRIVATE" description="病房类型"/>
+  </ObjectType>
+  
+  <ObjectType name="MedicalRecord" icon="record" color="#ef4444" primary_key="record_id">
+    <Property name="record_id" type="string" required="true" description="病历ID"/>
+    <Property name="patient_id" type="string" description="患者ID"/>
+    <Property name="diagnosis" type="string" description="诊断结果"/>
+    <Property name="treatment" type="string" description="治疗方案"/>
+    <Property name="prescription" type="string" description="处方"/>
+    <Property name="record_date" type="string" description="记录日期"/>
+    <Property name="doctor_id" type="string" description="主治医生ID"/>
+  </ObjectType>
+  
+  <ObjectType name="Medication" icon="medication" color="#6366f1" primary_key="med_id">
+    <Property name="med_id" type="string" required="true" description="药品ID"/>
+    <Property name="name" type="string" description="药品名称"/>
+    <Property name="dosage" type="string" description="剂量"/>
+    <Property name="unit" type="string" description="单位"/>
+    <Property name="manufacturer" type="string" description="生产商"/>
+    <Property name="stock" type="int" default="0" description="库存数量"/>
+    <Property name="expiry_date" type="string" description="有效期"/>
+  </ObjectType>
+  
+  <ObjectType name="Equipment" icon="equipment" color="#64748b" primary_key="equip_id">
+    <Property name="equip_id" type="string" required="true" description="设备ID"/>
+    <Property name="name" type="string" description="设备名称"/>
+    <Property name="type" type="string" enum="MRI,CT,XRAY,ULTRASOUND,MONITOR,PUMP" description="设备类型"/>
+    <Property name="status" type="string" enum="OPERATIONAL,MAINTENANCE,BROKEN" default="OPERATIONAL" description="状态"/>
+    <Property name="location" type="string" description="位置"/>
+  </ObjectType>
+  
+  <!-- 关系类型定义 -->
+  <LinkType name="TREATS" source="Doctor" target="Patient" color="#10b981" description="医生治疗患者"/>
+  <LinkType name="CARES_FOR" source="Nurse" target="Patient" color="#8b5cf6" description="护士照顾患者"/>
+  <LinkType name="ADMITS_TO" source="Patient" target="Ward" color="#f59e0b" description="患者入住病房"/>
+  <LinkType name="RECORDS" source="Doctor" target="MedicalRecord" color="#ef4444" description="医生记录病历"/>
+  <LinkType name="PRESCRIBES" source="Doctor" target="Medication" color="#6366f1" description="医生开药"/>
+  <LinkType name="USES" source="MedicalRecord" target="Equipment" color="#64748b" description="诊疗使用设备"/>
+</ObjectTypes>

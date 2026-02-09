@@ -1,0 +1,73 @@
+{
+  "nodes": [
+    {
+      "id": "warehouse_1",
+      "labels": ["WAREHOUSE"],
+      "properties": {
+        "name": "北京仓库",
+        "capacity": 10000,
+        "location": "北京"
+      }
+    },
+    {
+      "id": "warehouse_2",
+      "labels": ["WAREHOUSE"],
+      "properties": {
+        "name": "上海仓库",
+        "capacity": 8000,
+        "location": "上海"
+      }
+    },
+    {
+      "id": "product_1",
+      "labels": ["PRODUCT"],
+      "properties": {
+        "name": "智能手机",
+        "sku": "PHONE-001",
+        "price": 2999.99,
+        "weight": 0.2
+      }
+    },
+    {
+      "id": "product_2",
+      "labels": ["PRODUCT"],
+      "properties": {
+        "name": "笔记本电脑",
+        "sku": "LAPTOP-001",
+        "price": 5999.99,
+        "weight": 1.5
+      }
+    },
+    {
+      "id": "vehicle_1",
+      "labels": ["VEHICLE"],
+      "properties": {
+        "type": "卡车",
+        "capacity": 5000,
+        "status": "可用"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "store_1",
+      "type": "STORES",
+      "source": "warehouse_1",
+      "target": "product_1",
+      "properties": {
+        "quantity": 1000,
+        "last_updated": "2026-02-07T10:00:00Z"
+      }
+    },
+    {
+      "id": "store_2",
+      "type": "STORES",
+      "source": "warehouse_2",
+      "target": "product_2",
+      "properties": {
+        "quantity": 500,
+        "last_updated": "2026-02-07T09:30:00Z"
+      }
+    }
+  ]
+}

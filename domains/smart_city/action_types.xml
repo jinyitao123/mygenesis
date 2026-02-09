@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<action_types>
+  <!-- 智慧城市领域动作类型定义 -->
+  
+  <!-- 交通控制 -->
+  <action_type>
+    <id>ADJUST_TRAFFIC_LIGHT</id>
+    <name>调整交通灯</name>
+    <description>调整交通灯相位和时间</description>
+    <icon>🚦</icon>
+    <color="#f59e0b</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>TRAFFIC_LIGHT</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>OPERATIONAL</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>TRAFFIC_LIGHT</object_type>
+        <property>phase</property>
+        <value>GREEN</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 能源调度 -->
+  <action_type>
+    <id>ADJUST_ENERGY_LOAD</id>
+    <name>能源调度</name>
+    <description>调整能源负载分配</description>
+    <icon>⚡</icon>
+    <color>#ef4444</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>ENERGY_GRID</object_type>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>ENERGY_GRID</object_type>
+        <property>load</property>
+        <value>0</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 公共交通调度 -->
+  <action_type>
+    <id>DISPATCH_TRANSPORT</id>
+    <name>调度公交</name>
+    <description>调度公共交通车辆</description>
+    <icon>🚌</icon>
+    <color="#8b5cf6</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>PUBLIC_TRANSPORT</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>STOPPED</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>PUBLIC_TRANSPORT</object_type>
+        <property>status</property>
+        <value>IN_TRANSIT</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 垃圾收集调度 -->
+  <action_type>
+    <id>SCHEDULE_WASTE_COLLECTION</id>
+    <name>调度垃圾收集</name>
+    <description>安排垃圾收集任务</description>
+    <icon>🗑️</icon>
+    <color="#64748b</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>WASTE_MANAGEMENT</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>OPERATIONAL</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>WASTE_MANAGEMENT</object_type>
+        <property>current_load</property>
+        <value>0</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 公园管理 -->
+  <action_type>
+    <id>UPDATE_PARK_STATUS</id>
+    <name>更新公园状态</name>
+    <description>更新公园开放状态和活动</description>
+    <icon>🌳</icon>
+    <color="#10b981</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>PARK</object_type>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>PARK</object_type>
+        <Property>status</Property>
+        <value>EVENT</value>
+      </effect>
+    </effects>
+  </action_type>
+
+</action_types>

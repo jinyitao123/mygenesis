@@ -1,0 +1,64 @@
+{
+  "domain_id": "smart_city",
+  "name": "智慧城市",
+  "description": "智慧城市管理领域模块，包含交通、能源、环境等城市基础设施实体",
+  "version": "1.0.0",
+  "author": "Genesis Forge Team",
+  "created_at": "2026-02-05",
+  
+  "ui_config": {
+    "primary_color": "#3b82f6",
+    "secondary_color": "#10b981",
+    "accent_color": "#f59e0b",
+    "background_color": "#F5F5F5",
+    "text_color": "#333333",
+    "font_family": "Microsoft YaHei, sans-serif",
+    "icon_set": "emoji"
+  },
+  
+  "features": {
+    "object_types": ["TRAFFIC_LIGHT", "PARKING_LOT", "ENERGY_STATION", "ENVIRONMENT_SENSOR", "PUBLIC_TRANSPORT"],
+    "action_types": ["PROC_ADJUST_TRAFFIC", "PROC_MONITOR_POLLUTION", "PROC_ALLOCATE_ENERGY", "PROC_SCHEDULE_TRANSPORT"],
+    "relation_types": ["CONNECTED_TO", "LOCATED_AT", "MONITORS", "CONTROLS", "SUPPLIES_ENERGY_TO"],
+    "supported_csv_columns": ["id", "name", "type", "location", "status", "value", "capacity"]
+  },
+  
+  "default_objects": [
+    {
+      "id": "traffic_light_001",
+      "name": "十字路口信号灯A",
+      "type": "TRAFFIC_LIGHT",
+      "location": "人民路-解放路交叉口",
+      "status": "正常",
+      "current_state": "绿灯"
+    },
+    {
+      "id": "parking_001",
+      "name": "中央停车场",
+      "type": "PARKING_LOT",
+      "location": "市中心",
+      "capacity": 200,
+      "current_occupancy": 150
+    }
+  ],
+  
+  "templates": {
+    "csv_import": {
+      "filename": "smart_city_data.csv",
+      "columns": ["id", "name", "type", "location", "status", "properties_json"],
+      "example": "traffic_light_001,十字路口信号灯A,TRAFFIC_LIGHT,人民路-解放路交叉口,正常,{\"current_state\":\"绿灯\",\"cycle_time\":120}"
+    },
+    "cypher_queries": {
+      "find_congested_areas": "MATCH (t:TRAFFIC_LIGHT) WHERE t.status = '拥堵' RETURN t.id, t.location, t.current_state",
+      "get_parking_availability": "MATCH (p:PARKING_LOT) RETURN p.id, p.name, p.capacity, p.current_occupancy",
+      "monitor_environment": "MATCH (s:ENVIRONMENT_SENSOR) WHERE s.value > $threshold RETURN s"
+    }
+  },
+  
+  "validation_rules": {
+    "parking_occupancy": "current_occupancy >= 0 AND current_occupancy <= capacity",
+    "air_quality_index": "aqi >= 0 AND aqi <= 500",
+    "temperature": "temperature >= -50 AND temperature <= 60",
+    "energy_consumption": "consumption >= 0"
+  }
+}

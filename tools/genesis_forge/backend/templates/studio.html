@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- 顶部工具栏 -->
+<header class="border-b border-studio-border bg-studio-sidebar">
+    <div class="flex items-center justify-between px-4 py-2">
+        <!-- 左侧：Logo和面包屑 -->
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center">
+                <i class="fas fa-hammer text-studio-accent text-xl mr-2"></i>
+                <span class="font-bold text-lg">Genesis Forge</span>
+                <span class="text-studio-text-secondary text-sm ml-2">Studio Edition</span>
+            </div>
+            
+            <div class="flex items-center text-sm">
+                <span class="text-studio-text-secondary">{{ current_domain_name if current_domain_name else "Supply Chain" }}</span>
+                <i class="fas fa-chevron-right mx-2 text-studio-text-secondary text-xs"></i>
+                <span id="breadcrumb-current" class="text-studio-text">{{ current_file if current_file else "工作区" }}</span>
+            </div>
+        </div>
+        
+        <!-- 中间：全局搜索框 -->
+        <div class="flex-1 max-w-2xl mx-4">
+            <div class="relative">
+                <input type="text" 
+                       placeholder="搜索文件或输入命令 (如: >reload, >validate)..."
+                       class="w-full px-4 py-2 bg-studio-panel border border-studio-border rounded-lg focus:outline-none focus:ring-2 focus:ring-studio-accent"
+                       @keydown.enter="handleCommand($event.target.value)">
+                <i class="fas fa-search absolute right-3 top-2.5 text-studio-text-secondary"></i>
+            </div>
+        </div>
+        
+        <!-- 右侧：状态指示器和操作按钮 -->
+        <div class="flex items-center space-x-3">
+            <!-- Git状态 -->
+            <div class="flex items-center space-x-2 px-3 py-1.5 bg-studio-panel rounded-lg">
+                <i class="fas fa-code-branch text-studio-text-secondary"></i>
+                <span class="text-sm" id="git-branch">main</span>
+                <div class="status-dot status-dot-success"></div>
+            </div>
+            
+            <!-- 内存占用 -->
+            <div class="text-sm text-studio-text-secondary px-3 py-1.5 bg-studio-panel rounded-lg">
+                <i class="fas fa-memory mr-1"></i>
+                <span id="memory-usage">128MB</span>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <button class="btn btn-secondary" data-save-button
+                    hx-post="/api/editor/save"
+                    hx-include="[name='content']"
+                    hx-swap="none">
+                <i class="fas fa-save mr-2"></i>保存
+            </button>
+            
+            <button class="btn btn-primary"
+                    hx-post="/api/deploy"
+                    hx-swap="none">
+                <i class="fas fa-rocket mr-2"></i>部署
+            </button>
+            
+            <button class="btn btn-secondary"
+                    hx-post="/api/htmx/hot-reload"
+                    hx-swap="none">
+                <i class="fas fa-sync-alt mr-2"></i>热重载
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- 主内容区域 -->
+<div class="flex flex-1 overflow-hidden">
+    <!-- 左侧边栏 -->
+    <aside class="w-64 border-r border-studio-border bg-studio-sidebar flex flex-col"
+           :class="{ 'w-16': $store.app.sidebarCollapsed }"
+           x-data="{ 
+               expandedSections: { 'object_types': true, 'action_rules': true, 'seed_data': true },
+               dragItem: null
+           }">
+        
+        <!-- 折叠按钮 -->
+        <div class="p-2 border-b border-studio-border flex justify-end">
+            <button class="btn-icon" @click="$store.app.sidebarCollapsed = !$store.app.sidebarCollapsed">
+                <i class="fas" :class="$store.app.sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+            </button>
+        </div>
+        
+        <!-- 资源树 -->
+        <div class="flex-1 overflow-y-auto p-2">
+            {% include "components/sidebar.html" %}
+        </div>
+        
+        <!-- 资产库 -->
+        <div class="border-t border-studio-border p-2">
+            <div class="text-sm font-medium mb-2 text-studio-text-secondary">资产库</div>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="draggable p-2 bg-studio-panel rounded text-center cursor-pointer"
+                     draggable="true"
+                     @dragstart="dragItem = { type: 'entity', template: 'NPC' }">
+                    <i class="fas fa-user text-studio-accent mb-1"></i>
+                    <div class="text-xs">NPC</div>
+                </div>
+                <div class="draggable p-2 bg-studio-panel rounded text-center cursor-pointer"
+                     draggable="true"
+                     @dragstart="dragItem = { type: 'entity', template: 'ITEM' }">
+                    <i class="fas fa-cube text-studio-success mb-1"></i>
+                    <div class="text-xs">物品</div>
+                </div>
+                <div class="draggable p-2 bg-studio-panel rounded text-center cursor-pointer"
+                     draggable="true"
+                     @dragstart="dragItem = { type: 'entity', template: 'LOCATION' }">
+                    <i class="fas fa-map-marker-alt text-studio-warning mb-1"></i>
+                    <div class="text-xs">地点</div>
+                </div>
+                <div class="draggable p-2 bg-studio-panel rounded text-center cursor-pointer"
+                     draggable="true"
+                     @dragstart="dragItem = { type: 'relationship', template: 'HAS' }">
+                    <i class="fas fa-link text-studio-error mb-1"></i>
+                    <div class="text-xs">关系</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- 主工作区 -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <!-- 标签页导航 -->
+        <div class="border-b border-studio-border bg-studio-sidebar">
+            <div class="flex">
+                <button class="px-4 py-3 font-medium"
+                        :class="{ 'tab-active': $store.app.activeTab === 'editor' }"
+                        @click="$store.app.activeTab = 'editor'">
+                    <i class="fas fa-code mr-2"></i>代码编辑器
+                </button>
+                <button class="px-4 py-3 font-medium"
+                        :class="{ 'tab-active': $store.app.activeTab === 'graph' }"
+                        @click="$store.app.activeTab = 'graph'">
+                    <i class="fas fa-project-diagram mr-2"></i>图谱可视化
+                </button>
+                <button class="px-4 py-3 font-medium"
+                        :class="{ 'tab-active': $store.app.activeTab === 'split' }"
+                        @click="$store.app.activeTab = 'split'">
+                    <i class="fas fa-columns mr-2"></i>分屏视图
+                </button>
+            </div>
+        </div>
+        
+        <!-- 编辑器容器 -->
+        <div class="flex-1 overflow-hidden">
+            <!-- 代码编辑器视图 -->
+            <div x-show="$store.app.activeTab === 'editor'" class="h-full">
+                {% include "components/editor_pane.html" %}
+            </div>
+            
+            <!-- 图谱可视化视图 -->
+            <div x-show="$store.app.activeTab === 'graph'" class="h-full">
+                {% include "components/graph_pane.html" %}
+            </div>
+            
+            <!-- 分屏视图 -->
+            <div x-show="$store.app.activeTab === 'split'" class="h-full flex">
+                <div class="flex-1 border-r border-studio-border">
+                    {% include "components/editor_pane.html" %}
+                </div>
+                <div class="flex-1">
+                    {% include "components/graph_pane.html" %}
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 底部面板 -->
+<div class="border-t border-studio-border bg-studio-sidebar"
+     :class="{ 'h-64': $store.app.bottomPanelOpen, 'h-8': !$store.app.bottomPanelOpen }"
+     x-data="{ activePanel: 'console' }">
+    
+    <!-- 面板标题栏 -->
+    <div class="flex items-center justify-between px-4 py-1 border-b border-studio-border cursor-pointer"
+         @click="$store.app.bottomPanelOpen = !$store.app.bottomPanelOpen">
+        <div class="flex items-center space-x-4">
+            <button class="text-sm font-medium px-3 py-1 rounded"
+                    :class="{ 'bg-studio-accent': activePanel === 'console' }"
+                    @click.stop="activePanel = 'console'">
+                <i class="fas fa-terminal mr-1"></i>控制台
+            </button>
+            <button class="text-sm font-medium px-3 py-1 rounded"
+                    :class="{ 'bg-studio-accent': activePanel === 'copilot' }"
+                    @click.stop="activePanel = 'copilot'"
+                    id="copilot-tab">
+                <i class="fas fa-robot mr-1"></i>AI Copilot
+            </button>
+            <button class="text-sm font-medium px-3 py-1 rounded"
+                    :class="{ 'bg-studio-accent': activePanel === 'validation' }"
+                    @click.stop="activePanel = 'validation'"
+                    id="validation-tab">
+                <i class="fas fa-check-circle mr-1"></i>验证结果
+            </button>
+        </div>
+        
+        <div class="flex items-center">
+            <button class="btn-icon">
+                <i class="fas" :class="$store.app.bottomPanelOpen ? 'fa-chevron-down' : 'fa-chevron-up'"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- 面板内容 -->
+    <div class="flex-1 overflow-hidden" x-show="$store.app.bottomPanelOpen">
+        <!-- 控制台面板 -->
+        <div x-show="activePanel === 'console'" class="h-full p-4 font-mono text-sm overflow-y-auto">
+            <div id="console-output">
+                <div class="text-studio-text-secondary">系统就绪...</div>
+            </div>
+        </div>
+        
+        <!-- AI Copilot面板 -->
+        <div x-show="activePanel === 'copilot'" class="h-full flex flex-col">
+            {% include "components/ai_panel.html" %}
+        </div>
+        
+        <!-- 验证结果面板 -->
+        <div x-show="activePanel === 'validation'" class="h-full p-4 overflow-y-auto">
+            <div id="validation-results">
+                <div class="text-studio-text-secondary">无验证错误</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% endblock %}

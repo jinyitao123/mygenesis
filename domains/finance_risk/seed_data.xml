@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<World domain="finance_risk">
+  <Nodes>
+    <Node id="SRV_001" type="Server">
+      <Property key="cpu_usage" type="float">45.5</Property>
+      <Property key="disk_usage" type="int">35</Property>
+      <Property key="hostname" type="string">web-server-01</Property>
+      <Property key="ip_address" type="string">192.168.1.10</Property>
+      <Property key="memory_usage" type="float">62.3</Property>
+      <Property key="os" type="string">Ubuntu 22.04</Property>
+      <Property key="status" type="string">RUNNING</Property>
+    </Node>
+    <Node id="SRV_002" type="Server">
+      <Property key="cpu_usage" type="float">78.2</Property>
+      <Property key="disk_usage" type="int">62</Property>
+      <Property key="hostname" type="string">db-server-01</Property>
+      <Property key="ip_address" type="string">192.168.1.20</Property>
+      <Property key="memory_usage" type="float">85.6</Property>
+      <Property key="os" type="string">CentOS 8</Property>
+      <Property key="status" type="string">RUNNING</Property>
+    </Node>
+    <Node id="APP_001" type="Application">
+      <Property key="app_id" type="string">WEB_APP</Property>
+      <Property key="port" type="int">8080</Property>
+      <Property key="status" type="string">RUNNING</Property>
+      <Property key="uptime" type="int">864000</Property>
+      <Property key="version" type="string">2.1.0</Property>
+    </Node>
+    <Node id="DB_001" type="Database">
+      <Property key="connections" type="int">145</Property>
+      <Property key="db_id" type="string">MYSQL_PRIMARY</Property>
+      <Property key="size" type="float">256.5</Property>
+      <Property key="status" type="string">ONLINE</Property>
+    </Node>
+    <Node id="NET_001" type="NetworkDevice">
+      <Property key="bandwidth" type="int">10000</Property>
+      <Property key="device_id" type="string">SWITCH_01</Property>
+      <Property key="ip_address" type="string">192.168.1.1</Property>
+      <Property key="status" type="string">ONLINE</Property>
+    </Node>
+    <Node id="INC_001" type="Incident">
+      <Property key="assignee" type="string">李工</Property>
+      <Property key="category" type="string">PERFORMANCE</Property>
+      <Property key="incident_id" type="string">INC001</Property>
+      <Property key="severity" type="string">HIGH</Property>
+      <Property key="status" type="string">INVESTIGATING</Property>
+      <Property key="title" type="string">数据库连接数过高</Property>
+    </Node>
+    <Node id="USER_001" type="User">
+      <Property key="department" type="string">IT部门</Property>
+      <Property key="email" type="string">admin@company.com</Property>
+      <Property key="role" type="string">ADMIN</Property>
+      <Property key="user_id" type="string">USER001</Property>
+      <Property key="username" type="string">admin</Property>
+    </Node>
+  </Nodes>
+  <Links>
+    <Link type="CONNECTED_TO" source="SRV_001" target="NET_001"/>
+    <Link type="CONNECTED_TO" source="SRV_002" target="NET_001"/>
+    <Link type="USES" source="APP_001" target="DB_001"/>
+    <Link type="RUNS_ON" source="APP_001" target="SRV_001"/>
+    <Link type="AFFECTS" source="DB_001" target="INC_001"/>
+    <Link type="RESPONSIBLE_FOR" source="USER_001" target="INC_001"/>
+  </Links>
+</World>

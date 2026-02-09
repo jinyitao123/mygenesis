@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<World domain="smart_city">
+  <Version>1.0.0</Version>
+  <Description>智慧城市系统 - 示例数据</Description>
+  
+  <Nodes>
+    <!-- 建筑 -->
+    <Node id="BLD_001" type="Building">
+      <Property key="building_id" type="string">BLD001</Property>
+      <Property key="name" type="string">智慧大厦</Property>
+      <Property key="type" type="string">COMMERCIAL</Property>
+      <Property key="address" type="string">市中心广场1号</Property>
+      <Property key="floors" type="int">30</Property>
+      <Property key="energy_usage" type="float">5200.5</Property>
+      <Property key="status" type="string">ACTIVE</Property>
+    </Node>
+    
+    <!-- 传感器 -->
+    <Node id="SNS_001" type="Sensor">
+      <Property key="sensor_id" type="string">SNS001</Property>
+      <Property key="name" type="string">大厦温度传感器</Property>
+      <Property key="type" type="string">TEMPERATURE</Property>
+      <Property key="location" type="string">智慧大厦1层大厅</Property>
+      <Property key="reading" type="float">22.5</Property>
+      <Property key="unit" type="string">°C</Property>
+      <Property key="status" type="string">ONLINE</Property>
+    </Node>
+    
+    <Node id="SNS_002" type="Sensor">
+      <Property key="sensor_id" type="string">SNS002</Property>
+      <Property key="name" type="string">空气质量传感器</Property>
+      <Property key="type" type="string">AIR_QUALITY</Property>
+      <Property key="location" type="string">城市公园</Property>
+      <Property key="reading" type="float">42</Property>
+      <Property key="unit" type="string">AQI</Property>
+      <Property key="status" type="string">ONLINE</Property>
+    </Node>
+    
+    <!-- 交通灯 -->
+    <Node id="TL_001" type="TrafficLight">
+      <Property key="light_id" type="string">TL001</Property>
+      <Property key="intersection" type="string">中山路-人民路交叉口</Property>
+      <Property key="coordinates" type="string">116.397,39.907</Property>
+      <Property key="phase" type="string">GREEN</Property>
+      <Property key="cycle_time" type="int">90</Property>
+      <Property key="status" type="string">OPERATIONAL</Property>
+    </Node>
+    
+    <!-- 公共交通 -->
+    <Node id="PT_001" type="PublicTransport">
+      <Property key="vehicle_id" type="string">BUS001</Property>
+      <Property key="type" type="string">BUS</Property>
+      <Property key="route" type="string">1路</Property>
+      <Property key="current_stop" type="string">中央公园站</Property>
+      <Property key="passengers" type="int">28</Property>
+      <Property key="capacity" type="int">50</Property>
+      <Property key="status" type="string">IN_TRANSIT</Property>
+    </Node>
+    
+    <!-- 公园 -->
+    <Node id="PRK_001" type="Park">
+      <Property key="park_id" type="string">PRK001</Property>
+      <Property key="name" type="string">中央公园</Property>
+      <Property key="area" type="float">120.5</Property>
+      <Property key="facilities" type="string">游乐场,健身设施,湖泊</Property>
+      <Property key="open_hours" type="string">6:00-22:00</Property>
+      <Property key="visitors" type="int">356</Property>
+      <Property key="status" type="string">OPEN</Property>
+    </Node>
+    
+    <!-- 电网 -->
+    <Node id="GRID_001" type="EnergyGrid">
+      <Property key="grid_id" type="string">GRID001</Property>
+      <Property key="name" type="string">城市主电网</Property>
+      <Property key="capacity" type="float">500</Property>
+      <Property key="load" type="float">385.2</Property>
+      <Property key="source" type="string">HYDRO</Property>
+      <Property key="frequency" type="float">50.02</Property>
+      <Property key="status" type="string">STABLE</Property>
+    </Node>
+    
+    <!-- 垃圾处理 -->
+    <Node id="WM_001" type="WasteManagement">
+      <Property key="facility_id" type="string">WM001</Property>
+      <Property key="name" type="string">城市垃圾处理中心</Property>
+      <Property key="type" type="string">RECYCLING</Property>
+      <Property key="capacity" type="float">500</Property>
+      <Property key="current_load" type="float">320</Property>
+      <Property key="location" type="string">城市东部</Property>
+      <Property key="status" type="string">OPERATIONAL</Property>
+    </Node>
+  </Nodes>
+  
+  <Links>
+    <!-- 传感器监控建筑 -->
+    <Link type="MONITORS" source="SNS_001" target="BLD_001"/>
+    
+    <!-- 电网连接建筑 -->
+    <Link type="CONNECTS" source="GRID_001" target="BLD_001"/>
+  </Links>
+</World>

@@ -1,0 +1,74 @@
+{
+  "domain_id": "supply_chain",
+  "name": "供应链系统",
+  "description": "供应链管理系统示例",
+  "object_types": [
+    {
+      "type_key": "WAREHOUSE",
+      "name": "仓库",
+      "properties": {
+        "name": "string",
+        "capacity": "integer",
+        "location": "string"
+      },
+      "visual_assets": ["warehouse_icon.png"],
+      "tags": ["storage", "logistics"]
+    },
+    {
+      "type_key": "PRODUCT",
+      "name": "产品",
+      "properties": {
+        "name": "string",
+        "sku": "string",
+        "price": "float",
+        "weight": "float"
+      },
+      "visual_assets": ["product_icon.png"],
+      "tags": ["item", "goods"]
+    },
+    {
+      "type_key": "VEHICLE",
+      "name": "运输车辆",
+      "properties": {
+        "type": "string",
+        "capacity": "integer",
+        "status": "string"
+      },
+      "visual_assets": ["vehicle_icon.png"],
+      "tags": ["transport", "mobile"]
+    }
+  ],
+  "relationship_types": [
+    {
+      "type_key": "STORES",
+      "name": "存储",
+      "source_type": "WAREHOUSE",
+      "target_type": "PRODUCT",
+      "properties": {
+        "quantity": "integer",
+        "last_updated": "datetime"
+      }
+    },
+    {
+      "type_key": "TRANSPORTS",
+      "name": "运输",
+      "source_type": "VEHICLE",
+      "target_type": "PRODUCT",
+      "properties": {
+        "destination": "string",
+        "estimated_arrival": "datetime"
+      }
+    }
+  ],
+  "action_types": [
+    {
+      "action_id": "ACT_TRANSFER",
+      "name": "转移货物",
+      "validation_logic": "MATCH (w1:WAREHOUSE {id: $source}), (w2:WAREHOUSE {id: $target}), (p:PRODUCT {id: $item}) WHERE w1.capacity >= $quantity RETURN true",
+      "execution_rules": [
+        "MATCH (w1:WAREHOUSE {id: $source}), (p:PRODUCT {id: $item}) DELETE (w1)-[r:STORES]->(p)",
+        "MATCH (w2:WAREHOUSE {id: $target}), (p:PRODUCT {id: $item}) CREATE (w2)-[:STORES {quantity: $quantity, timestamp: datetime()}]->(p)"
+      ]
+    }
+  ]
+}

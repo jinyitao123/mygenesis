@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN" x-data="{ count: 0 }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="p-8">
+    <h1 class="text-2xl font-bold mb-4">简单Alpine.js测试</h1>
+    
+    <div class="mb-4">
+        <button @click="count++" class="px-4 py-2 bg-blue-500 text-white rounded">
+            点击计数: <span x-text="count"></span>
+        </button>
+    </div>
+    
+    <div class="mb-4" x-data="{ open: false }">
+        <button @click="open = !open" class="px-4 py-2 bg-green-500 text-white rounded">
+            切换显示 (当前: <span x-text="open ? '打开' : '关闭'"></span>)
+        </button>
+        <div x-show="open" class="mt-2 p-4 bg-gray-100 rounded">
+            Alpine.js 正常工作！
+        </div>
+    </div>
+    
+    <div class="mb-4">
+        <input type="text" x-model="count" class="border p-2 rounded" placeholder="输入数字">
+        <div class="mt-2">输入的值: <span x-text="count"></span></div>
+    </div>
+</body>
+</html>

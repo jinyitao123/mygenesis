@@ -1,0 +1,474 @@
+<div class="w-full h-full relative bg-studio-bg"
+     x-data="{
+         cy: null,
+         layout: 'cose',
+         selectedNode: null,
+         selectedEdge: null,
+         zoomLevel: 1,
+         isDraggingAsset: false,
+         dragAssetType: null,
+         
+         init() {
+             // 初始化Cytoscape
+             this.initCytoscape();
+             
+             // 监听图谱刷新事件
+             document.body.addEventListener('reload-graph', () => {
+                 this.refreshGraphData();
+             });
+             
+             // 监听拖拽事件
+             this.$el.addEventListener('dragover', (e) => {
+                 e.preventDefault();
+                 this.isDraggingAsset = true;
+             });
+             
+             this.$el.addEventListener('dragleave', () => {
+                 this.isDraggingAsset = false;
+             });
+             
+             this.$el.addEventListener('drop', (e) => {
+                 e.preventDefault();
+                 this.isDraggingAsset = false;
+                 
+                 const rect = this.$el.getBoundingClientRect();
+                 const x = e.clientX - rect.left;
+                 const y = e.clientY - rect.top;
+                 
+                 // 获取拖拽的资产类型
+                 const assetType = e.dataTransfer.getData('text/plain') || 'NPC';
+                 this.addNodeFromAsset(assetType, x, y);
+             });
+         },
+         
+         initCytoscape() {
+             this.cy = cytoscape({
+                 container: this.$refs.cyContainer,
+                 elements: {{ graph_elements|tojson if graph_elements else '[]' }},
+                 style: [
+                     {
+                         selector: 'node',
+                         style: {
+                             'background-color': '#3b82f6',
+                             'label': 'data(label)',
+                             'text-valign': 'center',
+                             'text-halign': 'center',
+                             'color': '#f1f5f9',
+                             'font-size': '12px',
+                             'font-family': 'JetBrains Mono, monospace',
+                             'width': '40px',
+                             'height': '40px',
+                             'border-width': '2px',
+                             'border-color': '#1e293b'
+                         }
+                     },
+                     {
+                         selector: 'node:selected',
+                         style: {
+                             'border-width': '3px',
+                             'border-color': '#f59e0b'
+                         }
+                     },
+                     {
+                         selector: 'edge',
+                         style: {
+                             'width': 2,
+                             'line-color': '#64748b',
+                             'target-arrow-color': '#64748b',
+                             'target-arrow-shape': 'triangle',
+                             'curve-style': 'bezier',
+                             'label': 'data(label)',
+                             'color': '#94a3b8',
+                             'font-size': '10px',
+                             'font-family': 'JetBrains Mono, monospace',
+                             'text-rotation': 'autorotate'
+                         }
+                     },
+                     {
+                         selector: 'edge:selected',
+                         style: {
+                             'line-color': '#f59e0b',
+                             'target-arrow-color': '#f59e0b'
+                         }
+                     }
+                 ],
+                 layout: {
+                     name: this.layout,
+                     animate: true,
+                     animationDuration: 500
+                 }
+             });
+             
+             // 添加交互事件
+             this.setupGraphInteractions();
+         },
+         
+         setupGraphInteractions() {
+             // 节点选择
+             this.cy.on('tap', 'node', (evt) => {
+                 this.selectedNode = evt.target;
+                 this.selectedEdge = null;
+                 this.showNodeProperties(evt.target);
+             });
+             
+             // 边选择
+             this.cy.on('tap', 'edge', (evt) => {
+                 this.selectedEdge = evt.target;
+                 this.selectedNode = null;
+                 this.showEdgeProperties(evt.target);
+             });
+             
+             // 画布点击
+             this.cy.on('tap', (evt) => {
+                 if (evt.target === this.cy) {
+                     this.selectedNode = null;
+                     this.selectedEdge = null;
+                     this.hidePropertiesPanel();
+                 }
+             });
+             
+             // 拖拽创建连线
+             let sourceNode = null;
+             this.cy.on('drag', 'node', (evt) => {
+                 // 拖拽连线逻辑
+             });
+             
+             // 缩放监听
+             this.cy.on('zoom', (evt) => {
+                 this.zoomLevel = this.cy.zoom();
+             });
+         },
+         
+         refreshGraphData() {
+             fetch('/api/graph/data')
+                 .then(res => res.json())
+                 .then(data => {
+                     this.cy.json({ elements: data.elements });
+                     this.cy.layout({ name: this.layout, animate: true }).run();
+                     showToast('图谱数据已刷新', 'success');
+                 })
+                 .catch(err => {
+                     console.error('刷新图谱数据失败:', err);
+                     showToast('刷新失败', 'error');
+                 });
+         },
+         
+         addNodeFromAsset(assetType, x, y) {
+             const pos = this.cy.renderer().projectFromViewport({ x, y });
+             
+             const newNode = {
+                 group: 'nodes',
+                 data: {
+                     id: `${assetType}_${Date.now()}`,
+                     label: assetType,
+                     type: assetType
+                 },
+                 position: { x: pos.x, y: pos.y }
+             };
+             
+             this.cy.add(newNode);
+             
+             // 发送到后端保存
+             fetch('/api/graph/node', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify(newNode)
+             }).then(res => {
+                 if (res.ok) {
+                     showToast(`已添加 ${assetType} 节点`, 'success');
+                 }
+             });
+         },
+         
+         showNodeProperties(node) {
+             const panel = this.$refs.propertiesPanel;
+             if (!panel) return;
+             
+             const data = node.data();
+             panel.innerHTML = `
+                 <div class="p-4">
+                     <h3 class="font-bold mb-2">节点属性</h3>
+                     <div class="space-y-2">
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">ID</label>
+                             <div class="font-mono text-sm">${data.id}</div>
+                         </div>
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">类型</label>
+                             <div>${data.type || '未知'}</div>
+                         </div>
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">标签</label>
+                             <input type="text" value="${data.label || ''}" 
+                                    class="w-full px-2 py-1 bg-studio-panel border border-studio-border rounded text-sm"
+                                    @change="updateNodeLabel('${data.id}', $event.target.value)">
+                         </div>
+                         ${Object.entries(data)
+                             .filter(([key]) => !['id', 'label', 'type'].includes(key))
+                             .map(([key, value]) => `
+                                 <div>
+                                     <label class="text-sm text-studio-text-secondary">${key}</label>
+                                     <input type="text" value="${value}" 
+                                            class="w-full px-2 py-1 bg-studio-panel border border-studio-border rounded text-sm"
+                                            @change="updateNodeProperty('${data.id}', '${key}', $event.target.value)">
+                                 </div>
+                             `).join('')}
+                     </div>
+                     <div class="mt-4 pt-4 border-t border-studio-border">
+                         <button class="btn btn-error btn-sm w-full" @click="deleteNode('${data.id}')">
+                             <i class="fas fa-trash mr-1"></i>删除节点
+                         </button>
+                     </div>
+                 </div>
+             `;
+             
+             panel.classList.remove('hidden');
+         },
+         
+         showEdgeProperties(edge) {
+             const panel = this.$refs.propertiesPanel;
+             if (!panel) return;
+             
+             const data = edge.data();
+             panel.innerHTML = `
+                 <div class="p-4">
+                     <h3 class="font-bold mb-2">关系属性</h3>
+                     <div class="space-y-2">
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">源节点</label>
+                             <div class="font-mono text-sm">${data.source}</div>
+                         </div>
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">目标节点</label>
+                             <div class="font-mono text-sm">${data.target}</div>
+                         </div>
+                         <div>
+                             <label class="text-sm text-studio-text-secondary">关系类型</label>
+                             <input type="text" value="${data.label || ''}" 
+                                    class="w-full px-2 py-1 bg-studio-panel border border-studio-border rounded text-sm"
+                                    @change="updateEdgeLabel('${data.id}', $event.target.value)">
+                         </div>
+                     </div>
+                     <div class="mt-4 pt-4 border-t border-studio-border">
+                         <button class="btn btn-error btn-sm w-full" @click="deleteEdge('${data.id}')">
+                             <i class="fas fa-trash mr-1"></i>删除关系
+                         </button>
+                     </div>
+                 </div>
+             `;
+             
+             panel.classList.remove('hidden');
+         },
+         
+         hidePropertiesPanel() {
+             const panel = this.$refs.propertiesPanel;
+             if (panel) {
+                 panel.classList.add('hidden');
+             }
+         },
+         
+         updateNodeLabel(nodeId, newLabel) {
+             const node = this.cy.getElementById(nodeId);
+             if (node) {
+                 node.data('label', newLabel);
+                 this.saveGraphChanges();
+             }
+         },
+         
+         updateNodeProperty(nodeId, key, value) {
+             const node = this.cy.getElementById(nodeId);
+             if (node) {
+                 const data = node.data();
+                 data[key] = value;
+                 node.data(data);
+                 this.saveGraphChanges();
+             }
+         },
+         
+         updateEdgeLabel(edgeId, newLabel) {
+             const edge = this.cy.getElementById(edgeId);
+             if (edge) {
+                 edge.data('label', newLabel);
+                 this.saveGraphChanges();
+             }
+         },
+         
+         deleteNode(nodeId) {
+             if (confirm('确定要删除这个节点吗？')) {
+                 this.cy.remove(this.cy.getElementById(nodeId));
+                 this.hidePropertiesPanel();
+                 this.saveGraphChanges();
+                 showToast('节点已删除', 'success');
+             }
+         },
+         
+         deleteEdge(edgeId) {
+             if (confirm('确定要删除这个关系吗？')) {
+                 this.cy.remove(this.cy.getElementById(edgeId));
+                 this.hidePropertiesPanel();
+                 this.saveGraphChanges();
+                 showToast('关系已删除', 'success');
+             }
+         },
+         
+         saveGraphChanges() {
+             // 标记为脏数据
+             document.body.dispatchEvent(new CustomEvent('dirty-state-changed', {
+                 detail: { isDirty: true }
+             }));
+             
+             // 可以在这里添加自动保存逻辑
+         },
+         
+         changeLayout(newLayout) {
+             this.layout = newLayout;
+             this.cy.layout({ name: newLayout, animate: true }).run();
+         },
+         
+         exportGraph() {
+             const json = this.cy.json();
+             const dataStr = JSON.stringify(json, null, 2);
+             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+             
+             const exportFileDefaultName = `graph_${new Date().toISOString().slice(0,10)}.json`;
+             
+             const linkElement = document.createElement('a');
+             linkElement.setAttribute('href', dataUri);
+             linkElement.setAttribute('download', exportFileDefaultName);
+             linkElement.click();
+             
+             showToast('图谱已导出', 'success');
+         }
+     }"
+     x-init="init()">
+    
+    <!-- 图谱容器 -->
+    <div x-ref="cyContainer" class="absolute inset-0 cy-container"></div>
+    
+    <!-- 工具栏 -->
+    <div class="absolute top-4 left-4 flex flex-col space-y-2">
+        <div class="bg-studio-sidebar/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+            <div class="flex flex-col space-y-2">
+                <button class="btn-icon" @click="cy.fit()" title="适应视图">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button class="btn-icon" @click="cy.reset()" title="重置视图">
+                    <i class="fas fa-home"></i>
+                </button>
+                <button class="btn-icon" @click="refreshGraphData()" title="刷新数据">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="btn-icon" @click="exportGraph()" title="导出图谱">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 布局选择器 -->
+        <div class="bg-studio-sidebar/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+            <div class="text-xs text-studio-text-secondary mb-1">布局</div>
+            <div class="flex flex-col space-y-1">
+                <button class="text-sm px-2 py-1 rounded hover:bg-studio-panel text-left"
+                        :class="{ 'bg-studio-accent': layout === 'cose' }"
+                        @click="changeLayout('cose')">
+                    COSE
+                </button>
+                <button class="text-sm px-2 py-1 rounded hover:bg-studio-panel text-left"
+                        :class="{ 'bg-studio-accent': layout === 'grid' }"
+                        @click="changeLayout('grid')">
+                    网格
+                </button>
+                <button class="text-sm px-2 py-1 rounded hover:bg-studio-panel text-left"
+                        :class="{ 'bg-studio-accent': layout === 'circle' }"
+                        @click="changeLayout('circle')">
+                    圆形
+                </button>
+                <button class="text-sm px-2 py-1 rounded hover:bg-studio-panel text-left"
+                        :class="{ 'bg-studio-accent': layout === 'concentric' }"
+                        @click="changeLayout('concentric')">
+                    同心圆
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 缩放控制 -->
+    <div class="absolute bottom-4 right-4 bg-studio-sidebar/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+        <div class="flex items-center space-x-2">
+            <button class="btn-icon" @click="cy.zoom(cy.zoom() * 1.2)" title="放大">
+                <i class="fas fa-search-plus"></i>
+            </button>
+            <span class="text-sm w-12 text-center" x-text="zoomLevel.toFixed(1) + 'x'"></span>
+            <button class="btn-icon" @click="cy.zoom(cy.zoom() * 0.8)" title="缩小">
+                <i class="fas fa-search-minus"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- 属性面板 -->
+    <div x-ref="propertiesPanel" class="absolute top-4 right-4 w-64 bg-studio-sidebar/90 backdrop-blur-sm rounded-lg shadow-lg hidden">
+        <!-- 内容通过JS动态填充 -->
+    </div>
+    
+    <!-- 拖拽提示 -->
+    <div x-show="isDraggingAsset" 
+         class="absolute inset-0 border-2 border-dashed border-studio-accent/50 bg-studio-accent/10 flex items-center justify-center pointer-events-none">
+        <div class="text-center p-4 bg-studio-sidebar/90 rounded-lg">
+            <i class="fas fa-plus text-2xl text-studio-accent mb-2"></i>
+            <p class="text-sm">释放以添加节点</p>
+        </div>
+    </div>
+    
+    <!-- 统计信息 -->
+    <div class="absolute bottom-4 left-4 bg-studio-sidebar/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+        <div class="text-xs space-y-1">
+            <div class="flex items-center justify-between">
+                <span class="text-studio-text-secondary">节点:</span>
+                <span x-text="cy ? cy.nodes().length : 0" class="font-mono"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-studio-text-secondary">关系:</span>
+                <span x-text="cy ? cy.edges().length : 0" class="font-mono"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 全局图谱函数
+function updateNodeLabel(nodeId, newLabel) {
+    Alpine.store('graph').updateNodeLabel(nodeId, newLabel);
+}
+
+function updateNodeProperty(nodeId, key, value) {
+    Alpine.store('graph').updateNodeProperty(nodeId, key, value);
+}
+
+function updateEdgeLabel(edgeId, newLabel) {
+    Alpine.store('graph').updateEdgeLabel(edgeId, newLabel);
+}
+
+function deleteNode(nodeId) {
+    Alpine.store('graph').deleteNode(nodeId);
+}
+
+function deleteEdge(edgeId) {
+    Alpine.store('graph').deleteEdge(edgeId);
+}
+
+// 初始化Alpine store
+document.addEventListener('alpine:init', () => {
+    Alpine.store('graph', {
+        cy: null,
+        selectedNode: null,
+        selectedEdge: null,
+        
+        // 方法将在组件初始化后设置
+        updateNodeLabel: () => {},
+        updateNodeProperty: () => {},
+        updateEdgeLabel: () => {},
+        deleteNode: () => {},
+        deleteEdge: () => {}
+    });
+});
+</script>
