@@ -1,5 +1,10 @@
 <template>
-  <div class="fixed inset-0 bg-gray-900 z-50 flex flex-col">
+  <div class="fixed inset-0 bg-gray-900 z-50 flex flex-col" id="visual-editor-root">
+    <!-- 调试信息 -->
+    <div v-if="false" class="absolute top-0 left-0 right-0 bg-red-500 text-white p-2 text-center z-100">
+      可视化编辑器已加载 - 调试模式
+    </div>
+    
     <!-- 顶部标题栏 -->
     <div class="bg-gray-800 px-6 py-4 border-b border-gray-700 flex justify-between items-center">
       <div>
@@ -17,7 +22,7 @@
     </div>
 
     <!-- 主编辑器区域 - 使用Grid布局实现真正自适应 -->
-    <div class="flex-1 grid overflow-hidden" :style="gridStyle" ref="editorGrid">
+    <div class="flex-1 grid grid-cols-[auto_1fr_auto] overflow-hidden" ref="editorGrid">
       <!-- 左侧边栏（可调整宽度） -->
       <ResizablePanel 
         :default-width="256" 
@@ -112,8 +117,7 @@
           </div>
           <div class="flex-1 p-4 overflow-auto min-h-0">
             <CytoscapeGraph 
-              v-if="graphData"
-              :elements="graphData.elements || []"
+              :elements="graphData?.elements || []"
               :domain-config="domainConfig"
               @node-click="handleNodeClick"
               @edge-click="handleEdgeClick"
@@ -124,22 +128,6 @@
               @node-update="handleNodeUpdate"
               @edge-update="handleEdgeUpdate"
             />
-            <div v-else class="h-full flex items-center justify-center">
-              <div class="text-center">
-                <div class="text-4xl mb-4">🔗</div>
-                <p class="text-lg mb-2">{{ domain?.name || '领域' }} 的可视化编辑器</p>
-                <p class="text-gray-400 mb-4">当前领域没有图谱数据</p>
-                <p class="text-sm text-gray-500 mb-6">您可以通过以下方式添加数据：</p>
-                <div class="space-y-3">
-                  <button @click="loadRealData" class="w-full px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">
-                    从后端加载数据
-                  </button>
-                  <button @click="importCSVToEditor" class="w-full px-4 py-2 bg-purple-600 rounded hover:bg-purple-700">
-                    导入CSV数据
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -272,7 +260,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import CytoscapeGraph from './CytoscapeGraph.vue'
 import ResizablePanel from './layout/ResizablePanel.vue'
 import api from '../utils/api'
@@ -304,12 +292,15 @@ const gridStyle = computed(() => {
   const leftWidth = `${leftPanelWidth.value}px`
   const rightWidth = showPropertyPanel.value ? `${rightPanelWidth.value}px` : '0px'
   
-  return {
+  const style = {
     gridTemplateColumns: `${leftWidth} 1fr ${rightWidth}`,
     display: 'grid',
     overflow: 'hidden',
     height: '100%'
   }
+  
+  console.log('Grid style:', style)
+  return style
 })
 
 // 关闭编辑器
@@ -335,7 +326,12 @@ const loadGraphData = async () => {
     
   } catch (error) {
     console.error('加载图谱数据失败:', error)
-    notifyError('数据刷新失败', `错误: ${error}`)
+    notifyWarning('数据加载警告', `部分数据加载失败: ${error}\n\n使用模拟数据继续...`)
+    
+    // 使用模拟数据确保编辑器可以显示
+    graphData.value = { elements: [], stats: { nodes: 0, edges: 0 } }
+    sidebarData.value = { object_types: [], action_rules: [], seed_data: [] }
+    domainConfig.value = { name: props.domain?.name || '未知领域' }
   }
 }
 
@@ -665,11 +661,43 @@ const handleEdgeUpdate = (edge: any) => {
   }
 }
 
-// 组件挂载时加载数据
-onMounted(() => {
-  loadGraphData()
-})
+  // 组件挂载时加载数据
+  onMounted(() => {
+    console.log('VisualEditor mounted, domain:', props.domain)
+    console.log('Left panel width:', leftPanelWidth.value)
+    console.log('Right panel width:', rightPanelWidth.value)
+    console.log('Show property panel:', showPropertyPanel.value)
+    
+    loadGraphData()
+  })
 </script>
+
+<style scoped>
+/* 确保编辑器容器正确填充 */
+.fixed.inset-0 {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+/* 确保flex布局正确 */
+.flex-1.flex {
+  flex: 1 1 0%;
+  display: flex;
+}
+
+/* 确保overflow正确处理 */
+.overflow-hidden {
+  overflow: hidden;
+}
+
+/* 确保Grid布局正确 */
+.grid {
+  display: grid;
+}
+</style>
 
 <style scoped>
 /* 样式 */
