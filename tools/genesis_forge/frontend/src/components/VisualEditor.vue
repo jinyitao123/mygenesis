@@ -354,16 +354,33 @@ const validateGraph = async () => {
     const response = await api.ontology.checkIntegrity()
     console.log('验证响应:', response)
     
+    // 处理不同的响应格式
     if (response.status === 'success') {
       notifySuccess('验证完成', response.message || '本体完整性检查通过')
     } else if (response.status === 'warning') {
       notifyWarning('验证警告', `${response.message || '发现一些问题'}\n\n错误: ${JSON.stringify(response.errors, null, 2)}`)
+    } else if (response.error) {
+      // 处理错误响应
+      notifyError('验证失败', response.error || '未知错误')
     } else {
       notifyError('验证失败', response.message || '未知错误')
     }
   } catch (error) {
     console.error('验证失败:', error)
-    notifyError('验证失败', `错误: ${error}`)
+    
+    // 尝试从错误对象中提取更多信息
+    let errorMessage = `错误: ${error}`
+    if (error.response) {
+      // 如果是HTTP错误响应
+      const errorData = error.response.data
+      if (errorData && errorData.error) {
+        errorMessage = errorData.error
+      } else if (errorData && errorData.message) {
+        errorMessage = errorData.message
+      }
+    }
+    
+    notifyError('验证失败', errorMessage)
   }
 }
 

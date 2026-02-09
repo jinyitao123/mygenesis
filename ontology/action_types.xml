@@ -1,1 +1,180 @@
-test
+<?xml version="1.0" encoding="UTF-8"?>
+<action_types>
+  <!-- 金融风控领域动作类型定义 -->
+  
+  <!-- 风险评估动作 -->
+  <action_type>
+    <id>RISK_ASSESS</id>
+    <name>评估风险</name>
+    <description>对识别的风险进行评估</description>
+    <icon>📊</icon>
+    <color>#ef4444</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>RISK</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>IDENTIFIED</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>RISK</object_type>
+        <property>status</property>
+        <value>ASSESSED</value>
+      </effect>
+    </effects>
+    
+    <cypher_validation>
+      <![CDATA[
+      MATCH (risk:RISK {id: $risk_id})
+      WHERE risk.status = 'IDENTIFIED'
+      RETURN risk
+      ]]>
+    </cypher_validation>
+  </action_type>
+  
+  <!-- 交易执行动作 -->
+  <action_type>
+    <id>EXECUTE_TRADE</id>
+    <name>执行交易</name>
+    <description>执行买卖交易</description>
+    <icon>💹</icon>
+    <color>#10b981</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>PORTFOLIO</object_type>
+      </precondition>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>ASSET</object_type>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>object_create</type>
+        <object_type>TRANSACTION</object_type>
+        <properties>
+          <property name="status" value="PENDING"/>
+        </properties>
+      </effect>
+      <effect>
+        <type>relation_create</type>
+        <relation_type>GENERATES</relation_type>
+        <from_object>ASSET</from_object>
+        <to_object>TRANSACTION</to_object>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 警报处理动作 -->
+  <action_type>
+    <id>ACKNOWLEDGE_ALERT</id>
+    <name>确认警报</name>
+    <description>确认收到警报</description>
+    <icon>✅</icon>
+    <color>#f59e0b</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>ALERT</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>NEW</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>ALERT</object_type>
+        <property>status</property>
+        <value>ACKNOWLEDGED</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 组合调整动作 -->
+  <action_type>
+    <id>REBALANCE_PORTFOLIO</id>
+    <name>重新平衡组合</name>
+    <description>调整投资组合配置</description>
+    <icon>⚖️</icon>
+    <color>#3b82f6</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>PORTFOLIO</object_type>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>PORTFOLIO</object_type>
+        <property>return_rate</property>
+        <value>0.0</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 客户管理动作 -->
+  <action_type>
+    <id>UPDATE_CUSTOMER_RISK</id>
+    <name>更新客户风险画像</name>
+    <description>根据最新数据更新客户风险等级</description>
+    <icon>👤📈</icon>
+    <color>#8b5cf6</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>CUSTOMER</object_type>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>CUSTOMER</object_type>
+        <property>risk_profile</property>
+        <value>MEDIUM</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 合规检查动作 -->
+  <action_type>
+    <id>CHECK_COMPLIANCE</id>
+    <name>合规检查</name>
+    <description>检查是否符合法规要求</description>
+    <icon>🔍</icon>
+    <color>#64748b</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>REGULATION</object_type>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>REGULATION</object_type>
+        <property>compliance_status</property>
+        <value>COMPLIANT</value>
+      </effect>
+    </effects>
+  </action_type>
+
+</action_types>

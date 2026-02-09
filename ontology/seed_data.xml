@@ -1,98 +1,65 @@
-<?xml version="1.0" ?>
-<World domain="supply_chain">
-    <Nodes>
-        <Node id="entity_1" type="object_type">
-            <Property key="label" type="string">TRUCK</Property>
-            <Property key="type" type="string">object_type</Property>
-        </Node>
-        <Node id="entity_2" type="object_type">
-            <Property key="label" type="string">WAREHOUSE</Property>
-            <Property key="type" type="string">object_type</Property>
-        </Node>
-        <Node id="entity_3" type="object_type">
-            <Property key="label" type="string">PACKAGE</Property>
-            <Property key="type" type="string">object_type</Property>
-        </Node>
-        <Node id="entity_4" type="object_type">
-            <Property key="label" type="string">ORDER</Property>
-            <Property key="type" type="string">object_type</Property>
-        </Node>
-        <Node id="entity_5" type="object_type">
-            <Property key="label" type="string">SUPPLIER</Property>
-            <Property key="type" type="string">object_type</Property>
-        </Node>
-        <Node id="entity_6" type="TRUCK">
-            <Property key="label" type="string">运输卡车A</Property>
-            <Property key="type" type="string">TRUCK</Property>
-            <Property key="capacity" type="int">10</Property>
-            <Property key="fuel_level" type="int">100</Property>
-            <Property key="location" type="string">仓库A</Property>
-            <Property key="status" type="string">空闲</Property>
-        </Node>
-        <Node id="entity_7" type="WAREHOUSE">
-            <Property key="label" type="string">中央仓库</Property>
-            <Property key="type" type="string">WAREHOUSE</Property>
-            <Property key="capacity" type="int">1000</Property>
-            <Property key="current_load" type="int">200</Property>
-            <Property key="location" type="string">工业区</Property>
-        </Node>
-        <Node id="entity_8" type="PACKAGE">
-            <Property key="label" type="string">电子产品包裹</Property>
-            <Property key="type" type="string">PACKAGE</Property>
-            <Property key="destination" type="string">客户地址A</Property>
-            <Property key="location" type="string">仓库A</Property>
-            <Property key="weight" type="int">5</Property>
-        </Node>
-        <Node id="entity_9" type="relation_type">
-            <Property key="label" type="string">CONTAINS</Property>
-            <Property key="type" type="string">relation_type</Property>
-        </Node>
-        <Node id="entity_10" type="relation_type">
-            <Property key="label" type="string">LOCATED_AT</Property>
-            <Property key="type" type="string">relation_type</Property>
-        </Node>
-        <Node id="entity_11" type="relation_type">
-            <Property key="label" type="string">BELONGS_TO</Property>
-            <Property key="type" type="string">relation_type</Property>
-        </Node>
-        <Node id="entity_12" type="relation_type">
-            <Property key="label" type="string">PLACED_WITH</Property>
-            <Property key="type" type="string">relation_type</Property>
-        </Node>
-        <Node id="entity_13" type="relation_type">
-            <Property key="label" type="string">TRANSPORTS</Property>
-            <Property key="type" type="string">relation_type</Property>
-        </Node>
-        <Node id="entity_14" type="action_type">
-            <Property key="label" type="string">LOAD_CARGO</Property>
-            <Property key="type" type="string">action_type</Property>
-        </Node>
-        <Node id="entity_15" type="action_type">
-            <Property key="label" type="string">UNLOAD_CARGO</Property>
-            <Property key="type" type="string">action_type</Property>
-        </Node>
-        <Node id="entity_16" type="action_type">
-            <Property key="label" type="string">TRANSPORT</Property>
-            <Property key="type" type="string">action_type</Property>
-        </Node>
-        <Node id="entity_17" type="action_type">
-            <Property key="label" type="string">CREATE_ORDER</Property>
-            <Property key="type" type="string">action_type</Property>
-        </Node>
-        <Node id="entity_18" type="action_type">
-            <Property key="label" type="string">FULFILL_ORDER</Property>
-            <Property key="type" type="string">action_type</Property>
-        </Node>
-        <Node id="entity_19" type="action_type">
-            <Property key="label" type="string">REFUEL</Property>
-            <Property key="type" type="string">action_type</Property>
-        </Node>
-    </Nodes>
-    <Links>
-        <Link type="RELATES_TO" source="type_TRUCK" target="truck_001"/>
-        <Link type="RELATES_TO" source="type_WAREHOUSE" target="warehouse_001"/>
-        <Link type="RELATES_TO" source="rel_CONTAINS" target="rel_LOCATED_AT"/>
-        <Link type="RELATES_TO" source="rel_LOCATED_AT" target="rel_BELONGS_TO"/>
-        <Link type="RELATES_TO" source="rel_BELONGS_TO" target="rel_PLACED_WITH"/>
-    </Links>
+<?xml version="1.0" encoding="UTF-8"?>
+<World domain="finance_risk">
+  <Nodes>
+    <Node id="SRV_001" type="Server">
+      <Property key="cpu_usage" type="float">45.5</Property>
+      <Property key="disk_usage" type="int">35</Property>
+      <Property key="hostname" type="string">web-server-01</Property>
+      <Property key="ip_address" type="string">192.168.1.10</Property>
+      <Property key="memory_usage" type="float">62.3</Property>
+      <Property key="os" type="string">Ubuntu 22.04</Property>
+      <Property key="status" type="string">RUNNING</Property>
+    </Node>
+    <Node id="SRV_002" type="Server">
+      <Property key="cpu_usage" type="float">78.2</Property>
+      <Property key="disk_usage" type="int">62</Property>
+      <Property key="hostname" type="string">db-server-01</Property>
+      <Property key="ip_address" type="string">192.168.1.20</Property>
+      <Property key="memory_usage" type="float">85.6</Property>
+      <Property key="os" type="string">CentOS 8</Property>
+      <Property key="status" type="string">RUNNING</Property>
+    </Node>
+    <Node id="APP_001" type="Application">
+      <Property key="app_id" type="string">WEB_APP</Property>
+      <Property key="port" type="int">8080</Property>
+      <Property key="status" type="string">RUNNING</Property>
+      <Property key="uptime" type="int">864000</Property>
+      <Property key="version" type="string">2.1.0</Property>
+    </Node>
+    <Node id="DB_001" type="Database">
+      <Property key="connections" type="int">145</Property>
+      <Property key="db_id" type="string">MYSQL_PRIMARY</Property>
+      <Property key="size" type="float">256.5</Property>
+      <Property key="status" type="string">ONLINE</Property>
+    </Node>
+    <Node id="NET_001" type="NetworkDevice">
+      <Property key="bandwidth" type="int">10000</Property>
+      <Property key="device_id" type="string">SWITCH_01</Property>
+      <Property key="ip_address" type="string">192.168.1.1</Property>
+      <Property key="status" type="string">ONLINE</Property>
+    </Node>
+    <Node id="INC_001" type="Incident">
+      <Property key="assignee" type="string">李工</Property>
+      <Property key="category" type="string">PERFORMANCE</Property>
+      <Property key="incident_id" type="string">INC001</Property>
+      <Property key="severity" type="string">HIGH</Property>
+      <Property key="status" type="string">INVESTIGATING</Property>
+      <Property key="title" type="string">数据库连接数过高</Property>
+    </Node>
+    <Node id="USER_001" type="User">
+      <Property key="department" type="string">IT部门</Property>
+      <Property key="email" type="string">admin@company.com</Property>
+      <Property key="role" type="string">ADMIN</Property>
+      <Property key="user_id" type="string">USER001</Property>
+      <Property key="username" type="string">admin</Property>
+    </Node>
+  </Nodes>
+  <Links>
+    <Link type="CONNECTED_TO" source="SRV_001" target="NET_001"/>
+    <Link type="CONNECTED_TO" source="SRV_002" target="NET_001"/>
+    <Link type="USES" source="APP_001" target="DB_001"/>
+    <Link type="RUNS_ON" source="APP_001" target="SRV_001"/>
+    <Link type="AFFECTS" source="DB_001" target="INC_001"/>
+    <Link type="RESPONSIBLE_FOR" source="USER_001" target="INC_001"/>
+  </Links>
 </World>

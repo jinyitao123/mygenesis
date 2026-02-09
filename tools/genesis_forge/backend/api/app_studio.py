@@ -267,7 +267,12 @@ def check_ontology_integrity():
         
         # 获取当前领域文件
         files_content = domain_manager.get_domain_files(current_domain)
+        logger.info(f"获取领域 {current_domain} 的文件，keys: {list(files_content.keys())}")
+        
         schema_content = files_content.get("schema", "")
+        if schema_content:
+            logger.info(f"Schema内容长度: {len(schema_content)} 字符")
+            logger.info(f"Schema内容前200字符: {schema_content[:200] if len(schema_content) > 200 else schema_content}")
         
         if not schema_content:
             return jsonify({
@@ -276,8 +281,64 @@ def check_ontology_integrity():
             }), 400
         
         # 解析并验证
-        schema_data = json.loads(schema_content)
-        ontology = OntologyModel(**schema_data)
+        try:
+            schema_data = json.loads(schema_content)
+        except json.JSONDecodeError:
+            # 如果不是JSON，可能是XML，尝试从XML中提取数据
+            logger.warning(f"Schema内容不是JSON格式，尝试作为XML处理")
+            # 这里可以添加XML解析逻辑，但暂时返回错误
+            return jsonify({
+                "status": "error",
+                "message": f"领域 {current_domain} 的Schema不是有效的JSON格式"
+            }), 400
+        
+        # 确保数据符合OntologyModel要求
+        # 1. 添加domain字段（如果缺失）
+        if "domain" not in schema_data:
+            schema_data["domain"] = current_domain
+        
+        # 2. 转换relationships为字典（如果是列表）
+        if "relationships" in schema_data and isinstance(schema_data["relationships"], list):
+            relationships_dict = {}
+            for rel in schema_data["relationships"]:
+                if isinstance(rel, dict):
+                    rel_name = rel.get("name") or rel.get("type")
+                    if rel_name:
+                        relationships_dict[rel_name] = rel
+            schema_data["relationships"] = relationships_dict
+        
+        # 3. 转换objectTypes为字典（如果是列表）
+        if "objectTypes" in schema_data and isinstance(schema_data["objectTypes"], list):
+            object_types_dict = {}
+            for obj in schema_data["objectTypes"]:
+                if isinstance(obj, dict):
+                    obj_name = obj.get("name") or obj.get("type_key")
+                    if obj_name:
+                        object_types_dict[obj_name] = obj
+            schema_data["objectTypes"] = object_types_dict
+        
+        # 4. 确保其他字段存在
+        if "object_types" not in schema_data and "objectTypes" in schema_data:
+            schema_data["object_types"] = schema_data["objectTypes"]
+        
+        if "action_types" not in schema_data:
+            schema_data["action_types"] = {}
+        
+        if "world_snapshots" not in schema_data:
+            schema_data["world_snapshots"] = {}
+        
+        if "domain_concepts" not in schema_data:
+            schema_data["domain_concepts"] = []
+        
+        try:
+            ontology = OntologyModel(**schema_data)
+        except Exception as model_error:
+            logger.error(f"OntologyModel创建失败: {model_error}")
+            return jsonify({
+                "status": "error",
+                "message": f"本体数据格式错误: {str(model_error)}",
+                "schema_data_keys": list(schema_data.keys())
+            }), 400
         
         # 验证完整性
         errors = validation_engine.validate_reference_integrity(
