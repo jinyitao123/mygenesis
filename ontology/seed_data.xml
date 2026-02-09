@@ -1,98 +1,153 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <World domain="supply_chain">
-    <Nodes>
-        <Node id="entity_1" type="object_type">
-            <Property key="label" type="string">TRUCK</Property>
-            <Property key="type" type="string">object_type</Property>
-        </Node>
-        <Node id="entity_2" type="object_type">
-            <Property key="label" type="string">WAREHOUSE</Property>
-            <Property key="type" type="string">object_type</Property>
-        </Node>
-        <Node id="entity_3" type="object_type">
-            <Property key="label" type="string">PACKAGE</Property>
-            <Property key="type" type="string">object_type</Property>
-        </Node>
-        <Node id="entity_4" type="object_type">
-            <Property key="label" type="string">ORDER</Property>
-            <Property key="type" type="string">object_type</Property>
-        </Node>
-        <Node id="entity_5" type="object_type">
-            <Property key="label" type="string">SUPPLIER</Property>
-            <Property key="type" type="string">object_type</Property>
-        </Node>
-        <Node id="entity_6" type="TRUCK">
-            <Property key="label" type="string">运输卡车A</Property>
-            <Property key="type" type="string">TRUCK</Property>
-            <Property key="capacity" type="int">10</Property>
-            <Property key="fuel_level" type="int">100</Property>
-            <Property key="location" type="string">仓库A</Property>
-            <Property key="status" type="string">空闲</Property>
-        </Node>
-        <Node id="entity_7" type="WAREHOUSE">
-            <Property key="label" type="string">中央仓库</Property>
-            <Property key="type" type="string">WAREHOUSE</Property>
-            <Property key="capacity" type="int">1000</Property>
-            <Property key="current_load" type="int">200</Property>
-            <Property key="location" type="string">工业区</Property>
-        </Node>
-        <Node id="entity_8" type="PACKAGE">
-            <Property key="label" type="string">电子产品包裹</Property>
-            <Property key="type" type="string">PACKAGE</Property>
-            <Property key="destination" type="string">客户地址A</Property>
-            <Property key="location" type="string">仓库A</Property>
-            <Property key="weight" type="int">5</Property>
-        </Node>
-        <Node id="entity_9" type="relation_type">
-            <Property key="label" type="string">CONTAINS</Property>
-            <Property key="type" type="string">relation_type</Property>
-        </Node>
-        <Node id="entity_10" type="relation_type">
-            <Property key="label" type="string">LOCATED_AT</Property>
-            <Property key="type" type="string">relation_type</Property>
-        </Node>
-        <Node id="entity_11" type="relation_type">
-            <Property key="label" type="string">BELONGS_TO</Property>
-            <Property key="type" type="string">relation_type</Property>
-        </Node>
-        <Node id="entity_12" type="relation_type">
-            <Property key="label" type="string">PLACED_WITH</Property>
-            <Property key="type" type="string">relation_type</Property>
-        </Node>
-        <Node id="entity_13" type="relation_type">
-            <Property key="label" type="string">TRANSPORTS</Property>
-            <Property key="type" type="string">relation_type</Property>
-        </Node>
-        <Node id="entity_14" type="action_type">
-            <Property key="label" type="string">LOAD_CARGO</Property>
-            <Property key="type" type="string">action_type</Property>
-        </Node>
-        <Node id="entity_15" type="action_type">
-            <Property key="label" type="string">UNLOAD_CARGO</Property>
-            <Property key="type" type="string">action_type</Property>
-        </Node>
-        <Node id="entity_16" type="action_type">
-            <Property key="label" type="string">TRANSPORT</Property>
-            <Property key="type" type="string">action_type</Property>
-        </Node>
-        <Node id="entity_17" type="action_type">
-            <Property key="label" type="string">CREATE_ORDER</Property>
-            <Property key="type" type="string">action_type</Property>
-        </Node>
-        <Node id="entity_18" type="action_type">
-            <Property key="label" type="string">FULFILL_ORDER</Property>
-            <Property key="type" type="string">action_type</Property>
-        </Node>
-        <Node id="entity_19" type="action_type">
-            <Property key="label" type="string">REFUEL</Property>
-            <Property key="type" type="string">action_type</Property>
-        </Node>
-    </Nodes>
-    <Links>
-        <Link type="RELATES_TO" source="type_TRUCK" target="truck_001"/>
-        <Link type="RELATES_TO" source="type_WAREHOUSE" target="warehouse_001"/>
-        <Link type="RELATES_TO" source="rel_CONTAINS" target="rel_LOCATED_AT"/>
-        <Link type="RELATES_TO" source="rel_LOCATED_AT" target="rel_BELONGS_TO"/>
-        <Link type="RELATES_TO" source="rel_BELONGS_TO" target="rel_PLACED_WITH"/>
-    </Links>
+  <Nodes>
+    <!-- 卡车实例 -->
+    <Node id="truck_001" type="TRUCK">
+      <Property key="truck_id" type="string">TRUCK001</Property>
+      <Property key="label" type="string">重型运输卡车A</Property>
+      <Property key="capacity" type="int">20</Property>
+      <Property key="fuel_level" type="float">85.5</Property>
+      <Property key="location" type="string">中央仓库</Property>
+      <Property key="status" type="string">IDLE</Property>
+      <Property key="current_load" type="int">0</Property>
+    </Node>
+    
+    <Node id="truck_002" type="TRUCK">
+      <Property key="truck_id" type="string">TRUCK002</Property>
+      <Property key="label" type="string">中型运输卡车B</Property>
+      <Property key="capacity" type="int">15</Property>
+      <Property key="fuel_level" type="float">45.0</Property>
+      <Property key="location" type="string">配送中心</Property>
+      <Property key="status" type="string">IN_TRANSIT</Property>
+      <Property key="current_load" type="int">12</Property>
+    </Node>
+    
+    <!-- 仓库实例 -->
+    <Node id="warehouse_001" type="WAREHOUSE">
+      <Property key="warehouse_id" type="string">WH001</Property>
+      <Property key="label" type="string">中央仓库</Property>
+      <Property key="capacity" type="int">5000</Property>
+      <Property key="current_load" type="int">3200</Property>
+      <Property key="location" type="string">工业区A</Property>
+      <Property key="type" type="string">DISTRIBUTION</Property>
+      <Property key="status" type="string">OPEN</Property>
+    </Node>
+    
+    <Node id="warehouse_002" type="WAREHOUSE">
+      <Property key="warehouse_id" type="string">WH002</Property>
+      <Property key="label" type="string">冷链仓库</Property>
+      <Property key="capacity" type="int">2000</Property>
+      <Property key="current_load" type="int">800</Property>
+      <Property key="location" type="string">物流园区</Property>
+      <Property key="type" type="string">COLD_STORAGE</Property>
+      <Property key="status" type="string">OPEN</Property>
+    </Node>
+    
+    <!-- 包裹实例 -->
+    <Node id="package_001" type="PACKAGE">
+      <Property key="package_id" type="string">PKG001</Property>
+      <Property key="label" type="string">电子产品包裹</Property>
+      <Property key="destination" type="string">客户A地址</Property>
+      <Property key="location" type="string">中央仓库</Property>
+      <Property key="weight" type="float">12.5</Property>
+      <Property key="status" type="string">IN_WAREHOUSE</Property>
+      <Property key="priority" type="string">HIGH</Property>
+    </Node>
+    
+    <Node id="package_002" type="PACKAGE">
+      <Property key="package_id" type="string">PKG002</Property>
+      <Property key="label" type="string">食品包裹</Property>
+      <Property key="destination" type="string">超市B</Property>
+      <Property key="location" type="string">冷链仓库</Property>
+      <Property key="weight" type="float">8.2</Property>
+      <Property key="status" type="string">IN_WAREHOUSE</Property>
+      <Property key="priority" type="string">MEDIUM</Property>
+    </Node>
+    
+    <Node id="package_003" type="PACKAGE">
+      <Property key="package_id" type="string">PKG003</Property>
+      <Property key="label" type="string">服装包裹</Property>
+      <Property key="destination" type="string">商场C</Property>
+      <Property key="location" type="string">中央仓库</Property>
+      <Property key="weight" type="float">5.8</Property>
+      <Property key="status" type="string">IN_TRANSIT</Property>
+      <Property key="priority" type="string">LOW</Property>
+    </Node>
+    
+    <!-- 供应商实例 -->
+    <Node id="supplier_001" type="SUPPLIER">
+      <Property key="supplier_id" type="string">SUP001</Property>
+      <Property key="label" type="string">电子元件供应商</Property>
+      <Property key="location" type="string">科技园区</Property>
+      <Property key="product_type" type="string">电子元件</Property>
+      <Property key="capacity" type="int">1000</Property>
+      <Property key="status" type="string">ACTIVE</Property>
+    </Node>
+    
+    <!-- 客户实例 -->
+    <Node id="customer_001" type="CUSTOMER">
+      <Property key="customer_id" type="string">CUST001</Property>
+      <Property key="label" type="string">零售客户A</Property>
+      <Property key="location" type="string">商业区</Property>
+      <Property key="demand" type="int">50</Property>
+      <Property key="status" type="string">ACTIVE</Property>
+    </Node>
+    
+    <!-- 路线实例 -->
+    <Node id="route_001" type="ROUTE">
+      <Property key="route_id" type="string">RT001</Property>
+      <Property key="label" type="string">中央仓库到商业区路线</Property>
+      <Property key="start_location" type="string">中央仓库</Property>
+      <Property key="end_location" type="string">商业区</Property>
+      <Property key="distance" type="float">25.5</Property>
+      <Property key="estimated_time" type="float">1.2</Property>
+      <Property key="status" type="string">OPEN</Property>
+    </Node>
+  </Nodes>
+  
+  <Links>
+    <!-- 卡车运输包裹 -->
+    <Link type="TRANSPORTS" source="truck_002" target="package_003">
+      <Property key="start_time" type="string">2026-02-09 08:30:00</Property>
+      <Property key="estimated_arrival" type="string">2026-02-09 09:42:00</Property>
+    </Link>
+    
+    <!-- 仓库存储包裹 -->
+    <Link type="STORES" source="warehouse_001" target="package_001">
+      <Property key="storage_date" type="string">2026-02-08</Property>
+      <Property key="section" type="string">A区</Property>
+    </Link>
+    
+    <Link type="STORES" source="warehouse_002" target="package_002">
+      <Property key="storage_date" type="string">2026-02-07</Property>
+      <Property key="section" type="string">冷藏区</Property>
+    </Link>
+    
+    <!-- 供应商供应货物 -->
+    <Link type="SUPPLIES" source="supplier_001" target="warehouse_001">
+      <Property key="last_delivery" type="string">2026-02-05</Property>
+      <Property key="quantity" type="int">200</Property>
+    </Link>
+    
+    <!-- 客户订购包裹 -->
+    <Link type="ORDERS" source="customer_001" target="package_001">
+      <Property key="order_date" type="string">2026-02-08</Property>
+      <Property key="quantity" type="int">1</Property>
+    </Link>
+    
+    <!-- 卡车遵循路线 -->
+    <Link type="FOLLOWS" source="truck_002" target="route_001">
+      <Property key="start_time" type="string">2026-02-09 08:30:00</Property>
+      <Property key="progress" type="float">0.4</Property>
+    </Link>
+    
+    <!-- 包裹位于仓库 -->
+    <Link type="LOCATED_AT" source="package_001" target="warehouse_001">
+      <Property key="since" type="string">2026-02-08 10:00:00</Property>
+    </Link>
+    
+    <Link type="LOCATED_AT" source="package_002" target="warehouse_002">
+      <Property key="since" type="string">2026-02-07 14:30:00</Property>
+    </Link>
+  </Links>
 </World>

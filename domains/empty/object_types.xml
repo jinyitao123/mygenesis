@@ -1,15 +1,42 @@
-<?xml version="1.0" ?>
-<ObjectTypes domain="unknown">
-    <ObjectType name="Entity" color="#3b82f6" icon="cube" primary_key="id">
-        <Property name="description" type="enum" description=""/>
-        <Property name="alignment" type="enum" description=""/>
-        <Property name="capacity" type="int" description=""/>
-        <Property name="current_load" type="int" description=""/>
-    </ObjectType>
-    <LinkTypes>
-        <LinkType name="BELONGS_TO" source="Entity" target="Faction" color="#64748b"/>
-        <LinkType name="DOCKED_AT" source="Entity" target="Warehouse" color="#64748b"/>
-        <LinkType name="LOCATED_AT" source="Entity" target="Location" color="#64748b"/>
-        <LinkType name="REPORTS_TO" source="Entity" target="Employee" color="#64748b"/>
-    </LinkTypes>
+<?xml version="1.0" encoding="UTF-8"?>
+<ObjectTypes domain="empty">
+  <!-- 空领域模板 - 用于创建新领域 -->
+  
+  <ObjectType name="Entity" icon="cube" color="#3b82f6" primary_key="entity_id">
+    <Property name="entity_id" type="string" required="true" description="实体ID"/>
+    <Property name="name" type="string" description="实体名称"/>
+    <Property name="description" type="string" description="实体描述"/>
+    <Property name="type" type="string" enum="OBJECT,ACTOR,LOCATION,ITEM" default="OBJECT" description="实体类型"/>
+    <Property name="status" type="string" enum="ACTIVE,INACTIVE,PENDING" default="ACTIVE" description="状态"/>
+  </ObjectType>
+  
+  <ObjectType name="Category" icon="category" color="#10b981" primary_key="category_id">
+    <Property name="category_id" type="string" required="true" description="分类ID"/>
+    <Property name="name" type="string" description="分类名称"/>
+    <Property name="description" type="string" description="分类描述"/>
+    <Property name="parent_category" type="string" description="父分类ID"/>
+  </ObjectType>
+  
+  <ObjectType name="Attribute" icon="attribute" color="#8b5cf6" primary_key="attribute_id">
+    <Property name="attribute_id" type="string" required="true" description="属性ID"/>
+    <Property name="name" type="string" description="属性名称"/>
+    <Property name="type" type="string" enum="STRING,INTEGER,FLOAT,BOOLEAN,DATE,ENUM" default="STRING" description="数据类型"/>
+    <Property name="default_value" type="string" description="默认值"/>
+    <Property name="required" type="boolean" default="false" description="是否必需"/>
+  </ObjectType>
+  
+  <ObjectType name="Relationship" icon="link" color="#f59e0b" primary_key="rel_id">
+    <Property name="rel_id" type="string" required="true" description="关系ID"/>
+    <Property name="name" type="string" description="关系名称"/>
+    <Property name="description" type="string" description="关系描述"/>
+    <Property name="source_type" type="string" description="源类型"/>
+    <Property name="target_type" type="string" description="目标类型"/>
+    <Property name="cardinality" type="string" enum="ONE_TO_ONE,ONE_TO_MANY,MANY_TO_ONE,MANY_TO_MANY" default="MANY_TO_MANY" description="基数"/>
+  </ObjectType>
+  
+  <!-- 关系类型定义 -->
+  <LinkType name="BELONGS_TO" source="Entity" target="Category" color="#64748b" description="实体属于分类"/>
+  <LinkType name="HAS_ATTRIBUTE" source="Entity" target="Attribute" color="#3b82f6" description="实体拥有属性"/>
+  <LinkType name="RELATED_TO" source="Entity" target="Entity" color="#10b981" description="实体相互关联"/>
+  <LinkType name="DEFINES" source="Category" target="Relationship" color="#8b5cf6" description="分类定义关系"/>
 </ObjectTypes>

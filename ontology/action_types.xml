@@ -1,1 +1,287 @@
-test
+<?xml version="1.0" encoding="UTF-8"?>
+<action_types>
+  <!-- 供应链领域动作类型定义 -->
+  
+  <!-- 装载货物 -->
+  <action_type>
+    <id>LOAD_PACKAGE</id>
+    <name>装载货物</name>
+    <description>将包裹装载到卡车上</description>
+    <icon>📦</icon>
+    <color>#3b82f6</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>TRUCK</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>IDLE</value>
+      </precondition>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>PACKAGE</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>IN_WAREHOUSE</value>
+      </precondition>
+      <precondition>
+        <type>property_compare</type>
+        <object_type>TRUCK</object_type>
+        <property>current_load</property>
+        <operator>+</operator>
+        <value>1</value>
+        <property2>capacity</property2>
+        <operator2>&lt;=</operator2>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>PACKAGE</object_type>
+        <property>status</property>
+        <value>IN_TRANSIT</value>
+      </effect>
+      <effect>
+        <type>property_change</type>
+        <object_type>TRUCK</object_type>
+        <property>current_load</property>
+        <value>+1</value>
+      </effect>
+      <effect>
+        <type>property_change</type>
+        <object_type>TRUCK</object_type>
+        <property>status</property>
+        <value>LOADING</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 卸载货物 -->
+  <action_type>
+    <id>UNLOAD_PACKAGE</id>
+    <name>卸载货物</name>
+    <description>从卡车上卸载包裹</description>
+    <icon>🚚</icon>
+    <color>#10b981</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>TRUCK</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>IN_TRANSIT</value>
+      </precondition>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>PACKAGE</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>IN_TRANSIT</value>
+      </precondition>
+      <precondition>
+        <type>property_compare</type>
+        <object_type>TRUCK</object_type>
+        <property>current_load</property>
+        <operator>&gt;</operator>
+        <value>0</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>PACKAGE</object_type>
+        <property>status</property>
+        <value>DELIVERED</value>
+      </effect>
+      <effect>
+        <type>property_change</type>
+        <object_type>TRUCK</object_type>
+        <property>current_load</property>
+        <value>-1</value>
+      </effect>
+      <effect>
+        <type>property_change</type>
+        <object_type>TRUCK</object_type>
+        <property>status</property>
+        <value>UNLOADING</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 运输货物 -->
+  <action_type>
+    <id>TRANSPORT_PACKAGE</id>
+    <name>运输货物</name>
+    <description>运输包裹到目的地</description>
+    <icon>🚛</icon>
+    <color>#f59e0b</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>TRUCK</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>LOADING</value>
+      </precondition>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>PACKAGE</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>IN_TRANSIT</value>
+      </precondition>
+      <precondition>
+        <type>property_compare</type>
+        <object_type>TRUCK</object_type>
+        <property>fuel_level</property>
+        <operator>&gt;</operator>
+        <value>10</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>TRUCK</object_type>
+        <property>status</property>
+        <value>IN_TRANSIT</value>
+      </effect>
+      <effect>
+        <type>property_change</type>
+        <object_type>TRUCK</object_type>
+        <property>fuel_level</property>
+        <value>-5</value>
+      </effect>
+      <effect>
+        <type>property_change</type>
+        <object_type>PACKAGE</object_type>
+        <property>location</property>
+        <value>destination</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 补充燃料 -->
+  <action_type>
+    <id>REFUEL_TRUCK</id>
+    <name>补充燃料</name>
+    <description>为卡车补充燃料</description>
+    <icon>⛽</icon>
+    <color>#ef4444</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>TRUCK</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>IDLE</value>
+      </precondition>
+      <precondition>
+        <type>property_compare</type>
+        <object_type>TRUCK</object_type>
+        <property>fuel_level</property>
+        <operator>&lt;</operator>
+        <value>30</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>TRUCK</object_type>
+        <property>fuel_level</property>
+        <value>100</value>
+      </effect>
+      <effect>
+        <type>property_change</type>
+        <object_type>TRUCK</object_type>
+        <property>status</property>
+        <value>MAINTENANCE</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 接收订单 -->
+  <action_type>
+    <id>RECEIVE_ORDER</id>
+    <name>接收订单</name>
+    <description>接收客户订单</description>
+    <icon>📝</icon>
+    <color>#8b5cf6</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>CUSTOMER</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>ACTIVE</value>
+      </precondition>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>WAREHOUSE</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>OPEN</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>create_object</type>
+        <object_type>PACKAGE</object_type>
+        <properties>
+          <property name="status" value="CREATED"/>
+          <property name="destination" value="customer_location"/>
+        </properties>
+      </effect>
+      <effect>
+        <type>property_change</type>
+        <object_type>CUSTOMER</object_type>
+        <property>demand</property>
+        <value>+1</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 库存管理 -->
+  <action_type>
+    <id>MANAGE_INVENTORY</id>
+    <name>库存管理</name>
+    <description>管理仓库库存</description>
+    <icon>📊</icon>
+    <color>#6366f1</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>WAREHOUSE</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>OPEN</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>WAREHOUSE</object_type>
+        <property>current_load</property>
+        <value>+10</value>
+      </effect>
+      <effect>
+        <type>property_change</type>
+        <object_type>WAREHOUSE</object_type>
+        <property>status</property>
+        <value>MAINTENANCE</value>
+      </effect>
+    </effects>
+  </action_type>
+
+</action_types>

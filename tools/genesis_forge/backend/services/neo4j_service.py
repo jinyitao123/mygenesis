@@ -61,17 +61,17 @@ class GenesisKernelNeo4jService(INeo4jService):
         """初始化 Neo4j 连接器"""
         try:
             from genesis.kernel.connectors.neo4j_connector import Neo4jConnector
-            from dotenv import load_dotenv
-            import os
+            from backend.core.config import settings
             
-            load_dotenv()
+            # 使用新的配置系统
+            neo4j_config = settings.get_neo4j_config()
             
-            uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
-            user = os.getenv("NEO4J_USER", "neo4j")
-            password = os.getenv("NEO4J_PASSWORD", "password")
-            
-            self.connector = Neo4jConnector(uri, user, password)
-            logger.info("Neo4j service initialized (genesis.kernel backend)")
+            self.connector = Neo4jConnector(
+                uri=neo4j_config["uri"],
+                user=neo4j_config["user"],
+                password=neo4j_config["password"]
+            )
+            logger.info(f"Neo4j service initialized (genesis.kernel backend) - URI: {neo4j_config['uri']}")
             
         except ImportError as e:
             logger.warning(f"Failed to import genesis.kernel: {e}")
@@ -86,6 +86,9 @@ class GenesisKernelNeo4jService(INeo4jService):
             return []
         
         try:
+            if self.connector is None:
+                logger.error("Neo4j connector is None")
+                return []
             result = self.connector.run_query(query, params or {})
             return [dict(record) for record in result]
         except Exception as e:
@@ -99,6 +102,9 @@ class GenesisKernelNeo4jService(INeo4jService):
             return False
         
         try:
+            if self.connector is None:
+                logger.error("Neo4j connector is None")
+                return False
             self.connector.run_transaction(query, params or {})
             return True
         except Exception as e:
@@ -196,8 +202,13 @@ def get_neo4j_service() -> INeo4jService:
     global _neo4j_service
     
     if _neo4j_service is None:
+        from backend.core.config import settings
+        
+        # 根据环境决定是否使用 Mock 服务
+        use_mock = settings.is_testing or (settings.is_development and settings.test_mode)
+        
         _neo4j_service = Neo4jServiceFactory.create_service(
-            use_mock=False  # 可以根据环境变量配置
+            use_mock=use_mock
         )
     
     return _neo4j_service

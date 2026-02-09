@@ -49,14 +49,14 @@ class Neo4jLoader:
                 # Fallback to legacy connection
                 try:
                     from genesis.kernel.connectors.neo4j_connector import Neo4jConnector
-                    from dotenv import load_dotenv
-                    import os
-                    load_dotenv()
+                    from backend.core.config import settings
                     
-                    uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
-                    user = os.getenv("NEO4J_USER", "neo4j")
-                    password = os.getenv("NEO4J_PASSWORD", "password")
-                    self.neo4j = Neo4jConnector(uri, user, password)
+                    neo4j_config = settings.get_neo4j_config()
+                    self.neo4j = Neo4jConnector(
+                        uri=neo4j_config["uri"],
+                        user=neo4j_config["user"],
+                        password=neo4j_config["password"]
+                    )
                 except ImportError:
                     self.neo4j = None
                     logger.warning("Neo4j connection not available")

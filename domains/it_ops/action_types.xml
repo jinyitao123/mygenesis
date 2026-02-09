@@ -13,7 +13,7 @@
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>SERVER</object_type>
+        <object_type>Server</object_type>
         <property>status</property>
         <operator>==</operator>
         <value>RUNNING</value>
@@ -23,7 +23,7 @@
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>SERVER</object_type>
+        <object_type>Server</object_type>
         <property>status</property>
         <value>MAINTENANCE</value>
       </effect>
@@ -41,14 +41,14 @@
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>SERVER</object_type>
+        <object_type>Server</object_type>
       </precondition>
     </preconditions>
     
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>APPLICATION</object_type>
+        <object_type>Application</object_type>
         <property>status</property>
         <value>DEPLOYING</value>
       </effect>
@@ -66,7 +66,7 @@
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>INCIDENT</object_type>
+        <object_type>Incident</object_type>
         <property>status</property>
         <operator>==</operator>
         <value>INVESTIGATING</value>
@@ -76,7 +76,7 @@
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>INCIDENT</object_type>
+        <object_type>Incident</object_type>
         <property>status</property>
         <value>RESOLVED</value>
       </effect>
@@ -94,7 +94,7 @@
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>BACKUP</object_type>
+        <object_type>Backup</object_type>
         <property>status</property>
         <operator>==</operator>
         <value>PENDING</value>
@@ -104,7 +104,7 @@
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>BACKUP</object_type>
+        <object_type>Backup</object_type>
         <property>status</property>
         <value>RUNNING</value>
       </effect>
@@ -117,12 +117,12 @@
     <name>指派事件</name>
     <description>将事件指派给运维人员</description>
     <icon>👤</icon>
-    <color="#6366f1</color>
+    <color>#6366f1</color>
     
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>INCIDENT</object_type>
+        <object_type>Incident</object_type>
         <property>status</property>
         <operator>==</operator>
         <value>OPEN</value>
@@ -132,7 +132,7 @@
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>INCIDENT</object_type>
+        <object_type>Incident</object_type>
         <property>status</property>
         <value>INVESTIGATING</value>
       </effect>

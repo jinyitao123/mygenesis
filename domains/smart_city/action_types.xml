@@ -8,12 +8,12 @@
     <name>调整交通灯</name>
     <description>调整交通灯相位和时间</description>
     <icon>🚦</icon>
-    <color="#f59e0b</color>
+    <color>#f59e0b</color>
     
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>TRAFFIC_LIGHT</object_type>
+        <object_type>TrafficLight</object_type>
         <property>status</property>
         <operator>==</operator>
         <value>OPERATIONAL</value>
@@ -21,9 +21,9 @@
     </preconditions>
     
     <effects>
-      <effect>
+       <effect>
         <type>property_change</type>
-        <object_type>TRAFFIC_LIGHT</object_type>
+        <object_type>TrafficLight</object_type>
         <property>phase</property>
         <value>GREEN</value>
       </effect>
@@ -41,14 +41,14 @@
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>ENERGY_GRID</object_type>
+        <object_type>EnergyGrid</object_type>
       </precondition>
     </preconditions>
     
     <effects>
-      <effect>
+       <effect>
         <type>property_change</type>
-        <object_type>ENERGY_GRID</object_type>
+        <object_type>EnergyGrid</object_type>
         <property>load</property>
         <value>0</value>
       </effect>
@@ -61,12 +61,12 @@
     <name>调度公交</name>
     <description>调度公共交通车辆</description>
     <icon>🚌</icon>
-    <color="#8b5cf6</color>
+    <color>#8b5cf6</color>
     
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>PUBLIC_TRANSPORT</object_type>
+        <object_type>PublicTransport</object_type>
         <property>status</property>
         <operator>==</operator>
         <value>STOPPED</value>
@@ -76,7 +76,7 @@
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>PUBLIC_TRANSPORT</object_type>
+        <object_type>PublicTransport</object_type>
         <property>status</property>
         <value>IN_TRANSIT</value>
       </effect>
@@ -89,12 +89,12 @@
     <name>调度垃圾收集</name>
     <description>安排垃圾收集任务</description>
     <icon>🗑️</icon>
-    <color="#64748b</color>
+    <color>#64748b</color>
     
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>WASTE_MANAGEMENT</object_type>
+        <object_type>WasteManagement</object_type>
         <property>status</property>
         <operator>==</operator>
         <value>OPERATIONAL</value>
@@ -104,7 +104,7 @@
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>WASTE_MANAGEMENT</object_type>
+        <object_type>WasteManagement</object_type>
         <property>current_load</property>
         <value>0</value>
       </effect>
@@ -117,20 +117,20 @@
     <name>更新公园状态</name>
     <description>更新公园开放状态和活动</description>
     <icon>🌳</icon>
-    <color="#10b981</color>
+    <color>#10b981</color>
     
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>PARK</object_type>
+        <object_type>Park</object_type>
       </precondition>
     </preconditions>
     
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>PARK</object_type>
-        <Property>status</Property>
+        <object_type>Park</object_type>
+        <property>status</property>
         <value>EVENT</value>
       </effect>
     </effects>

@@ -13,7 +13,7 @@
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>RISK</object_type>
+        <object_type>Risk</object_type>
         <property>status</property>
         <operator>==</operator>
         <value>IDENTIFIED</value>
@@ -23,7 +23,7 @@
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>RISK</object_type>
+        <object_type>Risk</object_type>
         <property>status</property>
         <value>ASSESSED</value>
       </effect>
@@ -49,18 +49,18 @@
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>PORTFOLIO</object_type>
+        <object_type>Portfolio</object_type>
       </precondition>
       <precondition>
         <type>object_exists</type>
-        <object_type>ASSET</object_type>
+        <object_type>Asset</object_type>
       </precondition>
     </preconditions>
     
     <effects>
       <effect>
         <type>object_create</type>
-        <object_type>TRANSACTION</object_type>
+        <object_type>Transaction</object_type>
         <properties>
           <property name="status" value="PENDING"/>
         </properties>
@@ -85,7 +85,7 @@
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>ALERT</object_type>
+        <object_type>Alert</object_type>
         <property>status</property>
         <operator>==</operator>
         <value>NEW</value>
@@ -95,7 +95,7 @@
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>ALERT</object_type>
+        <object_type>Alert</object_type>
         <property>status</property>
         <value>ACKNOWLEDGED</value>
       </effect>
@@ -113,14 +113,14 @@
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>PORTFOLIO</object_type>
+        <object_type>Portfolio</object_type>
       </precondition>
     </preconditions>
     
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>PORTFOLIO</object_type>
+        <object_type>Portfolio</object_type>
         <property>return_rate</property>
         <value>0.0</value>
       </effect>
@@ -138,14 +138,14 @@
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>CUSTOMER</object_type>
+        <object_type>Customer</object_type>
       </precondition>
     </preconditions>
     
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>CUSTOMER</object_type>
+        <object_type>Customer</object_type>
         <property>risk_profile</property>
         <value>MEDIUM</value>
       </effect>
@@ -163,14 +163,14 @@
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>REGULATION</object_type>
+        <object_type>Regulation</object_type>
       </precondition>
     </preconditions>
     
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>REGULATION</object_type>
+        <object_type>Regulation</object_type>
         <property>compliance_status</property>
         <value>COMPLIANT</value>
       </effect>

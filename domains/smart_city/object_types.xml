@@ -73,8 +73,8 @@
   
   <!-- 关系类型定义 -->
   <LinkType name="MONITORS" source="Sensor" target="Building" color="#10b981" description="传感器监控建筑"/>
-  <LinkType name="CONTROLS" source="TrafficLight" target="Road" color="#f59e0b" description="交通灯控制道路"/>
+   <LinkType name="CONTROLS" source="TrafficLight" target="Building" color="#f59e0b" description="交通灯控制区域"/>
   <LinkType name="SERVES" source="PublicTransport" target="Building" color="#8b5cf6" description="公共交通服务区域"/>
   <LinkType name="LOCATED_IN" source="Sensor" target="Building" color="#10b981" description="传感器位于建筑内"/>
-  <LinkType name="CONNECTS" source="EnergyGrid" source="Building" target="Building" color="#ef4444" description="电网连接建筑"/>
+   <LinkType name="CONNECTS" source="EnergyGrid" target="Building" color="#ef4444" description="电网连接建筑"/>
 </ObjectTypes>

@@ -7,19 +7,19 @@ import sys
 sys.path.append('.')
 sys.path.append('./backend')
 
-from backend.services.neo4j_service import Neo4jService
+from backend.services.neo4j_service import get_neo4j_service
 
 def init_graph_data():
     """初始化图数据库数据"""
     
     # 创建Neo4j服务实例
-    neo4j = Neo4jService()
+    neo4j = get_neo4j_service()
     
     print("连接Neo4j数据库...")
     
     # 测试连接
     try:
-        result = neo4j.query("RETURN 1 as test")
+        result = neo4j.run_query("RETURN 1 as test")
         print("Neo4j连接成功")
     except Exception as e:
         print(f"Neo4j连接失败: {e}")
@@ -28,7 +28,7 @@ def init_graph_data():
     # 清空现有数据
     print("清空现有数据...")
     try:
-        neo4j.query("MATCH (n) DETACH DELETE n")
+        neo4j.run_query("MATCH (n) DETACH DELETE n")
         print("数据清空完成")
     except Exception as e:
         print(f"清空数据失败: {e}")
@@ -66,7 +66,7 @@ def init_graph_data():
             SET n += $props
             RETURN n.id as id
             """
-            neo4j.query(query, {"id": node_id, "props": properties})
+            neo4j.run_query(query, {"id": node_id, "props": properties})
             print(f"创建节点: {node_id} - {node_type}")
         except Exception as e:
             print(f"创建节点失败 {node_id}: {e}")
@@ -93,7 +93,7 @@ def init_graph_data():
             SET r += $props
             RETURN type(r) as rel_type
             """
-            neo4j.query(query, {"source_id": source_id, "target_id": target_id, "props": properties})
+            neo4j.run_query(query, {"source_id": source_id, "target_id": target_id, "props": properties})
             print(f"创建关系: {source_id} -[{rel_type}]-> {target_id}")
         except Exception as e:
             print(f"创建关系失败 {source_id}->{target_id}: {e}")
@@ -107,7 +107,7 @@ def init_graph_data():
                labels(n)[0] as node_type
         ORDER BY node_type
         """
-        node_stats = neo4j.query(stats_query)
+        node_stats = neo4j.run_query(stats_query)
         
         rel_query = """
         MATCH ()-[r]->()
@@ -115,7 +115,7 @@ def init_graph_data():
                type(r) as rel_type
         ORDER BY rel_type
         """
-        rel_stats = neo4j.query(rel_query)
+        rel_stats = neo4j.run_query(rel_query)
         
         print("节点统计:")
         for stat in node_stats:
