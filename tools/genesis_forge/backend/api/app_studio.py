@@ -314,7 +314,12 @@ def check_ontology_integrity():
                     obj_name = obj_elem.get("name")
                     if obj_name:
                         # 转换type_key为大写下划线格式
-                        type_key = obj_name.upper().replace(' ', '_')
+                        # 如果已经是全大写且没有空格，保持原样（如TRUCK、WAREHOUSE）
+                        # 否则转换为大写下划线格式
+                        if obj_name.isupper() and ' ' not in obj_name:
+                            type_key = obj_name
+                        else:
+                            type_key = obj_name.upper().replace(' ', '_').replace('-', '_')
                         
                         # 构建符合ObjectTypeDefinition要求的数据结构
                         obj_def = {
@@ -410,9 +415,38 @@ def check_ontology_integrity():
             ontology = OntologyModel(**schema_data)
         except Exception as model_error:
             logger.error(f"OntologyModel创建失败: {model_error}")
+            
+            # 对于Pydantic验证错误，提取详细信息
+            error_message = str(model_error)
+            error_details = []
+            
+            # 尝试从错误消息中提取结构化信息
+            if "validation errors for OntologyModel" in error_message:
+                # 这是一个Pydantic验证错误
+                lines = error_message.split('\n')
+                for line in lines:
+                    if 'type=value_error' in line or 'type=missing' in line:
+                        # 提取字段名和错误信息
+                        parts = line.strip().split()
+                        if parts:
+                            field_name = parts[0]
+                            error_type = "validation_error"
+                            if 'type=value_error' in line:
+                                error_type = "value_error"
+                            elif 'type=missing' in line:
+                                error_type = "missing_field"
+                            
+                            error_details.append({
+                                "field": field_name,
+                                "type": error_type,
+                                "message": line.strip()
+                            })
+            
             return jsonify({
                 "status": "error",
-                "message": f"本体数据格式错误: {str(model_error)}",
+                "message": "本体数据格式错误",
+                "error": error_message,
+                "errors": error_details if error_details else [{"field": "unknown", "message": error_message}],
                 "schema_data_keys": list(schema_data.keys())
             }), 400
         
