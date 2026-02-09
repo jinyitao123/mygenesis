@@ -369,6 +369,7 @@ const emit = defineEmits<{
   'edge-delete': [edgeId: string]
   'node-update': [node: any]
   'edge-update': [edge: any]
+  'graph-updated': [elements: any[]]
 }>()
 
 // 引用
@@ -550,22 +551,21 @@ const initCytoscape = () => {
     ],
     layout: {
       name: 'cose',
-      animate: true,
-      animationDuration: 1000,
+      animate: false,  // 禁用动画，避免节点持续移动
       fit: true,
       padding: 50,
-      randomize: false,
-      componentSpacing: 100,
-      nodeRepulsion: 400000,
-      nodeOverlap: 10,
-      idealEdgeLength: 100,
-      edgeElasticity: 100,
+      randomize: true,  // 启用随机化以获得更好的初始布局
+      componentSpacing: 50,
+      nodeRepulsion: 8000,  // 减少排斥力
+      nodeOverlap: 20,
+      idealEdgeLength: 50,  // 减少理想边长
+      edgeElasticity: 50,
       nestingFactor: 5,
-      gravity: 80,
-      numIter: 1000,
-      initialTemp: 200,
-      coolingFactor: 0.95,
-      minTemp: 1.0
+      gravity: 1,  // 大幅减少重力
+      numIter: 250,  // 减少迭代次数
+      initialTemp: 100,
+      coolingFactor: 0.99,
+      minTemp: 0.5
     }
   })
   
@@ -951,14 +951,24 @@ watch(() => props.elements, (newElements) => {
     const formattedElements = formatElementsForCytoscape(newElements)
     cy.add(formattedElements)
     
-    // 重新布局
-    cy.layout({
-      name: 'cose',
-      animate: true,
-      animationDuration: 1000,
-      fit: true,
-      padding: 50
-    }).run()
+    // 只有在元素数量有显著变化时才重新布局
+    const currentCount = cy.elements().length
+    const newCount = newElements.length
+    
+    // 如果元素数量变化小于5个，不重新布局
+    if (Math.abs(currentCount - newCount) > 5 || newCount < currentCount) {
+      // 使用预设布局或简单布局
+      cy.layout({
+        name: 'grid',  // 使用网格布局更稳定
+        animate: false,
+        fit: true,
+        padding: 30,
+        rows: Math.ceil(Math.sqrt(newCount)) || 1
+      }).run()
+    } else {
+      // 少量变化时只调整视图
+      cy.fit()
+    }
     
     // 更新计数
     updateCounts()

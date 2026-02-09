@@ -74,8 +74,8 @@ def main():
         project_root = Path(__file__).parent.parent.parent
         ontology_dir = str(project_root / "ontology")
         
-        # 默认使用 XML，但可以通过环境变量切换
-        use_xml = os.getenv("USE_XML", "true").lower() in ("true", "1", "yes", "y")
+        # 默认使用 JSON，但可以通过环境变量切换到 XML
+        use_xml = os.getenv("USE_XML", "false").lower() in ("true", "1", "yes", "y")
         
         engine = GameEngine(
             neo4j_conn=neo4j_conn,

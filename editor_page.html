@@ -161,6 +161,22 @@
         .status-dot-error {
             @apply bg-studio-error;
         }
+        
+        /* 分隔条样式 */
+        .sidebar-resizer, .split-resizer, .bottom-resizer {
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .sidebar-resizer:hover, .split-resizer:hover, .bottom-resizer:hover {
+            background-color: #3b82f6 !important;
+        }
+        .sidebar-resizer:active, .split-resizer:active, .bottom-resizer:active {
+            background-color: #2563eb !important;
+        }
+        /* 防止分隔条影响布局 */
+        .resizing * {
+            user-select: none !important;
+        }
     </style>
 </head>
 <body class="bg-studio-bg text-studio-text h-screen overflow-hidden" hx-boost="true">
@@ -2814,6 +2830,9 @@ document.addEventListener('alpine:init', () => {
         console.error('未处理的Promise拒绝:', event.reason);
     });
     </script>
+    
+    <!-- 可调整大小面板脚本 -->
+    <script src="/static/js/resizable.js"></script>
     
 </body>
 </html>

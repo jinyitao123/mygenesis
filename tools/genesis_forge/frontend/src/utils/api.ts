@@ -180,38 +180,38 @@ export const gitApi = {
 // 编辑器API（HTMX）
 export const editorApi = {
   // 获取对象编辑器
-  getObjectEditor: (typeKey: string) =>
-    request<any>(`/studio/editor/object/${typeKey}`),
+  getObjectEditor: (typeKey: string, domain?: string) =>
+    request<any>(domain ? `/studio/editor/object/${typeKey}?domain=${domain}` : `/studio/editor/object/${typeKey}`),
   
   // 获取动作编辑器
-  getActionEditor: (actionId: string) =>
-    request<any>(`/studio/editor/action/${actionId}`),
+  getActionEditor: (actionId: string, domain?: string) =>
+    request<any>(domain ? `/studio/editor/action/${actionId}?domain=${domain}` : `/studio/editor/action/${actionId}`),
   
   // 获取种子数据编辑器
-  getSeedEditor: (seedName: string) =>
-    request<any>(`/studio/editor/seed/${seedName}`),
+  getSeedEditor: (seedName: string, domain?: string) =>
+    request<any>(domain ? `/studio/editor/seed/${seedName}?domain=${domain}` : `/studio/editor/seed/${seedName}`),
   
   // 保存内容
-  save: (content: any) =>
-    request<any>('/api/save', {
+  save: (content: any, domain?: string) =>
+    request<any>(domain ? `/api/save?domain=${domain}` : '/api/save', {
       method: 'POST',
       body: JSON.stringify(content)
     }),
   
   // 验证内容
-  validate: (content: any) =>
-    request<any>('/api/validate', {
+  validate: (content: any, domain?: string) =>
+    request<any>(domain ? `/api/validate?domain=${domain}` : '/api/validate', {
       method: 'POST',
       body: JSON.stringify(content)
     }),
   
   // 获取图谱数据
-  getGraphData: () =>
-    request<any>('/api/graph/data'),
+  getGraphData: (domain?: string) =>
+    request<any>(domain ? `/api/graph/data?domain=${domain}` : '/api/graph/data'),
   
   // 添加图谱节点
-  addGraphNode: (node: any) =>
-    request<any>('/api/graph/node', {
+  addGraphNode: (node: any, domain?: string) =>
+    request<any>(domain ? `/api/graph/node?domain=${domain}` : '/api/graph/node', {
       method: 'POST',
       body: JSON.stringify(node)
     }),
@@ -221,8 +221,8 @@ export const editorApi = {
     request<any>(domain ? `/studio/sidebar/data?domain=${domain}` : '/studio/sidebar/data'),
   
   // 部署
-  deploy: (config: any) =>
-    request<any>('/api/deploy', {
+  deploy: (config: any, domain?: string) =>
+    request<any>(domain ? `/api/deploy?domain=${domain}` : '/api/deploy', {
       method: 'POST',
       body: JSON.stringify(config)
     }),

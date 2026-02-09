@@ -1,15 +1,301 @@
-<?xml version="1.0" ?>
-<ObjectTypes domain="unknown">
-    <ObjectType name="Entity" color="#3b82f6" icon="cube" primary_key="id">
-        <Property name="description" type="enum" description=""/>
-        <Property name="alignment" type="enum" description=""/>
-        <Property name="capacity" type="int" description=""/>
-        <Property name="current_load" type="int" description=""/>
-    </ObjectType>
-    <LinkTypes>
-        <LinkType name="BELONGS_TO" source="Entity" target="Faction" color="#64748b"/>
-        <LinkType name="DOCKED_AT" source="Entity" target="Warehouse" color="#64748b"/>
-        <LinkType name="LOCATED_AT" source="Entity" target="Location" color="#64748b"/>
-        <LinkType name="REPORTS_TO" source="Entity" target="Employee" color="#64748b"/>
-    </LinkTypes>
-</ObjectTypes>
+{
+  "name": "可视化编辑_supply_chain_2026-02-09",
+  "description": "通过可视化编辑器创建的 supply_chain 领域本体",
+  "version": "1.0.0",
+  "createdAt": "2026-02-09T05:55:00.648Z",
+  "objectTypes": [
+    {
+      "name": "object_type",
+      "description": "通过可视化编辑器创建的 object_type 类型",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "节点标签"
+        },
+        "type": {
+          "type": "string",
+          "description": "节点类型"
+        }
+      }
+    },
+    {
+      "name": "TRUCK",
+      "description": "通过可视化编辑器创建的 TRUCK 类型",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "节点标签"
+        },
+        "type": {
+          "type": "string",
+          "description": "节点类型"
+        },
+        "capacity": 10,
+        "fuel_level": 100,
+        "location": "仓库A",
+        "status": "空闲"
+      }
+    },
+    {
+      "name": "WAREHOUSE",
+      "description": "通过可视化编辑器创建的 WAREHOUSE 类型",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "节点标签"
+        },
+        "type": {
+          "type": "string",
+          "description": "节点类型"
+        },
+        "capacity": 1000,
+        "current_load": 200,
+        "location": "工业区"
+      }
+    },
+    {
+      "name": "PACKAGE",
+      "description": "通过可视化编辑器创建的 PACKAGE 类型",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "节点标签"
+        },
+        "type": {
+          "type": "string",
+          "description": "节点类型"
+        },
+        "destination": "客户地址A",
+        "location": "仓库A",
+        "weight": 5
+      }
+    },
+    {
+      "name": "relation_type",
+      "description": "通过可视化编辑器创建的 relation_type 类型",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "节点标签"
+        },
+        "type": {
+          "type": "string",
+          "description": "节点类型"
+        }
+      }
+    },
+    {
+      "name": "action_type",
+      "description": "通过可视化编辑器创建的 action_type 类型",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "节点标签"
+        },
+        "type": {
+          "type": "string",
+          "description": "节点类型"
+        }
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "name": "RELATES_TO",
+      "description": "通过可视化编辑器创建的 RELATES_TO 关系 (Unknown → Unknown)",
+      "sourceType": "Unknown",
+      "targetType": "Unknown",
+      "properties": {}
+    }
+  ],
+  "rules": [],
+  "seedData": {
+    "entities": [
+      {
+        "type": "object_type",
+        "properties": {
+          "label": "TRUCK",
+          "type": "object_type"
+        }
+      },
+      {
+        "type": "object_type",
+        "properties": {
+          "label": "WAREHOUSE",
+          "type": "object_type"
+        }
+      },
+      {
+        "type": "object_type",
+        "properties": {
+          "label": "PACKAGE",
+          "type": "object_type"
+        }
+      },
+      {
+        "type": "object_type",
+        "properties": {
+          "label": "ORDER",
+          "type": "object_type"
+        }
+      },
+      {
+        "type": "object_type",
+        "properties": {
+          "label": "SUPPLIER",
+          "type": "object_type"
+        }
+      },
+      {
+        "type": "TRUCK",
+        "properties": {
+          "label": "运输卡车A",
+          "type": "TRUCK",
+          "capacity": 10,
+          "fuel_level": 100,
+          "location": "仓库A",
+          "status": "空闲"
+        }
+      },
+      {
+        "type": "WAREHOUSE",
+        "properties": {
+          "label": "中央仓库",
+          "type": "WAREHOUSE",
+          "capacity": 1000,
+          "current_load": 200,
+          "location": "工业区"
+        }
+      },
+      {
+        "type": "PACKAGE",
+        "properties": {
+          "label": "电子产品包裹",
+          "type": "PACKAGE",
+          "destination": "客户地址A",
+          "location": "仓库A",
+          "weight": 5
+        }
+      },
+      {
+        "type": "relation_type",
+        "properties": {
+          "label": "CONTAINS",
+          "type": "relation_type"
+        }
+      },
+      {
+        "type": "relation_type",
+        "properties": {
+          "label": "LOCATED_AT",
+          "type": "relation_type"
+        }
+      },
+      {
+        "type": "relation_type",
+        "properties": {
+          "label": "BELONGS_TO",
+          "type": "relation_type"
+        }
+      },
+      {
+        "type": "relation_type",
+        "properties": {
+          "label": "PLACED_WITH",
+          "type": "relation_type"
+        }
+      },
+      {
+        "type": "relation_type",
+        "properties": {
+          "label": "TRANSPORTS",
+          "type": "relation_type"
+        }
+      },
+      {
+        "type": "action_type",
+        "properties": {
+          "label": "LOAD_CARGO",
+          "type": "action_type"
+        }
+      },
+      {
+        "type": "action_type",
+        "properties": {
+          "label": "UNLOAD_CARGO",
+          "type": "action_type"
+        }
+      },
+      {
+        "type": "action_type",
+        "properties": {
+          "label": "TRANSPORT",
+          "type": "action_type"
+        }
+      },
+      {
+        "type": "action_type",
+        "properties": {
+          "label": "CREATE_ORDER",
+          "type": "action_type"
+        }
+      },
+      {
+        "type": "action_type",
+        "properties": {
+          "label": "FULFILL_ORDER",
+          "type": "action_type"
+        }
+      },
+      {
+        "type": "action_type",
+        "properties": {
+          "label": "REFUEL",
+          "type": "action_type"
+        }
+      }
+    ],
+    "relations": [
+      {
+        "type": "RELATES_TO",
+        "source": "type_TRUCK",
+        "target": "truck_001",
+        "properties": {
+          "label": "INSTANCE_OF"
+        }
+      },
+      {
+        "type": "RELATES_TO",
+        "source": "type_WAREHOUSE",
+        "target": "warehouse_001",
+        "properties": {
+          "label": "INSTANCE_OF"
+        }
+      },
+      {
+        "type": "RELATES_TO",
+        "source": "rel_CONTAINS",
+        "target": "rel_LOCATED_AT",
+        "properties": {
+          "label": "RELATED_TO"
+        }
+      },
+      {
+        "type": "RELATES_TO",
+        "source": "rel_LOCATED_AT",
+        "target": "rel_BELONGS_TO",
+        "properties": {
+          "label": "RELATED_TO"
+        }
+      },
+      {
+        "type": "RELATES_TO",
+        "source": "rel_BELONGS_TO",
+        "target": "rel_PLACED_WITH",
+        "properties": {
+          "label": "RELATED_TO"
+        }
+      }
+    ]
+  }
+}
