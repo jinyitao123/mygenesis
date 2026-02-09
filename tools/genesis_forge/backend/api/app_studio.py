@@ -19,7 +19,7 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
-from flask import Flask, request, render_template, jsonify, send_from_directory
+from flask import Flask, request, render_template, jsonify, send_from_directory, Response, stream_with_context
 from flask_socketio import SocketIO, emit
 
 # 添加项目根目录到路径
@@ -75,33 +75,95 @@ ai_copilot = EnhancedAICopilot(str(PROJECT_ROOT))
 git_ops = GitOpsManager(str(PROJECT_ROOT), validation_engine)
 rule_engine = RuleEngine(validation_engine)
 
-# 领域模组配置
-DOMAIN_PACKS = {
-    "supply_chain": {
-        "name": "供应链物流系统",
-        "description": "卡车、仓库、货物运输仿真",
-        "color": "#f59e0b",
-        "icon": "truck"
-    },
-    "finance_risk": {
-        "name": "金融风控图谱",
-        "description": "账户、交易、担保关系网络",
-        "color": "#8b5cf6",
-        "icon": "chart-line"
-    },
-    "it_ops": {
-        "name": "IT运维监控",
-        "description": "服务器、网络、应用监控",
-        "color": "#10b981",
-        "icon": "server"
-    },
-    "empty": {
-        "name": "空白项目",
-        "description": "从零开始定义新的本体",
-        "color": "#6b7280",
-        "icon": "file-plus"
+# 注意：copilot_routes已经在app_studio.py中定义了路由
+# 不需要重复注册，否则会导致路由冲突
+# app = register_copilot_routes(app, ai_copilot, domain_manager)
+
+# 领域模组配置 - 动态从 domains/ 目录加载
+import os
+import json
+from pathlib import Path
+
+def load_domain_packs():
+    """动态加载 domains/ 目录中的所有域"""
+    domain_packs = {}
+    domains_dir = Path(__file__).parent.parent.parent.parent.parent / "domains"
+    
+    # 默认域（确保基本域存在）
+    default_domains = {
+        "supply_chain": {
+            "name": "供应链物流系统",
+            "description": "卡车、仓库、货物运输仿真",
+            "color": "#f59e0b",
+            "icon": "truck"
+        },
+        "finance_risk": {
+            "name": "金融风控图谱",
+            "description": "账户、交易、担保关系网络",
+            "color": "#8b5cf6",
+            "icon": "chart-line"
+        },
+        "it_ops": {
+            "name": "IT运维监控",
+            "description": "服务器、网络、应用监控",
+            "color": "#10b981",
+            "icon": "server"
+        },
+        "empty": {
+            "name": "空白项目",
+            "description": "从零开始定义新的本体",
+            "color": "#6b7280",
+            "icon": "file-plus"
+        }
     }
-}
+    
+    # 首先添加默认域
+    domain_packs.update(default_domains)
+    
+    # 动态扫描 domains/ 目录
+    if domains_dir.exists():
+        for domain_dir in domains_dir.iterdir():
+            if domain_dir.is_dir():
+                domain_id = domain_dir.name
+                
+                # 跳过已存在的默认域
+                if domain_id in default_domains:
+                    continue
+                
+                # 读取域配置
+                config_file = domain_dir / "config.json"
+                if config_file.exists():
+                    try:
+                        with open(config_file, 'r', encoding='utf-8') as f:
+                            config = json.load(f)
+                        
+                        domain_packs[domain_id] = {
+                            "name": config.get("name", domain_id),
+                            "description": config.get("description", "自定义业务领域"),
+                            "color": config.get("ui_config", {}).get("primary_color", "#3b82f6"),
+                            "icon": "cogs"  # 默认图标
+                        }
+                    except Exception as e:
+                        print(f"加载域配置失败 {domain_id}: {e}")
+                        # 使用默认值
+                        domain_packs[domain_id] = {
+                            "name": domain_id.replace("_", " ").title(),
+                            "description": "自定义业务领域",
+                            "color": "#3b82f6",
+                            "icon": "cogs"
+                        }
+                else:
+                    # 没有配置文件，使用默认值
+                    domain_packs[domain_id] = {
+                        "name": domain_id.replace("_", " ").title(),
+                        "description": "自定义业务领域",
+                        "color": "#3b82f6",
+                        "icon": "cogs"
+                    }
+    
+    return domain_packs
+
+DOMAIN_PACKS = load_domain_packs()
 
 # ========== 路由定义 ==========
 
@@ -754,6 +816,253 @@ def suggest_actions():
         logger.error(f"动作推荐失败: {e}")
         return jsonify({"error": f"动作推荐失败: {str(e)}"}), 500
 
+@app.route('/api/v1/copilot/csv-to-domain', methods=['POST'])
+def csv_to_domain():
+    """将CSV数据转换为完整的领域文件"""
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"error": "没有提供数据"}), 400
+        
+        csv_content = data.get('csv_content', '')
+        domain_name = data.get('domain_name', 'CSV导入领域')
+        domain_id = data.get('domain_id', '')
+        
+        if not csv_content:
+            return jsonify({"error": "没有提供CSV内容"}), 400
+        
+        if not domain_id:
+            # 自动生成领域ID
+            import re
+            domain_id = re.sub(r'[^a-z0-9_]', '_', domain_name.lower())
+            domain_id = re.sub(r'_+', '_', domain_id).strip('_')
+            if not domain_id:
+                domain_id = 'csv_imported_domain'
+        
+        # 构建详细的提示词
+        prompt = f"""请基于以下CSV数据生成完整的领域本体文件：
+
+领域信息:
+- 领域名称: {domain_name}
+- 领域ID: {domain_id}
+
+CSV内容:
+{csv_content[:3000]}
+
+请生成以下完整的XML/JSON文件：
+
+1. config.json - 领域配置文件
+   - 包含name, description, ui_config等
+   - 根据CSV内容选择合适的颜色和图标
+
+2. object_types.xml - 对象类型定义
+   - 分析CSV中的实体类型（如product, supplier, customer等）
+   - 为每种实体类型定义属性和约束
+   - 包含合适的图标和颜色
+
+3. action_types.xml - 动作类型定义
+   - 基于CSV中的业务逻辑推断可能的动作
+   - 包含preconditions和effects
+
+4. seed_data.xml - 种子数据
+   - 将CSV数据转换为XML格式的种子数据
+   - 保持数据完整性和一致性
+
+5. synapser_patterns.xml - 同步模式定义（可选）
+   - 定义数据同步和转换规则
+
+请确保：
+1. 所有XML文件格式正确，有完整的XML声明
+2. JSON文件格式正确
+3. 文件内容符合业务逻辑
+4. 使用中文注释说明重要部分
+
+请为每个文件生成完整的内容，用```xml和```json代码块包裹。"""
+
+        # 调用AI Copilot
+        result = ai_copilot.generate_content(prompt, "object_type", {
+            "data_type": "csv_to_domain",
+            "domain_name": domain_name,
+            "domain_id": domain_id,
+            "csv_sample": csv_content[:500]
+        })
+        
+        content = result.get("content", result.get("result", ""))
+        
+        return jsonify({
+            "status": "success",
+            "domain_name": domain_name,
+            "domain_id": domain_id,
+            "generated_content": content,
+            "files": [
+                "config.json",
+                "object_types.xml", 
+                "action_types.xml",
+                "seed_data.xml",
+                "synapser_patterns.xml"
+            ]
+        })
+        
+    except Exception as e:
+        logger.error(f"CSV转领域失败: {e}")
+        return jsonify({
+            "status": "error",
+            "error": f"CSV转领域失败: {str(e)}"
+        }), 500
+
+@app.route('/api/copilot/csv-to-domain', methods=['POST'])
+def csv_to_domain_compat():
+    """CSV转领域 (兼容性路由)"""
+    return csv_to_domain()
+
+@app.route('/api/v1/copilot/stream', methods=['GET', 'OPTIONS'])
+def copilot_stream():
+    """AI Copilot流式响应 - Server-Sent Events"""
+    # 检查是否有聊天消息参数
+    chat_message = request.args.get('message')
+    session_id = request.args.get('session_id', 'default')
+    
+    logger.info(f"SSE连接建立 - 会话: {session_id}, 消息: {chat_message}")
+    
+    def generate():
+        import json
+        import time
+        
+        logger.info("SSE生成器开始执行")
+        
+        # 发送连接确认
+        data = json.dumps({'type': 'connected', 'message': 'SSE连接已建立', 'session_id': session_id})
+        logger.info(f"发送连接确认: {data}")
+        yield f"data: {data}\n\n"
+        logger.info("连接确认已发送")
+        
+        # 如果没有聊天消息，只发送心跳
+        if not chat_message:
+            logger.info("无聊天消息，发送心跳模式")
+            # 发送心跳保持连接
+            try:
+                count = 0
+                while True:
+                    count += 1
+                    time.sleep(10)  # 每10秒发送一次心跳
+                    heartbeat = json.dumps({'type': 'heartbeat', 'timestamp': time.time(), 'count': count})
+                    yield f"data: {heartbeat}\n\n"
+            except GeneratorExit:
+                logger.info("SSE心跳连接关闭")
+            return
+        
+        # 如果有聊天消息，处理AI响应
+        logger.info(f"处理聊天消息: {chat_message}")
+        
+        try:
+            # 首先发送连接确认和思考状态
+            connected = json.dumps({'type': 'connected', 'message': '开始处理您的消息', 'session_id': session_id})
+            logger.info("发送开始处理消息")
+            yield f"data: {connected}\n\n"
+            logger.info("开始处理消息已发送")
+            
+            thinking = json.dumps({'type': 'chunk', 'content': '正在思考您的问题...'})
+            logger.info("发送思考状态")
+            yield f"data: {thinking}\n\n"
+            logger.info("思考状态已发送")
+            time.sleep(0.5)
+            
+            # 先发送简单的测试响应，确保SSE工作
+            logger.info("发送测试流式响应")
+            
+            test_responses = [
+                "我正在思考您的问题...",
+                "这是一个测试流式响应。",
+                "真正的AI集成需要更多配置。",
+                "但SSE流式传输正在工作！"
+            ]
+            
+            full_response = ""
+            for i, resp in enumerate(test_responses):
+                data = json.dumps({'type': 'chunk', 'content': resp + ' '})
+                logger.info(f"发送测试块 {i+1}: {resp}")
+                yield f"data: {data}\n\n"
+                full_response += resp + ' '
+                time.sleep(0.3)
+            
+            logger.info(f"测试响应完成，总长度: {len(full_response)}")
+            
+            # 发送完成消息
+            complete = json.dumps({'type': 'complete', 'full_response': full_response, 'test': True})
+            yield f"data: {complete}\n\n"
+            
+        except Exception as e:
+            logger.error(f"AI处理失败: {e}", exc_info=True)
+            # 发送错误消息
+            error_msg = json.dumps({'type': 'error', 'message': f'处理失败: {str(e)[:100]}'})
+            yield f"data: {error_msg}\n\n"
+            
+            # 发送模拟响应作为后备
+            mock = json.dumps({'type': 'chunk', 'content': f'我收到了: {chat_message}. 这是一个模拟响应。'})
+            yield f"data: {mock}\n\n"
+            
+            complete = json.dumps({'type': 'complete', 'mock': True})
+            yield f"data: {complete}\n\n"
+    
+    response = Response(generate(), 
+                       mimetype='text/event-stream')
+    
+    # 设置SSE所需的头
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['Connection'] = 'keep-alive'
+    response.headers['X-Accel-Buffering'] = 'no'
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+    
+    return response
+
+@app.route('/api/copilot/stream', methods=['GET', 'OPTIONS'])
+def copilot_stream_compat():
+    """AI Copilot流式响应 (兼容性路由)"""
+    if request.method == 'OPTIONS':
+        # CORS preflight
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        return response
+    return copilot_stream()
+
+@app.route('/api/copilot/chat', methods=['POST', 'OPTIONS'])
+def copilot_chat_compat():
+    """AI Copilot聊天 (兼容性路由) - 流式响应"""
+    if request.method == 'OPTIONS':
+        # CORS preflight
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        return response
+    
+    try:
+        data = request.json
+        if not data or 'message' not in data:
+            return jsonify({'error': '没有提供消息'}), 400
+        
+        message = data['message']
+        context = data.get('context', {})
+        history = data.get('history', [])
+        
+        logger.info(f"Copilot聊天请求: {message[:100]}...")
+        
+        # 立即返回，表示请求已接收
+        # 实际响应将通过SSE连接发送
+        return jsonify({
+            'status': 'received',
+            'message': '请求已接收，将通过SSE流式返回响应',
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Copilot聊天失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/v1/rules/simulate', methods=['POST'])
 def simulate_action():
     """模拟运行动作"""
@@ -1213,7 +1522,7 @@ def launch_simulation():
 
 @app.route('/api/upload/csv', methods=['POST'])
 def upload_csv():
-    """上传CSV文件并转换为本体"""
+    """上传CSV文件并进行分析（第一步：分析展示）"""
     try:
         if 'file' not in request.files:
             return jsonify({"error": "没有上传文件"}), 400
@@ -1231,42 +1540,146 @@ def upload_csv():
         
         csv_content = file.read().decode('utf-8')
         
-        ai_response = ai_copilot.generate_content(
-            prompt=f"""请将以下CSV数据转换为本体结构：
-文件: {filename}
-内容:
-{csv_content}
+        # 创建领域ID（从领域名称转换，只保留英文字母、数字和下划线）
+        import re
+        # 移除所有非ASCII字符
+        domain_id = re.sub(r'[^a-zA-Z0-9_]', '_', domain)
+        # 转换为小写
+        domain_id = domain_id.lower()
+        # 移除连续的下划线
+        domain_id = re.sub(r'_+', '_', domain_id).strip('_')
+        # 如果为空，使用默认值
+        if not domain_id:
+            domain_id = 'csv_imported_domain'
+        
+        # 1. 调用AI Copilot的CSV转领域功能
+        import requests
+        import json as json_module
+        
+        # 解析CSV内容，提取关键信息用于AI分析
+        import csv
+        import io
+        
+        csv_io = io.StringIO(csv_content)
+        reader = csv.reader(csv_io)
+        
+        # 获取表头
+        headers = []
+        try:
+            headers = next(reader)
+        except StopIteration:
+            headers = []
+        
+        # 获取样本数据（前5行）
+        sample_data = []
+        for i, row in enumerate(reader):
+            if i < 5:
+                sample_data.append(row)
+            else:
+                break
+        
+        # 统计实体类型（从entity_type列）
+        entity_types = {}
+        if headers and 'entity_type' in [h.lower() for h in headers]:
+            entity_type_index = [h.lower() for h in headers].index('entity_type')
+            csv_io.seek(0)
+            next(reader)  # 跳过表头
+            for row in reader:
+                if len(row) > entity_type_index:
+                    entity_type = row[entity_type_index]
+                    entity_types[entity_type] = entity_types.get(entity_type, 0) + 1
+        
+        # 构建AI分析提示词
+        prompt = f"""请分析以下CSV数据并提供领域本体构建建议：
 
-要求：
-1. 识别实体类型和属性
-2. 建议关系类型
-3. 生成JSON格式的本体定义
-4. 适合领域: {domain}""",
+文件信息:
+- 文件名: {filename}
+- 领域名称: {domain}
+- 领域ID: {domain_id}
+
+CSV结构分析:
+1. 表头字段 ({len(headers)}个): {headers}
+2. 样本数据 (前{len(sample_data)}行): {sample_data}
+3. 实体类型分布: {entity_types if entity_types else '未检测到entity_type列'}
+
+请提供以下分析结果：
+1. 建议的对象类型（基于CSV中的实体类型）
+2. 建议的属性定义（基于CSV表头）
+3. 建议的动作类型（基于业务逻辑）
+4. 领域配置建议
+5. 数据同步模式建议
+
+请以清晰、结构化的方式呈现分析结果，方便用户审阅和调整。"""
+
+        # 调用AI Copilot进行分析
+        ai_response = ai_copilot.generate_content(
+            prompt=prompt,
             content_type="object_type",
             context={
-                "data_type": "csv_to_ontology",
+                "data_type": "csv_analysis",
                 "file_name": filename,
                 "domain": domain,
-                "csv_content": csv_content[:1000]  # 限制长度
+                "domain_id": domain_id,
+                "csv_headers": headers,
+                "csv_sample": sample_data,
+                "entity_types": entity_types
             }
         )
         
-        content = ai_response.get('content', '')
+        analysis_content = ai_response.get("content", ai_response.get("result", ""))
         
-        import re
-        json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
-        if json_match:
-            ontology_json = json_match.group(1)
-        else:
-            ontology_json = content
+        # 保存分析结果到临时文件，供用户审阅
+        import tempfile
+        import uuid
+        
+        # 创建临时会话ID
+        session_id = str(uuid.uuid4())
+        
+        # 保存CSV内容和分析结果到临时位置
+        temp_dir = os.path.join(project_root, "temp_csv_imports")
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        session_file = os.path.join(temp_dir, f"{session_id}.json")
+        session_data = {
+            "session_id": session_id,
+            "domain": domain,
+            "domain_id": domain_id,
+            "filename": filename,
+            "csv_content": csv_content,
+            "headers": headers,
+            "sample_data": sample_data,
+            "entity_types": entity_types,
+            "ai_analysis": analysis_content,
+            "created_at": datetime.now().isoformat()
+        }
+        
+        with open(session_file, 'w', encoding='utf-8') as f:
+            json.dump(session_data, f, ensure_ascii=False, indent=2)
+        
+        logger.info(f"CSV分析完成，会话ID: {session_id}")
         
         return jsonify({
             "status": "success",
-            "message": "CSV分析完成",
+            "message": "CSV分析完成，请审阅AI建议",
+            "session_id": session_id,
             "file_name": filename,
             "domain": domain,
-            "analysis": content,
-            "ontology": ontology_json if ontology_json else None
+            "domain_id": domain_id,
+            "analysis": {
+                "headers": headers,
+                "sample_rows": sample_data,
+                "entity_types": entity_types,
+                "ai_suggestions": analysis_content[:1000] + "..." if len(analysis_content) > 1000 else analysis_content,
+                "ai_suggestions_full": analysis_content
+            },
+            "next_step": {
+                "endpoint": "/api/confirm_csv_import",
+                "method": "POST",
+                "parameters": {
+                    "session_id": session_id,
+                    "action": "generate_domain"
+                }
+            }
         })
         
     except Exception as e:
@@ -1274,6 +1687,217 @@ def upload_csv():
         return jsonify({
             "status": "error",
             "error": f"CSV上传失败: {str(e)}"
+        }), 500
+
+@app.route('/api/confirm_csv_import', methods=['POST'])
+def confirm_csv_import():
+    """确认CSV导入并生成领域文件（第二步：生成文件）"""
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"error": "没有提供数据"}), 400
+        
+        session_id = data.get('session_id')
+        action = data.get('action', 'generate_domain')
+        
+        if not session_id:
+            return jsonify({"error": "没有提供会话ID"}), 400
+        
+        # 加载会话数据
+        temp_dir = os.path.join(project_root, "temp_csv_imports")
+        session_file = os.path.join(temp_dir, f"{session_id}.json")
+        
+        if not os.path.exists(session_file):
+            return jsonify({"error": "会话已过期或不存在"}), 404
+        
+        with open(session_file, 'r', encoding='utf-8') as f:
+            session_data = json.load(f)
+        
+        domain = session_data.get('domain')
+        domain_id = session_data.get('domain_id')
+        filename = session_data.get('filename')
+        csv_content = session_data.get('csv_content')
+        headers = session_data.get('headers', [])
+        sample_data = session_data.get('sample_data', [])
+        entity_types = session_data.get('entity_types', {})
+        ai_analysis = session_data.get('ai_analysis', '')
+        
+        # 获取用户调整（如果有）
+        user_adjustments = data.get('adjustments', {})
+        
+        # 构建生成领域文件的提示词
+        prompt = f"""基于以下CSV分析和用户调整，生成完整的领域本体文件：
+
+文件信息:
+- 文件名: {filename}
+- 领域名称: {domain}
+- 领域ID: {domain_id}
+
+CSV结构:
+- 表头字段: {headers}
+- 实体类型分布: {entity_types}
+- 样本数据: {sample_data[:3]}
+
+AI分析建议:
+{ai_analysis[:2000]}
+
+用户调整:
+{json.dumps(user_adjustments, ensure_ascii=False, indent=2) if user_adjustments else '无'}
+
+请生成以下5个完整的领域文件：
+
+1. config.json - 领域配置文件（JSON格式）
+2. object_types.xml - 对象类型定义（XML格式）
+3. action_types.xml - 动作类型定义（XML格式）
+4. seed_data.xml - 种子数据（XML格式）
+5. synapser_patterns.xml - 同步模式定义（XML格式）
+
+请确保：
+1. 所有XML文件都有完整的XML声明
+2. JSON文件格式正确
+3. 文件内容符合业务逻辑
+4. 使用中文注释说明重要部分
+5. 每个文件都用相应的代码块包裹"""
+
+        # 调用AI Copilot生成领域文件
+        ai_response = ai_copilot.generate_content(
+            prompt=prompt,
+            content_type="object_type",
+            context={
+                "data_type": "csv_to_domain_final",
+                "file_name": filename,
+                "domain": domain,
+                "domain_id": domain_id,
+                "csv_headers": headers,
+                "user_adjustments": user_adjustments
+            }
+        )
+        
+        generated_content = ai_response.get("content", ai_response.get("result", ""))
+        
+        # 解析生成的领域文件
+        import re
+        
+        generated_files = {}
+        
+        # 提取XML文件
+        xml_patterns = [
+            (r'```xml\s*(<action_types>.*?</action_types>)\s*```', "action_types.xml"),
+            (r'```xml\s*(<object_types>.*?</object_types>)\s*```', "object_types.xml"),
+            (r'```xml\s*(<seed_data>.*?</seed_data>)\s*```', "seed_data.xml"),
+            (r'```xml\s*(<synapser_patterns>.*?</synapser_patterns>)\s*```', "synapser_patterns.xml"),
+            (r'<\?xml[^>]*>\s*<action_types>.*?</action_types>', "action_types.xml"),
+            (r'<\?xml[^>]*>\s*<object_types>.*?</object_types>', "object_types.xml"),
+            (r'<\?xml[^>]*>\s*<seed_data>.*?</seed_data>', "seed_data.xml"),
+            (r'<\?xml[^>]*>\s*<synapser_patterns>.*?</synapser_patterns>', "synapser_patterns.xml"),
+        ]
+        
+        for pattern, file_name in xml_patterns:
+            match = re.search(pattern, generated_content, re.DOTALL | re.IGNORECASE)
+            if match and file_name not in generated_files:
+                generated_files[file_name] = match.group(0).strip()
+        
+        # 提取JSON文件
+        json_patterns = [
+            (r'```json\s*(\{.*?"name".*?\})\s*```', "config.json"),
+            (r'\{\s*"name".*?\}', "config.json"),
+        ]
+        
+        for pattern, file_name in json_patterns:
+            match = re.search(pattern, generated_content, re.DOTALL)
+            if match and file_name not in generated_files:
+                generated_files[file_name] = match.group(1).strip()
+        
+        # 创建领域目录并保存文件
+        domain_dir = os.path.join(project_root, "domains", domain_id)
+        os.makedirs(domain_dir, exist_ok=True)
+        
+        saved_files = []
+        for file_name, file_content in generated_files.items():
+            file_path = os.path.join(domain_dir, file_name)
+            try:
+                if file_name.endswith('.xml'):
+                    # 确保有XML声明
+                    if not file_content.startswith('<?xml'):
+                        file_content = f'<?xml version="1.0" encoding="UTF-8"?>\n{file_content}'
+                    
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write(file_content)
+                    saved_files.append(file_name)
+                    
+                elif file_name.endswith('.json'):
+                    # 验证JSON格式
+                    try:
+                        json_data = json.loads(file_content)
+                        with open(file_path, 'w', encoding='utf-8') as f:
+                            json.dump(json_data, f, ensure_ascii=False, indent=2)
+                        saved_files.append(file_name)
+                    except json.JSONDecodeError:
+                        # 创建基本配置
+                        basic_config = {
+                            "name": domain,
+                            "description": f"从CSV文件导入的领域: {filename}",
+                            "ui_config": {
+                                "primary_color": "#3b82f6",
+                                "secondary_color": "#10b981"
+                            }
+                        }
+                        with open(file_path, 'w', encoding='utf-8') as f:
+                            json.dump(basic_config, f, ensure_ascii=False, indent=2)
+                        saved_files.append(f"{file_name} (基本配置)")
+                        
+            except Exception as file_error:
+                logger.error(f"保存文件失败 {file_name}: {file_error}")
+        
+        # 如果没有生成任何文件，创建基本配置
+        if not saved_files:
+            logger.info("AI未生成文件，创建基本领域配置")
+            
+            # 创建基本配置
+            config_path = os.path.join(domain_dir, "config.json")
+            domain_config = {
+                "name": domain,
+                "description": f"从CSV文件导入的领域: {filename}",
+                "ui_config": {
+                    "primary_color": "#3b82f6",
+                    "secondary_color": "#10b981"
+                }
+            }
+            
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(domain_config, f, ensure_ascii=False, indent=2)
+            
+            saved_files.append("config.json (基本配置)")
+        
+        # 重新加载领域包
+        global DOMAIN_PACKS
+        DOMAIN_PACKS = load_domain_packs()
+        
+        # 清理临时文件
+        try:
+            os.remove(session_file)
+        except:
+            pass
+        
+        return jsonify({
+            "status": "success",
+            "message": "领域文件生成完成",
+            "domain": domain,
+            "domain_id": domain_id,
+            "generated_files": saved_files,
+            "domain_available": domain_id in DOMAIN_PACKS,
+            "domain_info": DOMAIN_PACKS.get(domain_id, {}),
+            "next_step": {
+                "switch_domain": f"/api/v1/domains/{domain_id}/switch",
+                "open_editor": "/editor"
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"确认CSV导入失败: {e}")
+        return jsonify({
+            "status": "error",
+            "error": f"确认CSV导入失败: {str(e)}"
         }), 500
 
 @app.route('/api/save_ontology', methods=['POST'])

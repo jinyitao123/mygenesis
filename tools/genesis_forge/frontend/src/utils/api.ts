@@ -1,6 +1,6 @@
 // API服务 - 封装所有后端API调用
 
-const API_BASE = '/api' // 通过Vite代理
+const API_BASE = '' // 通过Vite代理，代理会添加/api前缀
 
 // 通用请求函数
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -61,28 +61,28 @@ export const domainApi = {
 export const aiApi = {
   // 生成AI响应
   generate: (prompt: string, context?: any) =>
-    request<any>('/api/v1/copilot/generate', {
+    request<any>('/v1/copilot/generate', {
       method: 'POST',
       body: JSON.stringify({ prompt, context })
     }),
   
   // 文本转Cypher
   textToCypher: (description: string, schema?: any) =>
-    request<any>('/api/v1/copilot/text-to-cypher', {
+    request<any>('/v1/copilot/text-to-cypher', {
       method: 'POST',
       body: JSON.stringify({ description, schema })
     }),
   
   // 建议动作
   suggestActions: (context: any) =>
-    request<any>('/api/v1/copilot/suggest-actions', {
+    request<any>('/v1/copilot/suggest-actions', {
       method: 'POST',
       body: JSON.stringify({ context })
     }),
   
   // AI聊天（HTMX版本）
   chat: (message: string, history?: any[]) =>
-    request<any>('/api/copilot/chat', {
+    request<any>('/copilot/chat', {
       method: 'POST',
       body: JSON.stringify({ message, history })
     })
@@ -92,18 +92,18 @@ export const aiApi = {
 export const ontologyApi = {
   // 验证本体
   validate: (schema: any) =>
-    request<any>('/api/v1/ontology/validate', {
+    request<any>('/v1/ontology/validate', {
       method: 'POST',
       body: JSON.stringify({ schema })
     }),
   
   // 检查完整性
   checkIntegrity: () =>
-    request<any>('/api/v1/ontology/integrity'),
+    request<any>('/v1/ontology/integrity'),
   
   // 保存本体
   saveOntology: (ontology: any) =>
-    request<any>('/api/save_ontology', {
+    request<any>('/save_ontology', {
       method: 'POST',
       body: JSON.stringify(ontology)
     })
@@ -113,21 +113,21 @@ export const ontologyApi = {
 export const worldApi = {
   // 预览世界
   preview: () =>
-    request<any>('/api/v1/world/preview'),
+    request<any>('/v1/world/preview'),
   
   // 验证连接性
   validateConnectivity: () =>
-    request<any>('/api/v1/world/validate-connectivity'),
+    request<any>('/v1/world/validate-connectivity'),
   
   // 重置世界
   reset: () =>
-    request<any>('/api/v1/world/reset', {
+    request<any>('/v1/world/reset', {
       method: 'POST'
     }),
   
   // 启动仿真
   launchSimulation: (config: any) =>
-    request<any>('/api/launch_simulation', {
+    request<any>('/launch_simulation', {
       method: 'POST',
       body: JSON.stringify(config)
     })
@@ -137,14 +137,14 @@ export const worldApi = {
 export const ruleApi = {
   // 仿真规则
   simulate: (ruleId: string, initialState: any, steps?: number) =>
-    request<any>('/api/v1/rules/simulate', {
+    request<any>('/v1/rules/simulate', {
       method: 'POST',
       body: JSON.stringify({ ruleId, initialState, steps })
     }),
   
   // 验证规则
   validate: (rule: any) =>
-    request<any>('/api/v1/rules/validate', {
+    request<any>('/v1/rules/validate', {
       method: 'POST',
       body: JSON.stringify({ rule })
     })
@@ -154,24 +154,24 @@ export const ruleApi = {
 export const gitApi = {
   // 获取状态
   getStatus: () =>
-    request<any>('/api/v1/git/status'),
+    request<any>('/v1/git/status'),
   
   // 提交更改
   commit: (message: string, files?: string[]) =>
-    request<any>('/api/v1/git/commit', {
+    request<any>('/v1/git/commit', {
       method: 'POST',
       body: JSON.stringify({ message, files })
     }),
   
   // 热重载
   hotReload: () =>
-    request<any>('/api/v1/git/hot-reload', {
+    request<any>('/v1/git/hot-reload', {
       method: 'POST'
     }),
   
   // 回滚
   rollback: (commitId?: string) =>
-    request<any>('/api/v1/git/rollback', {
+    request<any>('/v1/git/rollback', {
       method: 'POST',
       body: JSON.stringify({ commitId })
     })
@@ -193,25 +193,25 @@ export const editorApi = {
   
   // 保存内容
   save: (content: any, domain?: string) =>
-    request<any>(domain ? `/api/save?domain=${domain}` : '/api/save', {
+    request<any>(domain ? `/save?domain=${domain}` : '/save', {
       method: 'POST',
       body: JSON.stringify(content)
     }),
   
   // 验证内容
   validate: (content: any, domain?: string) =>
-    request<any>(domain ? `/api/validate?domain=${domain}` : '/api/validate', {
+    request<any>(domain ? `/validate?domain=${domain}` : '/validate', {
       method: 'POST',
       body: JSON.stringify(content)
     }),
   
   // 获取图谱数据
   getGraphData: (domain?: string) =>
-    request<any>(domain ? `/api/graph/data?domain=${domain}` : '/api/graph/data'),
+    request<any>(domain ? `/graph/data?domain=${domain}` : '/graph/data'),
   
   // 添加图谱节点
   addGraphNode: (node: any, domain?: string) =>
-    request<any>(domain ? `/api/graph/node?domain=${domain}` : '/api/graph/node', {
+    request<any>(domain ? `/graph/node?domain=${domain}` : '/graph/node', {
       method: 'POST',
       body: JSON.stringify(node)
     }),
@@ -222,14 +222,14 @@ export const editorApi = {
   
   // 部署
   deploy: (config: any, domain?: string) =>
-    request<any>(domain ? `/api/deploy?domain=${domain}` : '/api/deploy', {
+    request<any>(domain ? `/deploy?domain=${domain}` : '/deploy', {
       method: 'POST',
       body: JSON.stringify(config)
     }),
   
   // 格式化代码
   format: (code: string, language: string) =>
-    request<any>('/api/tools/format', {
+    request<any>('/tools/format', {
       method: 'POST',
       body: JSON.stringify({ code, language })
     })
@@ -247,7 +247,7 @@ export const uploadApi = {
     
     try {
       // 使用fetch直接上传，避免JSON序列化问题
-      const response = await fetch('/api/upload/csv', {
+      const response = await fetch('/upload/csv', {
         method: 'POST',
         body: formData
       })
@@ -286,7 +286,7 @@ ${text}
   
   // 保存本体到领域
   saveOntologyToDomain: (domainName: string, data: any) =>
-    request<any>(`/api/domains/${domainName}/save`, {
+    request<any>(`/domains/${domainName}/save`, {
       method: 'POST',
       body: JSON.stringify({
         schema: JSON.stringify(data.schema || {}, null, 2),
@@ -297,7 +297,7 @@ ${text}
   
   // 直接保存本体
   saveOntology: (ontology: any) =>
-    request<any>('/api/save_ontology', {
+    request<any>('/save_ontology', {
       method: 'POST',
       body: JSON.stringify(ontology)
     })

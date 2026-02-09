@@ -33,6 +33,7 @@ class EnhancedDomainManager:
         self.ontology_dir = self.project_root / "ontology"
         
         # 确保目录存在
+        self.domains_dir.parent.mkdir(parents=True, exist_ok=True)
         self.domains_dir.mkdir(exist_ok=True)
         self.ontology_dir.mkdir(exist_ok=True)
         
@@ -206,21 +207,39 @@ class EnhancedDomainManager:
             root = ET.fromstring(xml_content)
             
             # 查找动作规则定义
-            for action in root.findall('.//Action'):
-                name = action.get('name') or action.findtext('Name')
-                description = action.get('description') or action.findtext('Description') or ""
+            for action in root.findall('.//action_type'):
+                name = action.get('id') or action.findtext('id') or action.findtext('ID') or action.findtext('Name')
+                description = action.get('description') or action.findtext('description') or action.findtext('Description') or ""
                 
                 if name:
-                    # 提取源和目标
-                    source = action.get('source') or action.findtext('Source')
-                    target = action.get('target') or action.findtext('Target')
+                    # 提取源和目标（从preconditions/effects中提取）
+                    source = None
+                    target = None
+                    
+                    # 尝试从preconditions中提取源
+                    preconditions = action.find('preconditions')
+                    if preconditions is not None:
+                        for precondition in preconditions.findall('precondition'):
+                            obj_type = precondition.findtext('object_type')
+                            if obj_type:
+                                source = obj_type
+                                break
+                    
+                    # 尝试从effects中提取目标
+                    effects = action.find('effects')
+                    if effects is not None:
+                        for effect in effects.findall('effect'):
+                            obj_type = effect.findtext('object_type')
+                            if obj_type:
+                                target = obj_type
+                                break
                     
                     action_rules.append({
                         "name": name,
                         "description": description,
                         "source": source,
                         "target": target,
-                        "conditions": action.get('conditions') or action.findtext('Conditions')
+                        "conditions": None  # 这个XML格式没有直接的conditions字段
                     })
         except Exception as e:
             logger.error(f"Failed to extract action rules from XML: {e}")

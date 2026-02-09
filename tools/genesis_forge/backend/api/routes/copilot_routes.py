@@ -215,7 +215,102 @@ def register_copilot_routes(app, ai_copilot, domain_manager):
                 "error": f"AI生成失败: {str(e)}"
             }), 500
     
-    # 7. 兼容性路由
+    # 7. CSV导入生成领域文件
+    @app.route('/api/v1/copilot/csv-to-domain', methods=['POST'])
+    def csv_to_domain():
+        """将CSV数据转换为完整的领域文件"""
+        try:
+            data = request.json
+            if not data:
+                return jsonify({"error": "没有提供数据"}), 400
+            
+            csv_content = data.get('csv_content', '')
+            domain_name = data.get('domain_name', 'CSV导入领域')
+            domain_id = data.get('domain_id', '')
+            
+            if not csv_content:
+                return jsonify({"error": "没有提供CSV内容"}), 400
+            
+            if not domain_id:
+                # 自动生成领域ID
+                import re
+                domain_id = re.sub(r'[^a-z0-9_]', '_', domain_name.lower())
+                domain_id = re.sub(r'_+', '_', domain_id).strip('_')
+                if not domain_id:
+                    domain_id = 'csv_imported_domain'
+            
+            # 构建详细的提示词
+            prompt = f"""请基于以下CSV数据生成完整的领域本体文件：
+
+领域信息:
+- 领域名称: {domain_name}
+- 领域ID: {domain_id}
+
+CSV内容:
+{csv_content[:3000]}
+
+请生成以下完整的XML/JSON文件：
+
+1. config.json - 领域配置文件
+   - 包含name, description, ui_config等
+   - 根据CSV内容选择合适的颜色和图标
+
+2. object_types.xml - 对象类型定义
+   - 分析CSV中的实体类型（如product, supplier, customer等）
+   - 为每种实体类型定义属性和约束
+   - 包含合适的图标和颜色
+
+3. action_types.xml - 动作类型定义
+   - 基于CSV中的业务逻辑推断可能的动作
+   - 包含preconditions和effects
+
+4. seed_data.xml - 种子数据
+   - 将CSV数据转换为XML格式的种子数据
+   - 保持数据完整性和一致性
+
+5. synapser_patterns.xml - 同步模式定义（可选）
+   - 定义数据同步和转换规则
+
+请确保：
+1. 所有XML文件格式正确，有完整的XML声明
+2. JSON文件格式正确
+3. 文件内容符合业务逻辑
+4. 使用中文注释说明重要部分
+
+请为每个文件生成完整的内容，用```xml和```json代码块包裹。"""
+
+            # 调用AI Copilot
+            result = ai_copilot.generate_content(prompt, "object_type", {
+                "data_type": "csv_to_domain",
+                "domain_name": domain_name,
+                "domain_id": domain_id,
+                "csv_sample": csv_content[:500]
+            })
+            
+            content = result.get("content", result.get("result", ""))
+            
+            return jsonify({
+                "status": "success",
+                "domain_name": domain_name,
+                "domain_id": domain_id,
+                "generated_content": content,
+                "files": [
+                    "config.json",
+                    "object_types.xml", 
+                    "action_types.xml",
+                    "seed_data.xml",
+                    "synapser_patterns.xml"
+                ]
+            })
+            
+        except Exception as e:
+            logger.error(f"CSV转领域失败: {e}")
+            return jsonify({
+                "status": "error",
+                "error": f"CSV转领域失败: {str(e)}"
+            }), 500
+    
+    # 8. 兼容性路由
     @app.route('/api/copilot/generate', methods=['POST'])
     def copilot_generate_compat():
         """AI Copilot生成内容 (兼容性路由)"""
@@ -235,6 +330,11 @@ def register_copilot_routes(app, ai_copilot, domain_manager):
     def ai_generate_compat():
         """AI生成内容 (兼容性路由)"""
         return ai_generate_simple()
+    
+    @app.route('/api/copilot/csv-to-domain', methods=['POST'])
+    def csv_to_domain_compat():
+        """CSV转领域 (兼容性路由)"""
+        return csv_to_domain()
     
     logger.info("AI Copilot路由注册完成")
     return app

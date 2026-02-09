@@ -13,25 +13,25 @@
             </div>
             <h1 class="text-xl font-bold">Genesis Forge Studio</h1>
           </div>
-          <nav class="flex space-x-4">
-            <button @click="showProjects" class="px-3 py-2 rounded hover:bg-gray-700">项目</button>
-            <button @click="showEditor" class="px-3 py-2 rounded hover:bg-gray-700">编辑</button>
-            <button @click="showView" class="px-3 py-2 rounded hover:bg-gray-700">视图</button>
-            <button @click="showTools" class="px-3 py-2 rounded hover:bg-gray-700">工具</button>
-            <button @click="showHelp" class="px-3 py-2 rounded hover:bg-gray-700">帮助</button>
-          </nav>
+           <nav class="flex space-x-4">
+             <button @click="showProjects" class="px-3 py-2 rounded hover:bg-gray-700">项目</button>
+             <button @click="showEditor" class="px-3 py-2 rounded hover:bg-gray-700">编辑</button>
+             <button @click="showView" class="px-3 py-2 rounded hover:bg-gray-700">视图</button>
+             <button @click="showTools" class="px-3 py-2 rounded hover:bg-gray-700">工具</button>
+             <button @click="showHelp" class="px-3 py-2 rounded hover:bg-gray-700">帮助</button>
+           </nav>
         </div>
-        <div class="flex items-center space-x-4">
-          <div class="text-sm">
-            <span class="text-gray-400">状态:</span>
-            <span :class="['ml-2', connectionStatus === 'connected' ? 'text-green-400' : 'text-red-400']">
-              ● {{ connectionStatus === 'connected' ? '已连接' : '未连接' }}
-            </span>
-          </div>
-          <button @click="checkBackend" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">
-            检查后端
-          </button>
-        </div>
+         <div class="flex items-center space-x-4">
+           <div class="text-sm">
+             <span class="text-gray-400">状态:</span>
+             <span :class="['ml-2', connectionStatus === 'connected' ? 'text-green-400' : 'text-red-400']">
+               ● {{ connectionStatus === 'connected' ? '已连接' : '未连接' }}
+             </span>
+           </div>
+           <button @click="checkBackend" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">
+             检查后端
+           </button>
+         </div>
       </div>
     </header>
 
@@ -58,11 +58,10 @@
         <div class="mt-8">
           <h3 class="text-md font-semibold mb-3">快速操作</h3>
           <div class="space-y-2">
-            <button @click="importCSV" class="w-full p-3 bg-blue-600 rounded hover:bg-blue-700 flex items-center justify-center">
-              <span>导入CSV</span>
-            </button>
-            <button @click="analyzeWithAI" class="w-full p-3 bg-green-600 rounded hover:bg-green-700 flex items-center justify-center">
-              <span>AI分析</span>
+            <button @click="toggleAICopilot" class="w-full p-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded hover:opacity-90 flex items-center justify-center space-x-2"
+                    :class="showAICopilot ? 'ring-2 ring-green-400' : ''">
+              <i class="fas fa-robot"></i>
+              <span>{{ showAICopilot ? '隐藏AI助手' : '显示AI助手' }}</span>
             </button>
             <button @click="openVisualEditor" class="w-full p-3 bg-purple-600 rounded hover:bg-purple-700 flex items-center justify-center">
               <span>可视化编辑</span>
@@ -72,7 +71,7 @@
       </aside>
 
       <!-- 主工作区 -->
-      <div class="flex-1 flex flex-col">
+      <div class="flex-1 flex flex-col" :class="showAICopilot ? 'w-1/2' : 'w-full'">
         <!-- 标签页 -->
         <div class="bg-gray-800 border-b border-gray-700 px-4">
           <div class="flex space-x-1">
@@ -93,54 +92,44 @@
           <div class="max-w-4xl mx-auto">
             <div class="text-center mb-12">
               <h2 class="text-3xl font-bold mb-4">欢迎使用 Genesis Forge Studio</h2>
-              <p class="text-gray-300 text-lg">
+              <p class="text-gray-300 text-lg mb-6">
                 基于AI辅助的CSV到本体转换和可视化编辑平台
               </p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              <!-- 功能卡片1 -->
-              <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
-                  <span class="text-2xl">📊</span>
-                </div>
-                <h3 class="text-xl font-semibold mb-3">CSV导入</h3>
-                <p class="text-gray-400 mb-4">
-                  上传CSV文件，AI自动分析数据结构，智能转换为本体定义
-                </p>
-                <button @click="importCSV" class="w-full py-2 bg-blue-600 rounded hover:bg-blue-700">
-                  开始导入
-                </button>
-              </div>
-
-              <!-- 功能卡片2 -->
-              <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-4">
-                  <span class="text-2xl">🤖</span>
-                </div>
-                <h3 class="text-xl font-semibold mb-3">AI Copilot</h3>
-                <p class="text-gray-400 mb-4">
-                  智能助手帮助优化本体结构、调整属性和规则，提供专业建议
-                </p>
-                <button @click="analyzeWithAI" class="w-full py-2 bg-green-600 rounded hover:bg-green-700">
-                  启动AI助手
-                </button>
-              </div>
-
-              <!-- 功能卡片3 -->
-              <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-4">
-                  <span class="text-2xl">🔗</span>
-                </div>
-                <h3 class="text-xl font-semibold mb-3">可视化编辑</h3>
-                <p class="text-gray-400 mb-4">
-                  拖拽式编辑本体关系，实时预览图数据库结构，直观管理数据模型
-                </p>
-                <button @click="openVisualEditor" class="w-full py-2 bg-purple-600 rounded hover:bg-purple-700">
-                  打开编辑器
-                </button>
+              <div class="inline-flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-900 to-emerald-900 rounded-full border border-green-700">
+                <i class="fas fa-robot text-green-400"></i>
+                <span class="text-green-300 text-sm">AI Copilot 已就绪，点击左侧按钮或按 Ctrl+Shift+C 显示/隐藏</span>
               </div>
             </div>
+
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 max-w-2xl mx-auto">
+               <!-- 功能卡片1 -->
+               <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                 <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-4">
+                   <span class="text-2xl">🤖</span>
+                 </div>
+                 <h3 class="text-xl font-semibold mb-3">AI Copilot</h3>
+                 <p class="text-gray-400 mb-4">
+                   上传CSV文件，AI分析数据结构，智能转换为本体定义，优化现有代码
+                 </p>
+                 <button @click="toggleAICopilot" class="w-full py-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded hover:opacity-90">
+                   {{ showAICopilot ? '隐藏AI助手' : '启动AI助手' }}
+                 </button>
+               </div>
+
+               <!-- 功能卡片2 -->
+               <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                 <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-4">
+                   <span class="text-2xl">🔗</span>
+                 </div>
+                 <h3 class="text-xl font-semibold mb-3">可视化编辑</h3>
+                 <p class="text-gray-400 mb-4">
+                   拖拽式编辑本体关系，实时预览图数据库结构，直观管理数据模型
+                 </p>
+                 <button @click="openVisualEditor" class="w-full py-2 bg-purple-600 rounded hover:bg-purple-700">
+                   打开编辑器
+                 </button>
+               </div>
+             </div>
 
             <!-- 工作流程 -->
             <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
@@ -152,29 +141,29 @@
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
                   <!-- 步骤1 -->
                   <div class="text-center">
-                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 relative z-10">
+                    <div class="w-16 h-16 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 relative z-10">
                       <span class="text-2xl">1</span>
                     </div>
-                    <h4 class="font-semibold mb-2">上传CSV</h4>
-                    <p class="text-sm text-gray-400">导入业务数据文件</p>
+                    <h4 class="font-semibold mb-2">AI Copilot</h4>
+                    <p class="text-sm text-gray-400">上传CSV并智能分析</p>
                   </div>
 
                   <!-- 步骤2 -->
                   <div class="text-center">
-                    <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4 relative z-10">
+                    <div class="w-16 h-16 bg-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4 relative z-10">
                       <span class="text-2xl">2</span>
                     </div>
-                    <h4 class="font-semibold mb-2">AI分析</h4>
-                    <p class="text-sm text-gray-400">智能识别数据结构</p>
+                    <h4 class="font-semibold mb-2">生成本体</h4>
+                    <p class="text-sm text-gray-400">创建XML本体定义</p>
                   </div>
 
                   <!-- 步骤3 -->
                   <div class="text-center">
-                    <div class="w-16 h-16 bg-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4 relative z-10">
+                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 relative z-10">
                       <span class="text-2xl">3</span>
                     </div>
-                    <h4 class="font-semibold mb-2">生成本体</h4>
-                    <p class="text-sm text-gray-400">创建XML本体定义</p>
+                    <h4 class="font-semibold mb-2">优化验证</h4>
+                    <p class="text-sm text-gray-400">AI辅助优化和验证</p>
                   </div>
 
                   <!-- 步骤4 -->
@@ -204,15 +193,15 @@
                   <li class="flex items-start">
                     <span class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center mr-4 flex-shrink-0">2</span>
                     <div>
-                      <h4 class="font-semibold mb-1">选择目标领域</h4>
-                      <p class="text-gray-400">从左侧选择或创建新的领域配置</p>
+                      <h4 class="font-semibold mb-1">使用AI Copilot</h4>
+                      <p class="text-gray-400">点击左侧AI Copilot按钮，获取智能帮助</p>
                     </div>
                   </li>
                   <li class="flex items-start">
                     <span class="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center mr-4 flex-shrink-0">3</span>
                     <div>
-                      <h4 class="font-semibold mb-1">使用AI辅助</h4>
-                      <p class="text-gray-400">让AI帮助优化本体结构和规则定义</p>
+                      <h4 class="font-semibold mb-1">生成本体</h4>
+                      <p class="text-gray-400">创建和优化XML本体定义</p>
                     </div>
                   </li>
                   <li class="flex items-start">
@@ -227,6 +216,18 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- AI Copilot面板（固定右侧） -->
+      <div v-if="showAICopilot" class="w-1/2 border-l border-gray-700 flex flex-col">
+        <AICopilotPanel 
+          ref="aiCopilotRef"
+          :domain="selectedDomainId"
+          :current-file="selectedDomain?.name || '未选择领域'"
+          @close="toggleAICopilot"
+          @apply-code="applyCodeToEditor"
+          @execute-action="executeCodeAction"
+        />
       </div>
     </main>
 
@@ -247,12 +248,17 @@
       </div>
     </footer>
 
-    <!-- 可视化编辑器组件 -->
-    <VisualEditor 
-      v-if="showVisualEditor" 
-      :domain="selectedDomain"
-      @close="closeVisualEditor"
-    />
+
+
+     <!-- 可视化编辑器组件 -->
+     <VisualEditor 
+       v-if="showVisualEditor" 
+       :domain="selectedDomain"
+       @close="closeVisualEditor"
+       @refresh="refreshDomains"
+     />
+
+
   </div>
 </template>
 
@@ -261,6 +267,7 @@ import { ref, onMounted } from 'vue'
 import api from './utils/api'
 import Notification from './components/Notification.vue'
 import VisualEditor from './components/VisualEditor.vue'
+import AICopilotPanel from './components/AICopilotPanel.vue'
 import notify, { notifySuccess, notifyError, notifyWarning, notifyInfo } from './utils/notify'
 
 // 响应式状态
@@ -274,6 +281,8 @@ const backendStatus = ref('未知')
 const statusMessage = ref('就绪')
 const statusColor = ref('bg-green-500')
 const showVisualEditor = ref(false)
+const showAICopilot = ref(false)
+const aiCopilotRef = ref<any>(null)
 
 // 领域模组配置（与后端保持一致）
 const DOMAIN_PACKS: Record<string, any> = {
@@ -323,14 +332,14 @@ const checkBackend = async () => {
 }
 
 const importCSV = () => {
-  notifyInfo('CSV导入', 'CSV导入功能需要上传CSV文件')
-  // 这里可以添加实际的CSV导入逻辑
+  // 现在CSV导入在AI Copilot面板中
+  if (!showAICopilot.value) {
+    toggleAICopilot()
+  }
+  notifyInfo('CSV导入', '请在AI Copilot面板中使用CSV导入功能')
 }
 
-const analyzeWithAI = () => {
-  notifyInfo('AI分析', 'AI Copilot分析功能')
-  // 这里可以添加实际的AI分析逻辑
-}
+
 
 const showProjects = () => {
   notifyInfo('项目管理', '项目管理功能')
@@ -356,9 +365,9 @@ const showHelp = () => {
 const loadDomains = async () => {
   try {
     // 尝试从后端API获取领域数据
-    const domainsData = await api.domain.getDomains()
-    if (domainsData && Array.isArray(domainsData)) {
-      domains.value = domainsData
+    const response = await api.domain.getDomains()
+    if (response && response.domains && Array.isArray(response.domains)) {
+      domains.value = response.domains
     } else {
       // 如果API失败或返回无效数据，使用模拟数据
       domains.value = Object.entries(DOMAIN_PACKS).map(([id, config]) => ({
@@ -379,6 +388,24 @@ const loadDomains = async () => {
       color: config.color,
       icon: config.icon
     }))
+  }
+}
+
+// 刷新领域数据（可被外部调用）
+const refreshDomains = async () => {
+  statusMessage.value = '刷新领域数据中...'
+  statusColor.value = 'bg-yellow-500'
+  
+  try {
+    await loadDomains()
+    statusMessage.value = '领域数据已刷新'
+    statusColor.value = 'bg-green-500'
+    notifySuccess('领域数据刷新成功', '侧边栏已更新最新领域列表')
+  } catch (error) {
+    console.error('刷新领域数据失败:', error)
+    statusMessage.value = '刷新失败，使用缓存数据'
+    statusColor.value = 'bg-red-500'
+    notifyWarning('刷新失败', '无法获取最新领域数据，使用缓存显示')
   }
 }
 
@@ -431,6 +458,17 @@ const selectDomain = async (domain: any) => {
   selectedDomain.value = domain
   currentDomain.value = domain.name
   
+  // 检查是否为临时领域（通过描述判断）
+  const isTempDomain = domain.description && domain.description.includes('临时')
+  
+  if (isTempDomain) {
+    // 临时领域：只在前端切换，不调用后端API
+    statusMessage.value = `切换到临时领域: ${domain.name}`
+    statusColor.value = 'bg-blue-500'
+    notifyInfo('临时领域', `已切换到临时领域: ${domain.name}\n\n这是一个临时领域，没有后端配置。`)
+    return
+  }
+  
   statusMessage.value = `切换到领域: ${domain.name}`
   statusColor.value = 'bg-yellow-500'
   
@@ -469,6 +507,41 @@ const selectDomain = async (domain: any) => {
   }
 }
 
+// 切换AI Copilot面板
+const toggleAICopilot = () => {
+  showAICopilot.value = !showAICopilot.value
+}
+
+// 应用代码到编辑器
+const applyCodeToEditor = (code: string, language: string) => {
+  notifySuccess('代码已准备', `已准备${language.toUpperCase()}代码，可应用到编辑器`)
+  // 这里可以添加实际应用到编辑器的逻辑
+}
+
+// 执行代码操作
+const executeCodeAction = (action: string, data: any) => {
+  notifyInfo('执行操作', `执行操作: ${action}`)
+  // 这里可以添加实际执行操作的逻辑
+}
+
+// 设置键盘快捷键
+const setupKeyboardShortcuts = () => {
+  const handleKeyDown = (event: KeyboardEvent) => {
+    // Ctrl+Shift+C 打开/关闭AI Copilot
+    if (event.ctrlKey && event.shiftKey && event.key === 'C') {
+      event.preventDefault()
+      toggleAICopilot()
+    }
+  }
+  
+  window.addEventListener('keydown', handleKeyDown)
+  
+  // 清理函数
+  return () => {
+    window.removeEventListener('keydown', handleKeyDown)
+  }
+}
+
 // 页面加载时自动检查后端
 onMounted(() => {
   // 初始化通知系统
@@ -481,6 +554,19 @@ onMounted(() => {
   
   // 检查后端连接
   checkBackend()
+  
+  // 设置键盘快捷键
+  const cleanup = setupKeyboardShortcuts()
+  
+  // 组件卸载时清理
+  onUnmounted(() => {
+    cleanup()
+  })
+})
+
+// 暴露刷新函数给全局
+defineExpose({
+  refreshDomains
 })
 </script>
 

@@ -42,7 +42,6 @@ export const notify = (options: NotificationOptions | string) => {
     : options
   
   return notificationInstance.addNotification({
-    type: 'info',
     autoClose: true,
     duration: 5000,
     ...notificationOptions
@@ -104,6 +103,16 @@ export const confirm = async (options: {
       ]
     })
   })
+}
+
+// 组合式API使用的toast钩子
+export const useToast = () => {
+  return {
+    success: (title: string, message?: string) => notifySuccess(title, message),
+    error: (title: string, message?: string) => notifyError(title, message),
+    warning: (title: string, message?: string) => notifyWarning(title, message),
+    info: (title: string, message?: string) => notifyInfo(title, message)
+  }
 }
 
 // 提示输入（替换prompt）
@@ -203,5 +212,6 @@ export default {
   notifyWarning,
   notifyInfo,
   confirm,
-  prompt
+  prompt,
+  useToast
 }
