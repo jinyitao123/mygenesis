@@ -1,5 +1,15 @@
 <template>
   <div class="flex h-full" ref="container">
+    <!-- 左侧分隔条（用于右侧面板） -->
+    <div 
+      v-if="position === 'right'"
+      class="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize flex-shrink-0"
+      @mousedown="startResize"
+      @dblclick="handleDoubleClick"
+      :class="{ 'bg-blue-500': isResizing }"
+      title="拖拽调整宽度 | 双击重置"
+    ></div>
+    
     <!-- 面板内容 -->
     <div 
       class="h-full overflow-auto" 
@@ -9,20 +19,10 @@
       <slot></slot>
     </div>
     
-    <!-- 右侧分隔条（用于调整宽度） -->
+    <!-- 右侧分隔条（用于左侧面板） -->
     <div 
       v-if="position === 'left'"
       class="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize flex-shrink-0"
-      @mousedown="startResize"
-      @dblclick="handleDoubleClick"
-      :class="{ 'bg-blue-500': isResizing }"
-      title="拖拽调整宽度 | 双击重置"
-    ></div>
-    
-    <!-- 左侧分隔条（用于调整宽度） -->
-    <div 
-      v-if="position === 'right'"
-      class="w-1 bg-gray-700 hover:bg-blue-500 cursor-col-resize flex-shrink-0 order-first"
       @mousedown="startResize"
       @dblclick="handleDoubleClick"
       :class="{ 'bg-blue-500': isResizing }"
@@ -123,6 +123,9 @@ const handleMouseMove = (e: MouseEvent) => {
   
   // 限制宽度范围
   newWidth = Math.max(props.minWidth, Math.min(props.maxWidth, newWidth))
+  
+  // 调试日志
+  console.log(`Resize: position=${props.position}, deltaX=${deltaX.toFixed(1)}, start=${startWidth}, new=${newWidth.toFixed(1)}, min=${props.minWidth}, max=${props.maxWidth}`)
   
   panelWidth.value = newWidth
 }

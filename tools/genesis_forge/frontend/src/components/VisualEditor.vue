@@ -22,7 +22,7 @@
       <ResizablePanel 
         :default-width="256" 
         :min-width="180" 
-        :max-width="500"
+        :max-width="600"
         storage-key="visual_editor_sidebar_width"
         position="left"
         class="bg-gray-800 border-r border-gray-700 overflow-y-auto"
@@ -148,7 +148,7 @@
         v-show="showPropertyPanel"
         :default-width="320" 
         :min-width="200" 
-        :max-width="600"
+        :max-width="800"
         storage-key="visual_editor_property_panel_width"
         position="right"
         class="bg-gray-800 border-l border-gray-700 overflow-y-auto"
