@@ -280,17 +280,77 @@ def check_ontology_integrity():
                 "message": f"领域 {current_domain} 没有Schema定义"
             }), 400
         
-        # 解析并验证
+        # 解析并验证 - 支持XML和JSON格式
+        schema_data = {}
+        
         try:
+            # 首先尝试解析为JSON
             schema_data = json.loads(schema_content)
+            logger.info(f"Schema是JSON格式，成功解析")
         except json.JSONDecodeError:
-            # 如果不是JSON，可能是XML，尝试从XML中提取数据
-            logger.warning(f"Schema内容不是JSON格式，尝试作为XML处理")
-            # 这里可以添加XML解析逻辑，但暂时返回错误
-            return jsonify({
-                "status": "error",
-                "message": f"领域 {current_domain} 的Schema不是有效的JSON格式"
-            }), 400
+            # 如果不是JSON，尝试解析为XML
+            logger.info(f"Schema是XML格式，尝试从XML中提取本体数据")
+            try:
+                # 使用XML转换器从XML中提取数据
+                from backend.core.xml_converter import XMLConverter
+                
+                # XML文件包含对象类型定义，需要转换为OntologyModel格式
+                # 首先，尝试从XML中提取基本信息
+                import xml.etree.ElementTree as ET
+                root = ET.fromstring(schema_content)
+                
+                # 构建基本的schema数据
+                schema_data = {
+                    "domain": current_domain,
+                    "object_types": {},
+                    "relationships": {},
+                    "action_types": {},
+                    "world_snapshots": {},
+                    "domain_concepts": []
+                }
+                
+                # 从XML中提取对象类型
+                for obj_elem in root.findall(".//ObjectType"):
+                    obj_name = obj_elem.get("name")
+                    if obj_name:
+                        obj_def = {
+                            "name": obj_name,
+                            "description": obj_elem.get("description", ""),
+                            "properties": {}
+                        }
+                        
+                        # 提取属性
+                        for prop_elem in obj_elem.findall(".//Property"):
+                            prop_name = prop_elem.get("name")
+                            if prop_name:
+                                obj_def["properties"][prop_name] = {
+                                    "type": prop_elem.get("type", "string"),
+                                    "description": prop_elem.get("description", "")
+                                }
+                        
+                        schema_data["object_types"][obj_name] = obj_def
+                
+                # 从XML中提取关系类型
+                link_types_elem = root.find(".//LinkTypes")
+                if link_types_elem is not None:
+                    for link_elem in link_types_elem.findall(".//LinkType"):
+                        link_name = link_elem.get("name")
+                        if link_name:
+                            schema_data["relationships"][link_name] = {
+                                "name": link_name,
+                                "sourceType": link_elem.get("source", "Unknown"),
+                                "targetType": link_elem.get("target", "Unknown"),
+                                "description": link_elem.get("description", "")
+                            }
+                
+                logger.info(f"从XML中提取了 {len(schema_data['object_types'])} 个对象类型和 {len(schema_data['relationships'])} 个关系类型")
+                
+            except Exception as xml_error:
+                logger.error(f"XML解析失败: {xml_error}")
+                return jsonify({
+                    "status": "error",
+                    "message": f"领域 {current_domain} 的Schema既不是有效的JSON也不是有效的XML格式: {str(xml_error)}"
+                }), 400
         
         # 确保数据符合OntologyModel要求
         # 1. 添加domain字段（如果缺失）
