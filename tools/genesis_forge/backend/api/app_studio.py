@@ -313,9 +313,12 @@ def check_ontology_integrity():
                 for obj_elem in root.findall(".//ObjectType"):
                     obj_name = obj_elem.get("name")
                     if obj_name:
+                        # 转换type_key为大写下划线格式
+                        type_key = obj_name.upper().replace(' ', '_')
+                        
                         # 构建符合ObjectTypeDefinition要求的数据结构
                         obj_def = {
-                            "type_key": obj_name,  # OntologyModel期望type_key字段
+                            "type_key": type_key,  # 必须是大写下划线格式
                             "name": obj_name,
                             "description": obj_elem.get("description", ""),
                             "properties": {},
@@ -334,7 +337,7 @@ def check_ontology_integrity():
                                     "description": prop_elem.get("description", ""),
                                     "default_value": None,
                                     "is_required": False,
-                                    "constraints": []
+                                    "constraints": {}  # 应该是字典，不是列表
                                 }
                         
                         schema_data["object_types"][obj_name] = obj_def
