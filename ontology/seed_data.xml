@@ -1,3 +1,98 @@
-{
-  "entities": []
-}
+<?xml version="1.0" ?>
+<World domain="supply_chain">
+    <Nodes>
+        <Node id="entity_1" type="object_type">
+            <Property key="label" type="string">TRUCK</Property>
+            <Property key="type" type="string">object_type</Property>
+        </Node>
+        <Node id="entity_2" type="object_type">
+            <Property key="label" type="string">WAREHOUSE</Property>
+            <Property key="type" type="string">object_type</Property>
+        </Node>
+        <Node id="entity_3" type="object_type">
+            <Property key="label" type="string">PACKAGE</Property>
+            <Property key="type" type="string">object_type</Property>
+        </Node>
+        <Node id="entity_4" type="object_type">
+            <Property key="label" type="string">ORDER</Property>
+            <Property key="type" type="string">object_type</Property>
+        </Node>
+        <Node id="entity_5" type="object_type">
+            <Property key="label" type="string">SUPPLIER</Property>
+            <Property key="type" type="string">object_type</Property>
+        </Node>
+        <Node id="entity_6" type="TRUCK">
+            <Property key="label" type="string">运输卡车A</Property>
+            <Property key="type" type="string">TRUCK</Property>
+            <Property key="capacity" type="int">10</Property>
+            <Property key="fuel_level" type="int">100</Property>
+            <Property key="location" type="string">仓库A</Property>
+            <Property key="status" type="string">空闲</Property>
+        </Node>
+        <Node id="entity_7" type="WAREHOUSE">
+            <Property key="label" type="string">中央仓库</Property>
+            <Property key="type" type="string">WAREHOUSE</Property>
+            <Property key="capacity" type="int">1000</Property>
+            <Property key="current_load" type="int">200</Property>
+            <Property key="location" type="string">工业区</Property>
+        </Node>
+        <Node id="entity_8" type="PACKAGE">
+            <Property key="label" type="string">电子产品包裹</Property>
+            <Property key="type" type="string">PACKAGE</Property>
+            <Property key="destination" type="string">客户地址A</Property>
+            <Property key="location" type="string">仓库A</Property>
+            <Property key="weight" type="int">5</Property>
+        </Node>
+        <Node id="entity_9" type="relation_type">
+            <Property key="label" type="string">CONTAINS</Property>
+            <Property key="type" type="string">relation_type</Property>
+        </Node>
+        <Node id="entity_10" type="relation_type">
+            <Property key="label" type="string">LOCATED_AT</Property>
+            <Property key="type" type="string">relation_type</Property>
+        </Node>
+        <Node id="entity_11" type="relation_type">
+            <Property key="label" type="string">BELONGS_TO</Property>
+            <Property key="type" type="string">relation_type</Property>
+        </Node>
+        <Node id="entity_12" type="relation_type">
+            <Property key="label" type="string">PLACED_WITH</Property>
+            <Property key="type" type="string">relation_type</Property>
+        </Node>
+        <Node id="entity_13" type="relation_type">
+            <Property key="label" type="string">TRANSPORTS</Property>
+            <Property key="type" type="string">relation_type</Property>
+        </Node>
+        <Node id="entity_14" type="action_type">
+            <Property key="label" type="string">LOAD_CARGO</Property>
+            <Property key="type" type="string">action_type</Property>
+        </Node>
+        <Node id="entity_15" type="action_type">
+            <Property key="label" type="string">UNLOAD_CARGO</Property>
+            <Property key="type" type="string">action_type</Property>
+        </Node>
+        <Node id="entity_16" type="action_type">
+            <Property key="label" type="string">TRANSPORT</Property>
+            <Property key="type" type="string">action_type</Property>
+        </Node>
+        <Node id="entity_17" type="action_type">
+            <Property key="label" type="string">CREATE_ORDER</Property>
+            <Property key="type" type="string">action_type</Property>
+        </Node>
+        <Node id="entity_18" type="action_type">
+            <Property key="label" type="string">FULFILL_ORDER</Property>
+            <Property key="type" type="string">action_type</Property>
+        </Node>
+        <Node id="entity_19" type="action_type">
+            <Property key="label" type="string">REFUEL</Property>
+            <Property key="type" type="string">action_type</Property>
+        </Node>
+    </Nodes>
+    <Links>
+        <Link type="RELATES_TO" source="type_TRUCK" target="truck_001"/>
+        <Link type="RELATES_TO" source="type_WAREHOUSE" target="warehouse_001"/>
+        <Link type="RELATES_TO" source="rel_CONTAINS" target="rel_LOCATED_AT"/>
+        <Link type="RELATES_TO" source="rel_LOCATED_AT" target="rel_BELONGS_TO"/>
+        <Link type="RELATES_TO" source="rel_BELONGS_TO" target="rel_PLACED_WITH"/>
+    </Links>
+</World>

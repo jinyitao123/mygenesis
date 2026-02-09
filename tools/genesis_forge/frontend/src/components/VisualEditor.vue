@@ -142,17 +142,17 @@
         position="right"
         class="bg-gray-800 border-l border-gray-700 overflow-y-auto h-full"
         @width-change="(width) => rightPanelWidth.value = width"
-      >
-        <div class="p-4 h-full overflow-y-auto">
-          <div class="flex justify-between items-center mb-3">
-            <h3 class="font-semibold">属性编辑</h3>
-            <button @click="closePropertyPanel" class="text-gray-400 hover:text-white">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-          </div>
-          <div v-if="selectedElement">
+       >
+         <div class="p-4 h-full flex flex-col overflow-hidden">
+           <div class="flex justify-between items-center mb-3">
+             <h3 class="font-semibold">属性编辑</h3>
+             <button @click="closePropertyPanel" class="text-gray-400 hover:text-white">
+               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+               </svg>
+             </button>
+           </div>
+           <div v-if="selectedElement" class="flex-1 overflow-y-auto">
             <div class="mb-4">
               <label class="block text-sm font-medium text-gray-300 mb-1">ID</label>
               <input 
@@ -194,9 +194,9 @@
                 class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
               >
             </div>
-            <div class="mb-4">
+            <div class="mb-4 flex-1 flex flex-col min-h-0">
               <label class="block text-sm font-medium text-gray-300 mb-1">属性</label>
-              <div class="bg-gray-900 rounded p-3 max-h-40 overflow-y-auto">
+              <div class="bg-gray-900 rounded p-3 flex-1 overflow-y-auto">
                 <div v-if="Object.keys(selectedElement.properties || {}).length === 0" class="text-gray-400 text-sm">
                   无属性
                 </div>
@@ -230,11 +230,11 @@
                 取消
               </button>
             </div>
-          </div>
-          <div v-else class="text-gray-400 text-sm">
-            选择元素以编辑属性
-          </div>
-        </div>
+           </div>
+           <div v-else class="text-gray-400 text-sm flex-1 flex items-center justify-center">
+             选择元素以编辑属性
+           </div>
+         </div>
       </ResizablePanel>
     </div>
 
