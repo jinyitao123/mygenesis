@@ -85,7 +85,7 @@
     </div>
     
     <!-- 图容器 -->
-    <div ref="cyContainer" class="flex-1 bg-gray-900"></div>
+    <div ref="cyContainer" class="flex-1 bg-gray-900 w-full h-full min-h-[400px]"></div>
     
     <!-- 属性面板 -->
     <div v-if="selectedElement" class="bg-gray-800 border-t border-gray-700 p-4">
@@ -441,9 +441,15 @@ const initCytoscape = () => {
     cy.destroy()
   }
   
+  // 确保容器有正确的尺寸
+  const container = cyContainer.value
+  container.style.width = '100%'
+  container.style.height = '100%'
+  container.style.position = 'relative'
+  
   // 创建Cytoscape实例
   cy = cytoscape({
-    container: cyContainer.value,
+    container: container,
     elements: formatElementsForCytoscape(props.elements),
     style: [
       {
@@ -975,15 +981,44 @@ watch(() => props.elements, (newElements) => {
   }
 }, { deep: true })
 
+// 响应式调整大小
+let resizeObserver: ResizeObserver | null = null
+
+const setupResizeObserver = () => {
+  if (!cyContainer.value) return
+  
+  resizeObserver = new ResizeObserver(() => {
+    if (cy) {
+      // 延迟执行以确保DOM已更新
+      setTimeout(() => {
+        cy.resize()
+        cy.fit()
+      }, 100)
+    }
+  })
+  
+  resizeObserver.observe(cyContainer.value)
+}
+
+const cleanupResizeObserver = () => {
+  if (resizeObserver && cyContainer.value) {
+    resizeObserver.unobserve(cyContainer.value)
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+}
+
 // 生命周期
 onMounted(() => {
   initCytoscape()
+  setupResizeObserver()
 })
 
 onUnmounted(() => {
   if (cy) {
     cy.destroy()
   }
+  cleanupResizeObserver()
 })
 
 // 暴露方法给父组件
@@ -999,6 +1034,12 @@ defineExpose({
 :deep(.cytoscape-container) {
   width: 100%;
   height: 100%;
+}
+
+/* 确保Cytoscape容器正确填充 */
+div[ref="cyContainer"] {
+  position: relative;
+  overflow: hidden;
 }
 
 /* 滚动条样式 */
