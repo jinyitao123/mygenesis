@@ -10,7 +10,7 @@ Neo4j Loader - XML 到 Neo4j 图数据库导入器
 
 import xml.etree.ElementTree as ET
 import logging
-from typing import Dict, List, Any, Optional, Tuple, Union
+from typing import Dict, List, Any, Optional, Tuple, Union, TypeVar
 from pathlib import Path
 import sys
 
@@ -31,7 +31,7 @@ except ImportError:
 class Neo4jLoader:
     """Neo4j 图数据库加载器 - 使用服务抽象层"""
     
-    def __init__(self, neo4j_service: Optional[INeo4jService] = None):
+    def __init__(self, neo4j_service: Optional[Any] = None):
         """
         初始化加载器
         
@@ -350,7 +350,7 @@ class Neo4jLoader:
                 "links": []
             }
     
-    def get_node_types(self) -> List[str]:
+    def get_node_types(self) -> List[Any]:
         """获取所有节点类型"""
         try:
             result = self._safe_run_query("""

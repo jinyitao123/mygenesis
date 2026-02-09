@@ -1014,11 +1014,41 @@ def save_domain_config_compat(domain_name):
         file_types = []
         new_contents = {}
         
+        # 导入XML转换器
+        try:
+            from backend.core.xml_converter import XMLConverter
+        except ImportError:
+            logger.error("XML转换器导入失败")
+            return jsonify({"error": "XML转换器不可用"}), 500
+        
         for file_type in ["schema", "seed", "actions", "patterns"]:
             content = data.get(file_type, "")
             if content:
-                file_types.append(file_type)
-                new_contents[file_type] = content
+                try:
+                    # 尝试解析JSON内容
+                    json_data = json.loads(content)
+                    
+                    # 根据文件类型转换为XML
+                    if file_type == "schema":
+                        # 本体数据转换为object_types.xml
+                        xml_content = XMLConverter.convert_ontology_to_xml(json_data, domain_name)
+                    elif file_type == "seed":
+                        # 种子数据转换为seed_data.xml
+                        xml_content = XMLConverter.convert_seed_data_to_xml(json_data, domain_name)
+                    else:
+                        # 其他文件类型保持原样
+                        xml_content = content
+                    
+                    file_types.append(file_type)
+                    new_contents[file_type] = xml_content
+                    
+                except json.JSONDecodeError:
+                    # 如果不是JSON，保持原样
+                    file_types.append(file_type)
+                    new_contents[file_type] = content
+                except Exception as e:
+                    logger.error(f"处理{file_type}文件失败: {e}")
+                    return jsonify({"error": f"处理{file_type}文件失败: {str(e)}"}), 500
         
         if not file_types:
             return jsonify({"error": "没有要保存的文件内容"}), 400

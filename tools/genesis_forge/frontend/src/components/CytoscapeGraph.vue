@@ -345,6 +345,7 @@ const initCytoscape = () => {
   // 销毁现有的实例
   if (cy) {
     cy.destroy()
+    cy = null
   }
   
   // 确保容器有正确的尺寸
@@ -521,12 +522,18 @@ const formatElementsForCytoscape = (elements: GraphElement[]) => {
 const setupEventListeners = () => {
   if (!cy) return
   
-  // 选择事件
-  cy.on('select', 'node, edge', (event) => {
+  // 点击事件 - 用于选择元素
+  cy.on('tap', 'node, edge', (event) => {
     const element = event.target
     const elementData = element.data()
     
-    console.log('Element selected:', elementData.id, 'isNode:', element.isNode(), 'isEdge:', element.isEdge())
+    console.log('Element tapped:', elementData.id, 'isNode:', element.isNode(), 'isEdge:', element.isEdge())
+    
+    // 先取消所有已选中的元素
+    cy.elements().unselect()
+    
+    // 选中当前点击的元素
+    element.select()
     
     // 构建GraphElement对象
     const graphElement: GraphElement = {
@@ -562,6 +569,45 @@ const setupEventListeners = () => {
     
     selectedElement.value = graphElement
     console.log('selectedElement updated:', selectedElement.value)
+    emit('element-selected', graphElement)
+  })
+  
+  // 点击空白区域取消选择
+  cy.on('tap', (event) => {
+    // 如果点击的不是节点或边
+    if (event.target === cy) {
+      cy.elements().unselect()
+      selectedElement.value = null
+      selectedNodes.value = { source: '', target: '' }
+      emit('element-selected', null)
+      console.log('Background tapped, selection cleared')
+    }
+  })
+  
+  // 选择事件（用于处理程序化选择）
+  cy.on('select', 'node, edge', (event) => {
+    const element = event.target
+    const elementData = element.data()
+    
+    console.log('Element programmatically selected:', elementData.id)
+    
+    // 构建GraphElement对象
+    const graphElement: GraphElement = {
+      data: {
+        id: elementData.id,
+        label: elementData.label || elementData.id,
+        type: elementData.type || 'unknown',
+        ...elementData
+      }
+    }
+    
+    // 添加位置信息（如果可用）
+    if (element.position) {
+      graphElement.position = element.position()
+    }
+    
+    selectedElement.value = graphElement
+    console.log('selectedElement updated via select event:', selectedElement.value)
   })
   
   // 取消选择事件
@@ -570,6 +616,7 @@ const setupEventListeners = () => {
     if (selected.length === 0) {
       selectedElement.value = null
       emit('element-selected', null)
+      console.log('Element unselected')
     }
   })
   
@@ -794,6 +841,9 @@ const deleteSelected = () => {
   console.log('Element found in cytoscape:', !!elementToDelete)
   
   if (elementToDelete) {
+    // 取消选择该元素
+    elementToDelete.unselect()
+    
     // 根据元素类型触发相应事件
     if (elementToDelete.isNode()) {
       console.log('Deleting node:', elementId)
@@ -806,6 +856,9 @@ const deleteSelected = () => {
     // 从Cytoscape中删除
     elementToDelete.remove()
     console.log('Element removed from cytoscape')
+    
+    // 发出元素选择事件，通知其他组件元素已被删除
+    emit('element-selected', null)
   }
   
   emit('graph-updated', getCurrentElements())
@@ -885,14 +938,60 @@ const getCurrentElements = (): GraphElement[] => {
 }
 
 // 监听元素变化
-watch(() => props.elements, (newElements) => {
+watch(() => props.elements, (newElements, oldElements) => {
   if (cy) {
-    // 清除现有元素
-    cy.elements().remove()
+    console.log('Elements changed, old:', oldElements?.length, 'new:', newElements.length)
+    
+    // 获取当前图中的所有元素ID
+    const currentElementIds = new Set(cy.elements().map(el => el.id()))
+    
+    // 获取新元素中的所有ID
+    const newElementIds = new Set(newElements.map(el => el.data?.id || el.id))
+    
+    // 找出需要删除的元素（在当前图中但不在新元素中）
+    const elementsToRemove = cy.elements().filter(el => !newElementIds.has(el.id()))
+    
+    // 找出需要添加的元素（在新元素中但不在当前图中）
+    const elementsToAdd = newElements.filter(el => {
+      const elementId = el.data?.id || el.id
+      return !currentElementIds.has(elementId)
+    })
+    
+    // 找出需要更新的元素（在两个集合中都存在）
+    const elementsToUpdate = newElements.filter(el => {
+      const elementId = el.data?.id || el.id
+      return currentElementIds.has(elementId)
+    })
+    
+    console.log('Elements to remove:', elementsToRemove.length)
+    console.log('Elements to add:', elementsToAdd.length)
+    console.log('Elements to update:', elementsToUpdate.length)
+    
+    // 删除不再需要的元素
+    if (elementsToRemove.length > 0) {
+      elementsToRemove.remove()
+    }
     
     // 添加新元素
-    const formattedElements = formatElementsForCytoscape(newElements)
-    cy.add(formattedElements)
+    if (elementsToAdd.length > 0) {
+      const formattedElements = formatElementsForCytoscape(elementsToAdd)
+      cy.add(formattedElements)
+    }
+    
+    // 更新现有元素
+    elementsToUpdate.forEach(el => {
+      const elementId = el.data?.id || el.id
+      const existingElement = cy.getElementById(elementId)
+      if (existingElement) {
+        // 更新元素数据
+        existingElement.data(el.data || el)
+        
+        // 如果有位置信息，更新位置
+        if (el.position && existingElement.isNode()) {
+          existingElement.position(el.position)
+        }
+      }
+    })
     
     // 只有在元素数量有显著变化时才重新布局
     const currentCount = cy.elements().length

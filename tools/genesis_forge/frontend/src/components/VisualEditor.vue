@@ -423,15 +423,19 @@ const saveVisualEditor = async () => {
       }
     })
     
-    // 创建本体配置 - 格式与后端API兼容
+    // 创建本体配置 - 格式与OntologyModel兼容
     const ontology = {
-      name: `可视化编辑_${props.domain?.id}_${new Date().toISOString().split('T')[0]}`,
-      description: `通过可视化编辑器创建的 ${props.domain?.id} 领域本体`,
+      domain: props.domain?.id || 'unknown',
       version: '1.0.0',
-      createdAt: new Date().toISOString(),
-      objectTypes: Array.from(nodeTypeMap.values()),
-      relationships: Array.from(relationshipTypeMap.values()),
-      rules: []
+      objectTypes: Object.fromEntries(
+        Array.from(nodeTypeMap.values()).map(obj => [obj.name, obj])
+      ),
+      relationships: Object.fromEntries(
+        Array.from(relationshipTypeMap.values()).map(rel => [rel.name, rel])
+      ),
+      actionTypes: {},
+      worldSnapshots: {},
+      domainConcepts: []
     }
     
     // 创建种子数据
@@ -630,7 +634,7 @@ const handleNodeDelete = (nodeId: string) => {
   console.log('删除节点:', nodeId)
   if (graphData.value?.elements) {
     graphData.value.elements = graphData.value.elements.filter(
-      (el: any) => !(el.id === nodeId && el.type === 'node')
+      (el: any) => !(el.data?.id === nodeId)
     )
     graphData.value.stats.nodes = Math.max(0, (graphData.value.stats.nodes || 0) - 1)
     
@@ -642,7 +646,7 @@ const handleEdgeDelete = (edgeId: string) => {
   console.log('删除边:', edgeId)
   if (graphData.value?.elements) {
     graphData.value.elements = graphData.value.elements.filter(
-      (el: any) => !(el.id === edgeId && el.type === 'edge')
+      (el: any) => !(el.data?.id === edgeId)
     )
     graphData.value.stats.edges = Math.max(0, (graphData.value.stats.edges || 0) - 1)
     
@@ -654,11 +658,11 @@ const handleNodeUpdate = (node: any) => {
   console.log('更新节点:', node)
   if (graphData.value?.elements) {
     const index = graphData.value.elements.findIndex(
-      (el: any) => el.id === node.id && el.type === 'node'
+      (el: any) => el.data?.id === node.data?.id
     )
     if (index !== -1) {
       graphData.value.elements[index] = node
-      notifySuccess('节点更新成功', `已更新节点: ${node.data?.label || node.id}`)
+      notifySuccess('节点更新成功', `已更新节点: ${node.data?.label || node.data?.id}`)
     }
   }
 }
@@ -667,7 +671,7 @@ const handleEdgeUpdate = (edge: any) => {
   console.log('更新边:', edge)
   if (graphData.value?.elements) {
     const index = graphData.value.elements.findIndex(
-      (el: any) => el.id === edge.id && el.type === 'edge'
+      (el: any) => el.data?.id === edge.data?.id
     )
     if (index !== -1) {
       graphData.value.elements[index] = edge
