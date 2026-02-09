@@ -299,7 +299,7 @@ def check_ontology_integrity():
                 import xml.etree.ElementTree as ET
                 root = ET.fromstring(schema_content)
                 
-                # 构建基本的schema数据
+                # 构建基本的schema数据 - 符合OntologyModel要求
                 schema_data = {
                     "domain": current_domain,
                     "object_types": {},
@@ -309,38 +309,51 @@ def check_ontology_integrity():
                     "domain_concepts": []
                 }
                 
-                # 从XML中提取对象类型
+                # 从XML中提取对象类型 - 符合ObjectTypeDefinition模型
                 for obj_elem in root.findall(".//ObjectType"):
                     obj_name = obj_elem.get("name")
                     if obj_name:
+                        # 构建符合ObjectTypeDefinition要求的数据结构
                         obj_def = {
+                            "type_key": obj_name,  # OntologyModel期望type_key字段
                             "name": obj_name,
                             "description": obj_elem.get("description", ""),
-                            "properties": {}
+                            "properties": {},
+                            "visual_assets": [],
+                            "tags": []
                         }
                         
-                        # 提取属性
+                        # 提取属性 - 符合PropertyDefinition模型
                         for prop_elem in obj_elem.findall(".//Property"):
                             prop_name = prop_elem.get("name")
                             if prop_name:
+                                # 构建符合PropertyDefinition要求的数据结构
                                 obj_def["properties"][prop_name] = {
+                                    "name": prop_name,  # 必需字段
                                     "type": prop_elem.get("type", "string"),
-                                    "description": prop_elem.get("description", "")
+                                    "description": prop_elem.get("description", ""),
+                                    "default_value": None,
+                                    "is_required": False,
+                                    "constraints": []
                                 }
                         
                         schema_data["object_types"][obj_name] = obj_def
                 
-                # 从XML中提取关系类型
+                # 从XML中提取关系类型 - 符合RelationshipDefinition模型
                 link_types_elem = root.find(".//LinkTypes")
                 if link_types_elem is not None:
                     for link_elem in link_types_elem.findall(".//LinkType"):
                         link_name = link_elem.get("name")
                         if link_name:
+                            # 构建符合RelationshipDefinition要求的数据结构
                             schema_data["relationships"][link_name] = {
+                                "relation_type": link_name,  # 必需字段
                                 "name": link_name,
-                                "sourceType": link_elem.get("source", "Unknown"),
-                                "targetType": link_elem.get("target", "Unknown"),
-                                "description": link_elem.get("description", "")
+                                "source_type": link_elem.get("source", "Unknown"),
+                                "target_type": link_elem.get("target", "Unknown"),
+                                "description": link_elem.get("description", ""),
+                                "properties": {},
+                                "constraints": []
                             }
                 
                 logger.info(f"从XML中提取了 {len(schema_data['object_types'])} 个对象类型和 {len(schema_data['relationships'])} 个关系类型")
