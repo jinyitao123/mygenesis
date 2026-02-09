@@ -97,6 +97,10 @@ let startWidth = 0
 
 const startResize = (e: MouseEvent) => {
   e.preventDefault()
+  e.stopPropagation()
+  
+  console.log(`Start resize: position=${props.position}, clientX=${e.clientX}, startWidth=${panelWidth.value}`)
+  
   isResizing.value = true
   startX = e.clientX
   startWidth = panelWidth.value
@@ -108,6 +112,14 @@ const startResize = (e: MouseEvent) => {
   // 防止文本选择
   document.body.style.userSelect = 'none'
   document.body.style.cursor = 'col-resize'
+  
+  // 添加激活样式
+  if (container.value) {
+    const handle = container.value.querySelector('.w-1')
+    if (handle) {
+      handle.classList.add('bg-blue-500')
+    }
+  }
 }
 
 const handleMouseMove = (e: MouseEvent) => {
@@ -133,6 +145,8 @@ const handleMouseMove = (e: MouseEvent) => {
 const stopResize = () => {
   if (!isResizing.value) return
   
+  console.log(`Stop resize: position=${props.position}, finalWidth=${panelWidth.value}`)
+  
   isResizing.value = false
   
   // 移除事件监听
@@ -142,6 +156,14 @@ const stopResize = () => {
   // 恢复样式
   document.body.style.userSelect = ''
   document.body.style.cursor = ''
+  
+  // 移除激活样式
+  if (container.value) {
+    const handle = container.value.querySelector('.w-1')
+    if (handle) {
+      handle.classList.remove('bg-blue-500')
+    }
+  }
   
   // 保存宽度
   saveWidth()
@@ -176,5 +198,17 @@ onUnmounted(() => {
 /* 调整大小时的样式 */
 .bg-blue-500 {
   background-color: #3b82f6;
+}
+
+/* 确保分隔条可以接收鼠标事件 */
+.w-1 {
+  position: relative;
+  z-index: 10;
+}
+
+/* 调试：分隔条激活时的高亮效果 */
+.w-1.bg-blue-500 {
+  background-color: #3b82f6 !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 }
 </style>
