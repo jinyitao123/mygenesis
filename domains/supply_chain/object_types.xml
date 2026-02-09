@@ -2,7 +2,7 @@
   "name": "可视化编辑_supply_chain_2026-02-09",
   "description": "通过可视化编辑器创建的 supply_chain 领域本体",
   "version": "1.0.0",
-  "createdAt": "2026-02-09T05:55:00.648Z",
+  "createdAt": "2026-02-09T08:06:43.046Z",
   "objectTypes": [
     {
       "name": "object_type",
@@ -97,15 +97,41 @@
           "description": "节点类型"
         }
       }
+    },
+    {
+      "name": "custom",
+      "description": "通过可视化编辑器创建的 custom 类型",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "节点标签"
+        },
+        "type": {
+          "type": "string",
+          "description": "节点类型"
+        },
+        "created": "2026-02-09T08:02:37.744Z",
+        "source": "visual_editor"
+      }
     }
   ],
   "relationships": [
     {
       "name": "RELATES_TO",
-      "description": "通过可视化编辑器创建的 RELATES_TO 关系 (Unknown → Unknown)",
+      "description": "通过可视化编辑器创建的 RELATES_TO 关系",
       "sourceType": "Unknown",
       "targetType": "Unknown",
       "properties": {}
+    },
+    {
+      "name": "213",
+      "description": "通过可视化编辑器创建的 213 关系",
+      "sourceType": "Unknown",
+      "targetType": "Unknown",
+      "properties": {
+        "created": "2026-02-09T08:02:48.706Z",
+        "source": "visual_editor"
+      }
     }
   ],
   "rules": [],
@@ -253,6 +279,15 @@
           "label": "REFUEL",
           "type": "action_type"
         }
+      },
+      {
+        "type": "custom",
+        "properties": {
+          "label": "新节点_6952",
+          "type": "custom",
+          "created": "2026-02-09T08:02:37.744Z",
+          "source": "visual_editor"
+        }
       }
     ],
     "relations": [
@@ -294,6 +329,16 @@
         "target": "rel_PLACED_WITH",
         "properties": {
           "label": "RELATED_TO"
+        }
+      },
+      {
+        "type": "213",
+        "source": "package_001",
+        "target": "rel_TRANSPORTS",
+        "properties": {
+          "label": "213",
+          "created": "2026-02-09T08:02:48.706Z",
+          "source": "visual_editor"
         }
       }
     ]

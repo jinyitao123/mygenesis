@@ -350,7 +350,10 @@ const loadRealData = async () => {
 // 验证图谱
 const validateGraph = async () => {
   try {
+    console.log('验证按钮点击，当前领域:', props.domain?.id)
     const response = await api.ontology.checkIntegrity()
+    console.log('验证响应:', response)
+    
     if (response.status === 'success') {
       notifySuccess('验证完成', response.message || '本体完整性检查通过')
     } else if (response.status === 'warning') {
@@ -359,6 +362,7 @@ const validateGraph = async () => {
       notifyError('验证失败', response.message || '未知错误')
     }
   } catch (error) {
+    console.error('验证失败:', error)
     notifyError('验证失败', `错误: ${error}`)
   }
 }
@@ -419,7 +423,7 @@ const saveVisualEditor = async () => {
       }
     })
     
-    // 创建本体配置
+    // 创建本体配置 - 格式与后端API兼容
     const ontology = {
       name: `可视化编辑_${props.domain?.id}_${new Date().toISOString().split('T')[0]}`,
       description: `通过可视化编辑器创建的 ${props.domain?.id} 领域本体`,
@@ -427,35 +431,41 @@ const saveVisualEditor = async () => {
       createdAt: new Date().toISOString(),
       objectTypes: Array.from(nodeTypeMap.values()),
       relationships: Array.from(relationshipTypeMap.values()),
-      rules: [],
-      // 包含种子数据（实际节点实例）
-      seedData: {
-        entities: nodes.map(node => ({
-          id: node.id,
+      rules: []
+    }
+    
+    // 创建种子数据
+    const seedData = {
+      entities: nodes.map(node => ({
+        id: node.id,
+        type: node.data?.type || 'Unknown',
+        properties: {
+          label: node.data?.label || node.id,
           type: node.data?.type || 'Unknown',
-          properties: {
-            label: node.data?.label || node.id,
-            type: node.data?.type || 'Unknown',
-            ...(node.data?.properties || {})
-          }
-        })),
-        relations: edges.map(edge => ({
-          id: edge.id,
-          type: edge.data?.type || 'RELATES_TO',
-          source: edge.data?.source,
-          target: edge.data?.target,
-          properties: {
-            label: edge.data?.label || edge.id,
-            ...(edge.data?.properties || {})
-          }
-        }))
-      }
+          ...(node.data?.properties || {})
+        }
+      })),
+      relations: edges.map(edge => ({
+        id: edge.id,
+        type: edge.data?.type || 'RELATES_TO',
+        source: edge.data?.source,
+        target: edge.data?.target,
+        properties: {
+          label: edge.data?.label || edge.id,
+          ...(edge.data?.properties || {})
+        }
+      }))
     }
     
     console.log('生成的本体:', ontology)
+    console.log('生成的种子数据:', seedData)
     
-    // 保存到领域
-    await api.upload.saveOntologyToDomain(props.domain?.id, ontology)
+    // 保存到领域 - 使用正确的格式
+    await api.upload.saveOntologyToDomain(props.domain?.id, {
+      schema: ontology,
+      seed: seedData,
+      sync_to_neo4j: true  // 同步到图数据库
+    })
     
     notifySuccess('本体保存成功', `已保存到领域: ${props.domain?.id}\n\n现在可以在以下位置使用：\n1. E:\\Documents\\MyGame\\genesis\n2. E:\\Documents\\MyGame\\applications\n3. 其他业务系统`)
     
@@ -591,6 +601,11 @@ const handleNodeAdd = (node: any) => {
   console.log('添加节点:', node)
   if (!graphData.value) {
     graphData.value = { elements: [], stats: { nodes: 0, edges: 0 } }
+  }
+  
+  // 确保stats对象存在
+  if (!graphData.value.stats) {
+    graphData.value.stats = { nodes: 0, edges: 0 }
   }
   
   graphData.value.elements.push(node)

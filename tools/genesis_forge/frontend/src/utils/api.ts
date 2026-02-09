@@ -285,12 +285,13 @@ ${text}
   },
   
   // 保存本体到领域
-  saveOntologyToDomain: (domainName: string, ontology: any) =>
+  saveOntologyToDomain: (domainName: string, data: any) =>
     request<any>(`/api/domains/${domainName}/save`, {
       method: 'POST',
       body: JSON.stringify({
-        schema: JSON.stringify(ontology, null, 2),
-        seed: JSON.stringify({ entities: [] }, null, 2)
+        schema: JSON.stringify(data.schema || {}, null, 2),
+        seed: JSON.stringify(data.seed || { entities: [] }, null, 2),
+        sync_to_neo4j: data.sync_to_neo4j || false
       })
     }),
   

@@ -262,14 +262,17 @@ def validate_ontology():
 def check_ontology_integrity():
     """检查本体完整性"""
     try:
+        # 获取当前领域
+        current_domain = RequestContext.get_current_domain()
+        
         # 获取当前领域文件
-        files_content = domain_manager.get_active_domain_files()
+        files_content = domain_manager.get_domain_files(current_domain)
         schema_content = files_content.get("schema", "")
         
         if not schema_content:
             return jsonify({
                 "status": "error",
-                "message": "没有Schema定义"
+                "message": f"领域 {current_domain} 没有Schema定义"
             }), 400
         
         # 解析并验证

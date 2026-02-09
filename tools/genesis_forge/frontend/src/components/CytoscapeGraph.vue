@@ -50,7 +50,7 @@
         </div>
         <div class="flex space-x-2">
           <button 
-            @click="addNode" 
+            @click.stop="addNode" 
             class="px-3 py-1.5 bg-blue-600 rounded text-sm hover:bg-blue-700 flex items-center"
           >
             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,7 +59,7 @@
             添加节点
           </button>
           <button 
-            @click="addEdge" 
+            @click.stop="addEdge" 
             class="px-3 py-1.5 bg-green-600 rounded text-sm hover:bg-green-700 flex items-center"
             :disabled="!selectedNodes.source || !selectedNodes.target"
             :class="{ 'opacity-50 cursor-not-allowed': !selectedNodes.source || !selectedNodes.target }"
@@ -70,7 +70,7 @@
             添加关系
           </button>
           <button 
-            @click="deleteSelected" 
+            @click.stop="deleteSelected" 
             class="px-3 py-1.5 bg-red-600 rounded text-sm hover:bg-red-700 flex items-center"
             :disabled="!selectedElement"
             :class="{ 'opacity-50 cursor-not-allowed': !selectedElement }"
@@ -139,14 +139,14 @@
         </div>
         
         <div class="flex justify-end space-x-3 mt-6">
-          <button 
-            @click="cancelAddNode" 
+           <button 
+            @click.stop="cancelAddNode" 
             class="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
           >
             取消
           </button>
-          <button 
-            @click="confirmAddNode" 
+           <button 
+            @click.stop="confirmAddNode" 
             class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
             :disabled="!newNode.id || !newNode.label"
             :class="{ 'opacity-50 cursor-not-allowed': !newNode.id || !newNode.label }"
@@ -222,14 +222,14 @@
         </div>
         
         <div class="flex justify-end space-x-3 mt-6">
-          <button 
-            @click="cancelAddEdge" 
+           <button 
+            @click.stop="cancelAddEdge" 
             class="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
           >
             取消
           </button>
-          <button 
-            @click="confirmAddEdge" 
+           <button 
+            @click.stop="confirmAddEdge" 
             class="px-4 py-2 bg-green-600 rounded hover:bg-green-700"
             :disabled="!newEdge.source || !newEdge.target || !newEdge.type"
             :class="{ 'opacity-50 cursor-not-allowed': !newEdge.source || !newEdge.target || !newEdge.type }"
@@ -526,6 +526,8 @@ const setupEventListeners = () => {
     const element = event.target
     const elementData = element.data()
     
+    console.log('Element selected:', elementData.id, 'isNode:', element.isNode(), 'isEdge:', element.isEdge())
+    
     // 构建GraphElement对象
     const graphElement: GraphElement = {
       data: {
@@ -535,6 +537,13 @@ const setupEventListeners = () => {
         ...elementData
       }
     }
+    
+    // 添加位置信息（如果可用）
+    if (element.position) {
+      graphElement.position = element.position()
+    }
+    
+    console.log('GraphElement created:', graphElement)
     
     // 如果是节点，更新selectedNodes
     if (element.isNode()) {
@@ -552,6 +561,7 @@ const setupEventListeners = () => {
     }
     
     selectedElement.value = graphElement
+    console.log('selectedElement updated:', selectedElement.value)
   })
   
   // 取消选择事件
@@ -628,6 +638,8 @@ const resetView = () => {
 
 // 元素操作
 const addNode = () => {
+  console.log('addNode clicked, current showAddNodeModal:', showAddNodeModal.value)
+  
   // 生成默认ID
   newNode.value.id = `node_${Date.now()}`
   newNode.value.label = `新节点_${Date.now().toString().slice(-4)}`
@@ -635,6 +647,7 @@ const addNode = () => {
   newNode.value.customType = ''
   
   showAddNodeModal.value = true
+  console.log('showAddNodeModal set to:', showAddNodeModal.value)
 }
 
 const confirmAddNode = () => {
@@ -687,7 +700,10 @@ const cancelAddNode = () => {
 }
 
 const addEdge = () => {
+  console.log('addEdge clicked, selectedNodes:', selectedNodes.value)
+  
   if (!selectedNodes.value.source || !selectedNodes.value.target) {
+    console.log('addEdge: missing source or target')
     return
   }
   
@@ -698,6 +714,7 @@ const addEdge = () => {
   newEdge.value.customType = ''
   
   showAddEdgeModal.value = true
+  console.log('showAddEdgeModal set to:', showAddEdgeModal.value)
 }
 
 const confirmAddEdge = () => {
@@ -761,22 +778,34 @@ const cancelAddEdge = () => {
 }
 
 const deleteSelected = () => {
-  if (!cy || !selectedElement.value) return
+  console.log('deleteSelected clicked, selectedElement:', selectedElement.value)
+  console.log('cy exists:', !!cy)
+  
+  if (!cy || !selectedElement.value) {
+    console.log('deleteSelected: missing cy or selectedElement')
+    return
+  }
   
   const elementId = selectedElement.value.data.id
+  console.log('Deleting element:', elementId)
   
   // 获取元素并判断类型
   const elementToDelete = cy.getElementById(elementId)
+  console.log('Element found in cytoscape:', !!elementToDelete)
+  
   if (elementToDelete) {
     // 根据元素类型触发相应事件
     if (elementToDelete.isNode()) {
+      console.log('Deleting node:', elementId)
       emit('node-delete', elementId)
     } else if (elementToDelete.isEdge()) {
+      console.log('Deleting edge:', elementId)
       emit('edge-delete', elementId)
     }
     
     // 从Cytoscape中删除
     elementToDelete.remove()
+    console.log('Element removed from cytoscape')
   }
   
   emit('graph-updated', getCurrentElements())
@@ -785,6 +814,8 @@ const deleteSelected = () => {
   updateCounts()
   selectedElement.value = null
   selectedNodes.value = { source: '', target: '' }
+  
+  console.log('deleteSelected completed')
 }
 
 const updateElement = () => {
