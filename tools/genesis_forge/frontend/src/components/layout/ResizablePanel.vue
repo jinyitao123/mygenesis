@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full" ref="container">
+  <div class="flex h-full min-w-0" ref="container">
     <!-- 左侧分隔条（用于右侧面板） -->
     <div 
       v-if="position === 'right'"
@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 
 interface Props {
   // 初始宽度
@@ -55,9 +55,18 @@ const props = withDefaults(defineProps<Props>(), {
   position: 'left'
 })
 
+const emit = defineEmits<{
+  'width-change': [width: number]
+}>()
+
 // 响应式状态
 const panelWidth = ref(props.defaultWidth)
 const isResizing = ref(false)
+
+// 监听宽度变化并发出事件
+watch(panelWidth, (newWidth) => {
+  emit('width-change', newWidth)
+})
 
 // 引用
 const container = ref<HTMLElement>()

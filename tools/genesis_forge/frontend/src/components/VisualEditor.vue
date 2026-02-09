@@ -16,8 +16,8 @@
       </div>
     </div>
 
-    <!-- 主编辑器区域 -->
-    <div class="flex-1 flex">
+    <!-- 主编辑器区域 - 使用Grid布局实现真正自适应 -->
+    <div class="flex-1 grid overflow-hidden" :style="gridStyle" ref="editorGrid">
       <!-- 左侧边栏（可调整宽度） -->
       <ResizablePanel 
         :default-width="256" 
@@ -25,7 +25,8 @@
         :max-width="600"
         storage-key="visual_editor_sidebar_width"
         position="left"
-        class="bg-gray-800 border-r border-gray-700 overflow-y-auto"
+        class="bg-gray-800 border-r border-gray-700 overflow-y-auto h-full"
+        @width-change="(width) => leftPanelWidth.value = width"
       >
         <div class="p-4 h-full overflow-y-auto">
           <h3 class="font-semibold mb-4">对象类型 ({{ sidebarData?.object_types?.length || 0 }})</h3>
@@ -103,13 +104,13 @@
         </div>
       </ResizablePanel>
       
-      <!-- 中间图谱视图 -->
-      <div class="flex-1 p-4">
-        <div class="bg-gray-800 rounded-lg border border-gray-700 h-full flex flex-col">
-          <div class="p-4 border-b border-gray-700">
+      <!-- 中间图谱视图 - 自适应区域 -->
+      <div class="min-w-0 h-full p-4"> <!-- 添加min-w-0防止内容溢出 -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 h-full flex flex-col min-h-0"> <!-- 添加min-h-0 -->
+          <div class="p-4 border-b border-gray-700 flex-shrink-0">
             <h3 class="font-semibold">图谱视图</h3>
           </div>
-          <div class="flex-1 p-4 overflow-auto">
+          <div class="flex-1 p-4 overflow-auto min-h-0">
             <CytoscapeGraph 
               v-if="graphData"
               :elements="graphData.elements || []"
@@ -151,7 +152,8 @@
         :max-width="800"
         storage-key="visual_editor_property_panel_width"
         position="right"
-        class="bg-gray-800 border-l border-gray-700 overflow-y-auto"
+        class="bg-gray-800 border-l border-gray-700 overflow-y-auto h-full"
+        @width-change="(width) => rightPanelWidth.value = width"
       >
         <div class="p-4 h-full overflow-y-auto">
           <div class="flex justify-between items-center mb-3">
@@ -292,6 +294,23 @@ const graphData = ref<any>(null)
 const domainConfig = ref<any>(null)
 const showPropertyPanel = ref(false)
 const selectedElement = ref<any>(null)
+
+// 面板宽度状态（用于Grid布局）
+const leftPanelWidth = ref(256)
+const rightPanelWidth = ref(320)
+
+// Grid布局样式
+const gridStyle = computed(() => {
+  const leftWidth = `${leftPanelWidth.value}px`
+  const rightWidth = showPropertyPanel.value ? `${rightPanelWidth.value}px` : '0px'
+  
+  return {
+    gridTemplateColumns: `${leftWidth} 1fr ${rightWidth}`,
+    display: 'grid',
+    overflow: 'hidden',
+    height: '100%'
+  }
+})
 
 // 关闭编辑器
 const closeEditor = () => {
