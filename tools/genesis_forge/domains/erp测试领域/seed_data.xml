@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<seed_data>
+  <!-- CSV数据将在这里转换为种子数据 -->
+  <object type="CSVRecord">
+    <property name="id">sample_001</property>
+    <property name="name">示例记录</property>
+    <property name="description">这是一个示例记录</property>
+  </object>
+</seed_data>

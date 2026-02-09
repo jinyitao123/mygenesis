@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<synapser_patterns>
+  <pattern name="csv_import" description="CSV导入模式">
+    <source type="csv" format="utf-8"/>
+    <target type="neo4j" database="default"/>
+    <mapping>
+      <field source="id" target="id"/>
+      <field source="name" target="name"/>
+    </mapping>
+  </pattern>
+</synapser_patterns>

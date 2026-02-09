@@ -7,7 +7,7 @@
     <id>ADJUST_TRAFFIC_LIGHT</id>
     <name>调整交通灯</name>
     <description>调整交通灯相位和时间</description>
-    <icon>🚦</icon>
+    <icon>traffic-light</icon>
     <color>#f59e0b</color>
     
     <preconditions>
@@ -60,7 +60,7 @@
     <id>DISPATCH_TRANSPORT</id>
     <name>调度公交</name>
     <description>调度公共交通车辆</description>
-    <icon>🚌</icon>
+    <icon>bus</icon>
     <color>#8b5cf6</color>
     
     <preconditions>

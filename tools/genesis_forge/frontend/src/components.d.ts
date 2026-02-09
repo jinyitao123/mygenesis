@@ -7,6 +7,7 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    AICopilotPanel: typeof import('./components/AICopilotPanel.vue')['default']
     AppLayout: typeof import('./components/layout/AppLayout.vue')['default']
     BottomPanel: typeof import('./components/layout/BottomPanel.vue')['default']
     Button: typeof import('./components/ui/Button.vue')['default']

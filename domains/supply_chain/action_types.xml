@@ -7,7 +7,7 @@
     <id>LOAD_PACKAGE</id>
     <name>装载货物</name>
     <description>将包裹装载到卡车上</description>
-    <icon>📦</icon>
+    <icon>package</icon>
     <color>#3b82f6</color>
     
     <preconditions>
@@ -63,7 +63,7 @@
     <id>UNLOAD_PACKAGE</id>
     <name>卸载货物</name>
     <description>从卡车上卸载包裹</description>
-    <icon>🚚</icon>
+    <icon>truck</icon>
     <color>#10b981</color>
     
     <preconditions>
@@ -117,7 +117,7 @@
     <id>TRANSPORT_PACKAGE</id>
     <name>运输货物</name>
     <description>运输包裹到目的地</description>
-    <icon>🚛</icon>
+    <icon>truck</icon>
     <color>#f59e0b</color>
     
     <preconditions>
@@ -171,7 +171,7 @@
     <id>REFUEL_TRUCK</id>
     <name>补充燃料</name>
     <description>为卡车补充燃料</description>
-    <icon>⛽</icon>
+    <icon>fuel</icon>
     <color>#ef4444</color>
     
     <preconditions>
@@ -212,7 +212,7 @@
     <id>RECEIVE_ORDER</id>
     <name>接收订单</name>
     <description>接收客户订单</description>
-    <icon>📝</icon>
+    <icon>document</icon>
     <color>#8b5cf6</color>
     
     <preconditions>
@@ -255,7 +255,7 @@
     <id>MANAGE_INVENTORY</id>
     <name>库存管理</name>
     <description>管理仓库库存</description>
-    <icon>📊</icon>
+    <icon>chart</icon>
     <color>#6366f1</color>
     
     <preconditions>

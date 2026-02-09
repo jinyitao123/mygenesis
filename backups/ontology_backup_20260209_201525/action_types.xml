@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ActionTypes>
+    <!-- 提交订单审批 -->
+    <ActionType name="ACT_SUBMIT_ORDER" display_name="提交审批">
+        <Parameters>
+            <Parameter name="order_id" object_type="PurchaseOrder"/>
+        </Parameters>
+        <Validation>
+            <Statement>
+                MATCH (o:PurchaseOrder {id: $order_id})
+                RETURN o.status == 'DRAFT'
+            </Statement>
+            <ErrorMessage>只有草稿状态的订单可以提交审批</ErrorMessage>
+        </Validation>
+        <Rules>
+            <Rule type="modify_graph">
+                <Statement>
+                    MATCH (o:PurchaseOrder {id: $order_id})
+                    SET o.status = CASE 
+                        WHEN o.amount &lt; 1000 THEN 'APPROVED' 
+                        ELSE 'PENDING' 
+                    END
+                </Statement>
+            </Rule>
+        </Rules>
+    </ActionType>
+
+    <!-- 经理批准订单 -->
+    <ActionType name="ACT_APPROVE_ORDER" display_name="经理批准">
+        <Parameters>
+            <Parameter name="order_id" object_type="PurchaseOrder"/>
+            <Parameter name="manager_id" object_type="Employee"/>
+        </Parameters>
+        <Validation>
+            <Statement>
+                MATCH (m:Employee {id: $manager_id})
+                RETURN m.role == 'MANAGER'
+            </Statement>
+            <ErrorMessage>只有经理有权审批</ErrorMessage>
+        </Validation>
+        <Validation>
+            <Statement>
+                MATCH (o:PurchaseOrder {id: $order_id})
+                RETURN o.status == 'PENDING'
+            </Statement>
+            <ErrorMessage>该订单不是待审批状态</ErrorMessage>
+        </Validation>
+        <Rules>
+            <Rule type="modify_graph">
+                <Statement>
+                    MATCH (o:PurchaseOrder {id: $order_id})
+                    SET o.status = 'APPROVED'
+                </Statement>
+            </Rule>
+            <Rule type="create_link">
+                <Statement>
+                    MATCH (o:PurchaseOrder {id: $order_id}), (m:Employee {id: $manager_id})
+                    CREATE (o)-[:APPROVED_BY]->(m)
+                </Statement>
+            </Rule>
+        </Rules>
+    </ActionType>
+
+    <!-- 经理驳回订单 -->
+    <ActionType name="ACT_REJECT_ORDER" display_name="经理驳回">
+        <Parameters>
+            <Parameter name="order_id" object_type="PurchaseOrder"/>
+            <Parameter name="manager_id" object_type="Employee"/>
+        </Parameters>
+        <Validation>
+            <Statement>
+                MATCH (m:Employee {id: $manager_id})
+                RETURN m.role == 'MANAGER'
+            </Statement>
+            <ErrorMessage>只有经理有权驳回</ErrorMessage>
+        </Validation>
+        <Validation>
+            <Statement>
+                MATCH (o:PurchaseOrder {id: $order_id})
+                RETURN o.status == 'PENDING'
+            </Statement>
+            <ErrorMessage>该订单不是待审批状态</ErrorMessage>
+        </Validation>
+        <Rules>
+            <Rule type="modify_graph">
+                <Statement>
+                    MATCH (o:PurchaseOrder {id: $order_id})
+                    SET o.status = 'REJECTED'
+                </Statement>
+            </Rule>
+        </Rules>
+    </ActionType>
+</ActionTypes>

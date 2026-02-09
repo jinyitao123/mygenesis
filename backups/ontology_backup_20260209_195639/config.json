@@ -1,0 +1,73 @@
+{
+  "domain_id": "supply_chain",
+  "name": "供应链管理",
+  "description": "物流和供应链管理领域模块，包含卡车、仓库、订单等业务实体",
+  "version": "1.0.0",
+  "author": "Genesis Forge Team",
+  "created_at": "2026-02-05",
+  
+  "ui_config": {
+    "primary_color": "#4169E1",
+    "secondary_color": "#FFA500",
+    "accent_color": "#32CD32",
+    "background_color": "#F5F5F5",
+    "text_color": "#333333",
+    "font_family": "Microsoft YaHei, sans-serif",
+    "icon_set": "emoji"
+  },
+  
+  "features": {
+    "object_types": ["TRUCK", "WAREHOUSE", "PACKAGE", "ORDER", "SUPPLIER"],
+    "action_types": ["PROC_LOAD_CARGO", "PROC_UNLOAD_CARGO", "PROC_TRANSPORT", "PROC_CREATE_ORDER", "PROC_FULFILL_ORDER", "PROC_REFUEL"],
+    "relation_types": ["CONTAINS", "LOCATED_AT", "BELONGS_TO", "PLACED_WITH", "TRANSPORTS"],
+    "supported_csv_columns": ["id", "name", "type", "location", "status", "capacity", "weight", "destination"]
+  },
+  
+  "default_objects": [
+    {
+      "id": "truck_001",
+      "name": "运输卡车A",
+      "type": "TRUCK",
+      "location": "仓库A",
+      "status": "空闲",
+      "capacity": 10,
+      "fuel_level": 100
+    },
+    {
+      "id": "warehouse_001",
+      "name": "中央仓库",
+      "type": "WAREHOUSE",
+      "location": "工业区",
+      "capacity": 1000,
+      "current_load": 200
+    },
+    {
+      "id": "package_001",
+      "name": "电子产品包裹",
+      "type": "PACKAGE",
+      "location": "仓库A",
+      "weight": 5,
+      "destination": "客户地址A"
+    }
+  ],
+  
+  "templates": {
+    "csv_import": {
+      "filename": "supply_chain_data.csv",
+      "columns": ["id", "name", "type", "location", "status", "properties_json"],
+      "example": "truck_001,运输卡车A,TRUCK,仓库A,空闲,{\"capacity\":10,\"fuel_level\":100}"
+    },
+    "cypher_queries": {
+      "find_trucks": "MATCH (t:TRUCK) RETURN t.id, t.name, t.location, t.status",
+      "find_packages_in_warehouse": "MATCH (p:PACKAGE) WHERE p.location = $warehouse_name RETURN p",
+      "get_order_status": "MATCH (o:ORDER) RETURN o.id, o.customer, o.status, o.total_amount"
+    }
+  },
+  
+  "validation_rules": {
+    "truck_capacity": "capacity > 0 AND capacity <= 50",
+    "fuel_level": "fuel_level >= 0 AND fuel_level <= 100",
+    "warehouse_load": "current_load <= capacity",
+    "package_weight": "weight > 0 AND weight <= 1000"
+  }
+}

@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+
+{% block title %}采购订单管理 - Genesis ERP{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">采购订单管理</h1>
+            <p class="text-gray-600 mt-2">
+                基于元数据驱动的订单审批流程。所有业务逻辑定义在 XML 本体中，支持动态变更。
+            </p>
+        </div>
+        <button 
+            onclick="showCreateOrderModal()"
+            class="btn-primary flex items-center">
+            <i class="fas fa-plus mr-2"></i> 新建订单
+        </button>
+    </div>
+    
+    <!-- 统计卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="card">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-file-alt text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">总订单数</p>
+                    <p class="text-2xl font-bold">{{ orders|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">待审批</p>
+                    <p class="text-2xl font-bold">
+                        {{ orders|selectattr('status', 'equalto', 'PENDING')|list|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">已批准</p>
+                    <p class="text-2xl font-bold">
+                        {{ orders|selectattr('status', 'equalto', 'APPROVED')|list|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
+                    <i class="fas fa-times-circle text-red-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">已驳回</p>
+                    <p class="text-2xl font-bold">
+                        {{ orders|selectattr('status', 'equalto', 'REJECTED')|list|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 订单表格 -->
+<div class="card">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+                <tr>
+                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        订单号
+                    </th>
+                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        采购物品
+                    </th>
+                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        金额
+                    </th>
+                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        状态
+                    </th>
+                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        创建时间
+                    </th>
+                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        操作
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for order in orders %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-blue-100 rounded flex items-center justify-center mr-3">
+                                <i class="fas fa-file-invoice text-blue-600"></i>
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-900 font-mono">{{ order.id }}</div>
+                                <div class="text-xs text-gray-500">
+                                    创建人: {{ employees.get(order.created_by, {}).name if order.created_by else '未知' }}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ order.item_name }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-bold text-gray-900">¥{{ "%.2f"|format(order.amount|float) }}</div>
+                        <div class="text-xs text-gray-500">
+                            {% if order.amount < 1000 %}
+                                <span class="text-green-600"><i class="fas fa-bolt mr-1"></i>小额订单</span>
+                            {% else %}
+                                <span class="text-orange-600"><i class="fas fa-exclamation-triangle mr-1"></i>需审批</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if order.status == 'DRAFT' %}
+                            <span class="status-draft px-3 py-1 rounded-full text-xs font-medium">
+                                <i class="fas fa-edit mr-1"></i> 草稿
+                            </span>
+                        {% elif order.status == 'PENDING' %}
+                            <span class="status-pending px-3 py-1 rounded-full text-xs font-medium">
+                                <i class="fas fa-clock mr-1"></i> 待审批
+                            </span>
+                        {% elif order.status == 'APPROVED' %}
+                            <span class="status-approved px-3 py-1 rounded-full text-xs font-medium">
+                                <i class="fas fa-check-circle mr-1"></i> 已批准
+                            </span>
+                        {% elif order.status == 'REJECTED' %}
+                            <span class="status-rejected px-3 py-1 rounded-full text-xs font-medium">
+                                <i class="fas fa-times-circle mr-1"></i> 已驳回
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ order.created_at if order.created_at else '未设置' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex space-x-2">
+                            {% if order.status == 'DRAFT' %}
+                                <button 
+                                    onclick="submitOrder('{{ order.id }}')"
+                                    class="btn-primary text-sm px-3 py-1">
+                                    <i class="fas fa-paper-plane mr-1"></i> 提交审批
+                                </button>
+                                <button 
+                                    onclick="editOrder('{{ order.id }}')"
+                                    class="btn-secondary text-sm px-3 py-1">
+                                    <i class="fas fa-edit mr-1"></i> 编辑
+                                </button>
+                            {% endif %}
+                            
+                            {% if order.status == 'PENDING' and current_user.role == 'MANAGER' %}
+                                <button 
+                                    onclick="approveOrder('{{ order.id }}')"
+                                    class="btn-success text-sm px-3 py-1">
+                                    <i class="fas fa-check mr-1"></i> 批准
+                                </button>
+                                <button 
+                                    onclick="rejectOrder('{{ order.id }}')"
+                                    class="btn-danger text-sm px-3 py-1">
+                                    <i class="fas fa-times mr-1"></i> 驳回
+                                </button>
+                            {% elif order.status == 'PENDING' %}
+                                <span class="text-gray-400 text-sm">等待经理审批</span>
+                            {% endif %}
+                            
+                            {% if order.status == 'APPROVED' %}
+                                <span class="text-green-600 text-sm">
+                                    <i class="fas fa-check-circle mr-1"></i> 已完成
+                                </span>
+                            {% endif %}
+                            
+                            {% if order.status == 'REJECTED' %}
+                                <button 
+                                    onclick="resubmitOrder('{{ order.id }}')"
+                                    class="btn-secondary text-sm px-3 py-1">
+                                    <i class="fas fa-redo mr-1"></i> 重新提交
+                                </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-inbox text-4xl text-gray-300 mb-3"></i>
+                            <p class="text-lg">暂无采购订单</p>
+                            <p class="text-sm mt-1">点击"新建订单"按钮创建第一个订单</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- 分页和统计 -->
+    <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+        <div class="text-sm text-gray-500">
+            显示 <span class="font-medium">{{ orders|length }}</span> 个订单
+        </div>
+        <div class="text-sm text-gray-500">
+            总金额: <span class="font-bold text-blue-600">
+                ¥{{ "%.2f"|format(orders|sum(attribute='amount')|float) }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- 系统信息卡片 -->
+<div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="card">
+        <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fas fa-cogs text-blue-600 mr-2"></i> 系统信息
+        </h3>
+        <div class="space-y-3">
+            <div class="flex justify-between">
+                <span class="text-gray-600">当前域:</span>
+                <span class="font-medium">supply_chain_erp</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">对象类型:</span>
+                <span class="font-medium">2 种</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">动作类型:</span>
+                <span class="font-medium">3 种</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">数据库:</span>
+                <span class="font-medium text-green-600">Neo4j 已连接</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fas fa-info-circle text-green-600 mr-2"></i> 业务规则说明
+        </h3>
+        <div class="space-y-3 text-sm">
+            <div class="flex items-start">
+                <i class="fas fa-check text-green-500 mt-0.5 mr-2"></i>
+                <span>金额 &lt; 1000 元的订单提交后自动批准</span>
+            </div>
+            <div class="flex items-start">
+                <i class="fas fa-check text-green-500 mt-0.5 mr-2"></i>
+                <span>金额 ≥ 1000 元的订单需要经理审批</span>
+            </div>
+            <div class="flex items-start">
+                <i class="fas fa-check text-green-500 mt-0.5 mr-2"></i>
+                <span>只有经理角色的员工可以审批订单</span>
+            </div>
+            <div class="flex items-start">
+                <i class="fas fa-check text-green-500 mt-0.5 mr-2"></i>
+                <span>所有规则定义在 XML 本体中，支持动态修改</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建订单模态框 -->
+<div id="createOrderModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-semibold mb-4">新建采购订单</h3>
+        <form id="createOrderForm" onsubmit="return createOrder(event)">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">采购物品</label>
+                    <input type="text" name="item_name" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">金额 (元)</label>
+                    <input type="number" name="amount" step="0.01" min="0" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                    <textarea name="notes" rows="2"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="hideCreateOrderModal()" class="btn-secondary">
+                    取消
+                </button>
+                <button type="submit" class="btn-primary">
+                    创建订单
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 显示创建订单模态框
+    function showCreateOrderModal() {
+        document.getElementById('createOrderModal').classList.remove('hidden');
+        document.getElementById('createOrderModal').classList.add('flex');
+    }
+    
+    // 隐藏创建订单模态框
+    function hideCreateOrderModal() {
+        document.getElementById('createOrderModal').classList.add('hidden');
+        document.getElementById('createOrderModal').classList.remove('flex');
+        document.getElementById('createOrderForm').reset();
+    }
+    
+    // 创建订单
+    function createOrder(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        // 这里应该调用后端 API 创建订单
+        // 暂时模拟创建
+        showToast('创建订单功能开发中...', 'info');
+        hideCreateOrderModal();
+        return false;
+    }
+    
+    // 提交订单审批
+    function submitOrder(orderId) {
+        confirmAction(`确定要提交订单 ${orderId} 进行审批吗？`, function() {
+            fetch('/api/action/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ order_id: orderId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('提交成功', 'success');
+                    // 刷新页面
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || '提交失败', 'error');
+                }
+            })
+            .catch(error => {
+                showToast('请求失败: ' + error.message, 'error');
+            });
+        });
+    }
+    
+    // 批准订单
+    function approveOrder(orderId) {
+        confirmAction(`确定要批准订单 ${orderId} 吗？`, function() {
+            fetch('/api/action/approve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ order_id: orderId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('批准成功', 'success');
+                    // 刷新页面
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || '批准失败', 'error');
+                }
+            })
+            .catch(error => {
+                showToast('请求失败: ' + error.message, 'error');
+            });
+        });
+    }
+    
+    // 驳回订单
+    function rejectOrder(orderId) {
+        confirmAction(`确定要驳回订单 ${orderId} 吗？`, function() {
+            fetch('/api/action/reject', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ order_id: orderId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('驳回成功', 'success');
+                    // 刷新页面
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.message || '驳回失败', 'error');
+                }
+            })
+            .catch(error => {
+                showToast('请求失败: ' + error.message, 'error');
+            });
+        });
+    }
+    
+    // 编辑订单
+    function editOrder(orderId) {
+        showToast('编辑功能开发中...', 'info');
+    }
+    
+    // 重新提交订单
+    function resubmitOrder(orderId) {
+        // 这里应该将订单状态改回 DRAFT
+        showToast('重新提交功能开发中...', 'info');
+    }
+    
+    // 自动刷新数据（每30秒）
+    setInterval(() => {
+        htmx.ajax('GET', '/api/orders', {
+            target: 'body',
+            swap: 'none'
+        });
+    }, 30000);
+</script>
+{% endblock %}

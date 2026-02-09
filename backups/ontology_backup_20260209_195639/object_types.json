@@ -1,0 +1,241 @@
+{
+  "version": "0.1.0",
+  "description": "游戏对象类型定义 - 定义所有实体类型及其属性",
+
+  "object_types": {
+    "Player": {
+      "display_name": "玩家",
+      "description": "玩家控制的角色实体",
+      "primary_key": "id",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "玩家唯一标识符"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "玩家名称"
+        },
+        "hp": {
+          "type": "integer",
+          "default": 100,
+          "description": "生命值"
+        },
+        "damage": {
+          "type": "integer",
+          "default": 10,
+          "description": "攻击力"
+        },
+        "faction": {
+          "type": "string",
+          "default": "PlayerFaction",
+          "description": "所属阵营"
+        }
+      }
+    },
+
+    "NPC": {
+      "display_name": "非玩家角色",
+      "description": "NPC 实体，可以有各种行为模式",
+      "primary_key": "id",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "NPC唯一标识符"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "NPC名称"
+        },
+        "hp": {
+          "type": "integer",
+          "default": 50,
+          "description": "生命值"
+        },
+        "damage": {
+          "type": "integer",
+          "default": 5,
+          "description": "攻击力"
+        },
+        "faction": {
+          "type": "string",
+          "required": true,
+          "description": "所属阵营"
+        },
+        "disposition": {
+          "type": "string",
+          "enum": ["aggressive", "neutral", "friendly"],
+          "default": "neutral",
+          "description": "性格倾向"
+        },
+        "dialogue": {
+          "type": "string",
+          "description": "默认对话内容"
+        }
+      }
+    },
+
+    "Location": {
+      "display_name": "地点",
+      "description": "游戏场景/房间",
+      "primary_key": "id",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "地点唯一标识符"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "地点名称（中文）"
+        },
+        "description": {
+          "type": "string",
+          "description": "地点详细描述"
+        }
+      }
+    },
+
+    "Faction": {
+      "display_name": "阵营",
+      "description": "游戏阵营/组织",
+      "primary_key": "id",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "阵营唯一标识符"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "阵营名称"
+        },
+        "description": {
+          "type": "string",
+          "description": "阵营描述"
+        }
+      }
+    },
+
+    "Item": {
+      "display_name": "物品",
+      "description": "可交互物品",
+      "primary_key": "id",
+      "properties": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "物品唯一标识符"
+        },
+        "name": {
+          "type": "string",
+          "required": true,
+          "description": "物品名称"
+        },
+        "description": {
+          "type": "string",
+          "description": "物品描述"
+        },
+        "value": {
+          "type": "integer",
+          "default": 0,
+          "description": "物品价值"
+        },
+        "damage": {
+          "type": "integer",
+          "default": 0,
+          "description": "武器伤害"
+        },
+        "heal_amount": {
+          "type": "integer",
+          "default": 0,
+          "description": "治疗量"
+        },
+        "weight": {
+          "type": "float",
+          "default": 0.0,
+          "description": "物品重量"
+        },
+        "is_equippable": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否可装备"
+        },
+        "is_consumable": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否可消耗"
+        },
+        "is_key": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否是钥匙"
+        }
+      }
+    }
+  },
+
+  "link_types": {
+    "LOCATED_AT": {
+      "display_name": "位于",
+      "description": "实体位于某地点",
+      "source": "Player|NPC|Item",
+      "target": "Location",
+      "bidirectional": false
+    },
+
+    "CONNECTED_TO": {
+      "display_name": "连接到",
+      "description": "地点之间的通道连接",
+      "source": "Location",
+      "target": "Location",
+      "bidirectional": true
+    },
+
+    "BELONGS_TO": {
+      "display_name": "属于",
+      "description": "角色属于某个阵营",
+      "source": "Player|NPC",
+      "target": "Faction",
+      "bidirectional": false
+    },
+
+    "HOSTILE_TO": {
+      "display_name": "敌对",
+      "description": "阵营之间的敌对关系",
+      "source": "Faction",
+      "target": "Faction",
+      "bidirectional": false
+    },
+
+    "HAS_ITEM": {
+      "display_name": "拥有物品",
+      "description": "角色拥有某物品",
+      "source": "Player|NPC",
+      "target": "Item",
+      "bidirectional": false
+    },
+    
+    "ALLIED_WITH": {
+      "display_name": "同盟",
+      "description": "阵营之间的同盟关系",
+      "source": "Faction",
+      "target": "Faction",
+      "bidirectional": true
+    },
+    
+    "ENEMY_OF": {
+      "display_name": "敌对",
+      "description": "阵营之间的敌对关系",
+      "source": "Faction",
+      "target": "Faction",
+      "bidirectional": false
+    }
+  }
+}

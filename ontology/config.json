@@ -1,0 +1,38 @@
+{
+  "name": "supply_chain_erp",
+  "description": "企业资源规划演示系统",
+  "version": "1.0",
+  "ui_config": {
+    "primary_color": "#3b82f6",
+    "secondary_color": "#10b981",
+    "accent_color": "#f59e0b",
+    "background_color": "#f8fafc",
+    "text_color": "#1e293b",
+    "font_family": "system-ui, -apple-system, sans-serif"
+  },
+  "features": {
+    "object_types": ["PurchaseOrder", "Employee"],
+    "action_types": ["ACT_SUBMIT_ORDER", "ACT_APPROVE_ORDER", "ACT_REJECT_ORDER"],
+    "relation_types": ["CREATED_BY", "APPROVED_BY"],
+    "supported_csv_columns": ["id", "item_name", "amount", "status", "created_at"]
+  },
+  "default_objects": [
+    {
+      "id": "staff_01",
+      "name": "张三",
+      "type": "Employee",
+      "role": "STAFF"
+    },
+    {
+      "id": "mgr_01",
+      "name": "李总",
+      "type": "Employee",
+      "role": "MANAGER"
+    }
+  ],
+  "validation_rules": {
+    "order_amount": "amount > 0",
+    "order_status": "status in ['DRAFT', 'PENDING', 'APPROVED', 'REJECTED']",
+    "employee_role": "role in ['STAFF', 'MANAGER']"
+  }
+}

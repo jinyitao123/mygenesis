@@ -7,7 +7,7 @@
     <id>ADMIT_PATIENT</id>
     <name>办理入院</name>
     <description>办理患者入院手续</description>
-    <icon>🏥</icon>
+    <icon>hospital</icon>
     <color>#3b82f6</color>
     
     <preconditions>
@@ -35,7 +35,7 @@
     <id>PRESCRIBE_MEDICATION</id>
     <name>开具处方</name>
     <description>医生为患者开具处方</description>
-    <icon>💊</icon>
+    <icon>pill</icon>
     <color>#10b981</color>
     
     <preconditions>

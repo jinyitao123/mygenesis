@@ -57,10 +57,21 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: true,
       proxy: {
-        '/api': {
+        '^/api': {
           target: env.VITE_API_BASE_URL || 'http://localhost:5000',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, '')
+          secure: false
+        },
+        '^/(v1|save|validate|graph|deploy|tools|upload|domains|copilot|launch_simulation|save_ontology)': {
+          target: env.VITE_API_BASE_URL || 'http://localhost:5000',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => `/api${path}`
+        },
+        '^/studio': {
+          target: env.VITE_API_BASE_URL || 'http://localhost:5000',
+          changeOrigin: true,
+          secure: false
         }
       }
     },

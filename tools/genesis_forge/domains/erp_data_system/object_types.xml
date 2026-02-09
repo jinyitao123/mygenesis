@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<object_types>
+  <!-- 基于CSV数据生成的对象类型 -->
+  <object_type name="CSVRecord" icon="file-text" color="#3b82f6" primary_key="id">
+    <property name="id" type="string" required="true" description="记录ID"/>
+    <property name="name" type="string" required="true" description="名称"/>
+    <property name="description" type="string" required="false" description="描述"/>
+    <property name="category" type="string" required="false" description="分类"/>
+    <property name="status" type="string" required="false" description="状态"/>
+    <property name="created_at" type="datetime" required="false" default="now()" description="创建时间"/>
+  </object_type>
+</object_types>

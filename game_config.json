@@ -1,0 +1,12 @@
+{
+  "active_domain": "supply_chain",
+  "backup_before_deploy": true,
+  "backup_retention_days": 7,
+  "description": "游戏配置 - 指定活动域和备份设置",
+  "notes": [
+    "配置优先级：环境变量 ACTIVE_DOMAIN > 此配置文件",
+    "backup_before_deploy: 部署前是否备份现有 ontology 文件",
+    "backup_retention_days: 备份文件保留天数",
+    "可用域：supply_chain, healthcare, it_ops, finance_risk, smart_city, empty"
+  ]
+}

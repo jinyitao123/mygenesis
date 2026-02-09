@@ -35,7 +35,7 @@
     <id>DEPLOY_APPLICATION</id>
     <name>部署应用</name>
     <description>部署或更新应用程序</description>
-    <icon>🚀</icon>
+    <icon>rocket</icon>
     <color>#10b981</color>
     
     <preconditions>

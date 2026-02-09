@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SynapserPatterns>
+    <Version>1.0.0</Version>
+    <Description>医疗健康系统 - 自然语言意图映射</Description>
+    
+    <!-- 患者入院 -->
+    <Pattern action="ADMIT_PATIENT" requires_target="true" target_type="Patient">
+        <Keywords>入院,住院,办理入院,admit,register</Keywords>
+        <Templates>
+            <Template>办理{patient}入院</Template>
+            <Template>安排{patient}住院</Template>
+            <Template>admit {patient}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 开具处方 -->
+    <Pattern action="PRESCRIBE_MEDICATION" requires_target="true" target_type="Medication">
+        <Keywords>开药,处方,prescribe</Keywords>
+        <Templates>
+            <Template>给{patient}开{medication}</Template>
+            <Template>开具{medication}处方</Template>
+            <Template>prescribe {medication}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 安排检查 -->
+    <Pattern action="SCHEDULE_EXAM" requires_target="true" target_type="Equipment">
+        <Keywords>检查,安排检查,exam,schedule</Keywords>
+        <Templates>
+            <Template>安排{equipment}检查</Template>
+            <Template>给{patient}预约{equipment}</Template>
+            <Template>schedule {equipment} for {patient}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 分配病房 -->
+    <Pattern action="ASSIGN_WARD" requires_target="true" target_type="Ward">
+        <Keywords>分配,病房,assign,ward</Keywords>
+        <Templates>
+            <Template>分配{ward}给{patient}</Template>
+            <Template>安排{ward}床位</Template>
+            <Template>assign {ward} to {patient}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 护理操作 -->
+    <Pattern action="NURSE_CARE" requires_target="true" target_type="Nurse">
+        <Keywords>护理,照顾,care,nurse</Keywords>
+        <Templates>
+            <Template>{nurse}护理{patient}</Template>
+            <Template>安排{nurse}照顾</Template>
+            <Template>{nurse} care for {patient}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 通用查询 -->
+    <Pattern action="ACT_INSPECT" requires_target="false" target_type="any">
+        <Keywords>查看,查询,检查,状态,信息,check,view,status,info</Keywords>
+        <Templates>
+            <Template>查看{patient}病历</Template>
+            <Template>查询{doctor}排班</Template>
+            <Template>check status of {target}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 同义词库 - 医疗健康特定实体别名 -->
+    <Synonyms>
+        <SynonymGroup primary="患者">
+            <Alias>patient</Alias>
+            <Alias>病人</Alias>
+            <Alias>病患</Alias>
+        </SynonymGroup>
+        <SynonymGroup primary="医生">
+            <Alias>doctor</Alias>
+            <Alias>医师</Alias>
+            <Alias>主治医生</Alias>
+        </SynonymGroup>
+        <SynonymGroup primary="护士">
+            <Alias>nurse</Alias>
+            <Alias>护理人员</Alias>
+        </SynonymGroup>
+        <SynonymGroup primary="病房">
+            <Alias>ward</Alias>
+            <Alias>病房</Alias>
+            <Alias>病区</Alias>
+        </SynonymGroup>
+        <SynonymGroup primary="药品">
+            <Alias>medication</Alias>
+            <Alias>药物</Alias>
+            <Alias>药</Alias>
+        </SynonymGroup>
+    </Synonyms>
+</SynapserPatterns>

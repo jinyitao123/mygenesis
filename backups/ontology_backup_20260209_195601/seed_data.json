@@ -1,0 +1,210 @@
+{
+  "version": "0.1.0",
+  "description": "初始世界数据 - 定义游戏开始时的初始状态",
+
+  "seed_nodes": [
+    {
+      "id": "player_001",
+      "type": "Player",
+      "properties": {
+        "name": "冒险者",
+        "hp": 100,
+        "damage": 10,
+        "faction": "PlayerFaction"
+      }
+    },
+    {
+      "id": "faction_player",
+      "type": "Faction",
+      "properties": {
+        "name": "玩家阵营",
+        "description": "玩家所属阵营"
+      }
+    },
+    {
+      "id": "faction_guard",
+      "type": "Faction",
+      "properties": {
+        "name": "守卫阵营",
+        "description": "守护庄园的守卫"
+      }
+    },
+    {
+      "id": "faction_bandit",
+      "type": "Faction",
+      "properties": {
+        "name": "强盗阵营",
+        "description": "潜伏在庄园的强盗"
+      }
+    },
+    {
+      "id": "location_lobby",
+      "type": "Location",
+      "properties": {
+        "name": "庄园大厅",
+        "description": "宽敞的庄园入口大厅，吊灯摇曳，木地板发出轻微的吱呀声。"
+      }
+    },
+    {
+      "id": "location_library",
+      "type": "Location",
+      "properties": {
+        "name": "藏书室",
+        "description": "密布着书架的房间，空气中弥漫着旧纸张的味道。"
+      }
+    },
+    {
+      "id": "location_kitchen",
+      "type": "Location",
+      "properties": {
+        "name": "厨房",
+        "description": "炊具齐全的厨房，炉火微弱但仍在燃烧。"
+      }
+    },
+    {
+      "id": "location_garden",
+      "type": "Location",
+      "properties": {
+        "name": "花园",
+        "description": "夜晚的花园静悄悄的，月光洒在枯萎的花朵上。"
+      }
+    },
+    {
+      "id": "npc_guard_1",
+      "type": "NPC",
+      "properties": {
+        "name": "守卫队长",
+        "hp": 80,
+        "damage": 15,
+        "faction": "faction_guard",
+        "disposition": "neutral",
+        "dialogue": "这里是禁地，如果你不是庄园主人的朋友，请速速离开。"
+      }
+    },
+    {
+      "id": "npc_bandit_1",
+      "type": "NPC",
+      "properties": {
+        "name": "蒙面强盗",
+        "hp": 60,
+        "damage": 20,
+        "faction": "faction_bandit",
+        "disposition": "aggressive",
+        "dialogue": "嘿嘿，又来了一个送死的！"
+      }
+    },
+    {
+      "id": "npc_maid",
+      "type": "NPC",
+      "properties": {
+        "name": "女仆",
+        "hp": 40,
+        "damage": 5,
+        "faction": "faction_guard",
+        "disposition": "friendly",
+        "dialogue": "您需要什么帮助吗？我可以为您带路。"
+      }
+    },
+    {
+      "id": "item_key",
+      "type": "Item",
+      "properties": {
+        "name": "旧钥匙",
+        "description": "一把生锈的铁钥匙，上面刻着模糊的徽章。",
+        "value": 5
+      }
+    },
+    {
+      "id": "item_potion",
+      "type": "Item",
+      "properties": {
+        "name": "治疗药水",
+        "description": "一瓶散发着淡淡草药味的红色液体。",
+        "value": 20
+      }
+    }
+  ],
+
+  "seed_links": [
+    {
+      "source": "player_001",
+      "target": "location_lobby",
+      "type": "LOCATED_AT"
+    },
+    {
+      "source": "player_001",
+      "target": "faction_player",
+      "type": "BELONGS_TO"
+    },
+    {
+      "source": "npc_guard_1",
+      "target": "location_library",
+      "type": "LOCATED_AT"
+    },
+    {
+      "source": "npc_guard_1",
+      "target": "faction_guard",
+      "type": "BELONGS_TO"
+    },
+    {
+      "source": "npc_bandit_1",
+      "target": "location_garden",
+      "type": "LOCATED_AT"
+    },
+    {
+      "source": "npc_bandit_1",
+      "target": "faction_bandit",
+      "type": "BELONGS_TO"
+    },
+    {
+      "source": "npc_maid",
+      "target": "location_lobby",
+      "type": "LOCATED_AT"
+    },
+    {
+      "source": "npc_maid",
+      "target": "faction_guard",
+      "type": "BELONGS_TO"
+    },
+    {
+      "source": "item_key",
+      "target": "location_kitchen",
+      "type": "LOCATED_AT"
+    },
+    {
+      "source": "item_potion",
+      "target": "location_library",
+      "type": "LOCATED_AT"
+    },
+    {
+      "source": "location_lobby",
+      "target": "location_library",
+      "type": "CONNECTED_TO"
+    },
+    {
+      "source": "location_lobby",
+      "target": "location_kitchen",
+      "type": "CONNECTED_TO"
+    },
+    {
+      "source": "location_lobby",
+      "target": "location_garden",
+      "type": "CONNECTED_TO"
+    },
+    {
+      "source": "location_library",
+      "target": "location_kitchen",
+      "type": "CONNECTED_TO"
+    },
+    {
+      "source": "faction_bandit",
+      "target": "faction_guard",
+      "type": "HOSTILE_TO"
+    },
+    {
+      "source": "faction_guard",
+      "target": "faction_bandit",
+      "type": "HOSTILE_TO"
+    }
+  ]
+}

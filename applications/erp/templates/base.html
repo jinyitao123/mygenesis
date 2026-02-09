@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Genesis ERP System{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 自定义样式 -->
+    <style>
+        .status-draft { @apply bg-gray-100 text-gray-800; }
+        .status-pending { @apply bg-yellow-100 text-yellow-800; }
+        .status-approved { @apply bg-green-100 text-green-800; }
+        .status-rejected { @apply bg-red-100 text-red-800; }
+        
+        .role-staff { @apply bg-blue-100 text-blue-800; }
+        .role-manager { @apply bg-purple-100 text-purple-800; }
+        
+        .btn-primary { @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors; }
+        .btn-secondary { @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors; }
+        .btn-success { @apply bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors; }
+        .btn-danger { @apply bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors; }
+        
+        .card { @apply bg-white rounded-lg shadow-md p-6; }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top-color: #3b82f6;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 导航栏 -->
+    <nav class="bg-slate-800 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-cogs mr-2"></i>
+                        Genesis ERP
+                    </a>
+                    <span class="text-sm bg-slate-700 px-2 py-1 rounded">v1.0</span>
+                </div>
+                
+                <div class="flex items-center space-x-6">
+                    <a href="/" class="hover:text-blue-300 transition-colors">
+                        <i class="fas fa-home mr-1"></i> 首页
+                    </a>
+                    <a href="#" class="hover:text-blue-300 transition-colors">
+                        <i class="fas fa-shopping-cart mr-1"></i> 采购管理
+                    </a>
+                    <a href="#" class="hover:text-blue-300 transition-colors opacity-50">
+                        <i class="fas fa-boxes mr-1"></i> 库存管理
+                    </a>
+                    <a href="#" class="hover:text-blue-300 transition-colors opacity-50">
+                        <i class="fas fa-chart-line mr-1"></i> 财务报表
+                    </a>
+                    
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium">{{ current_user.name if current_user else '用户' }}</div>
+                            <div class="text-xs text-slate-300">
+                                {% if current_user and current_user.role == 'MANAGER' %}
+                                    <span class="role-manager px-2 py-0.5 rounded text-xs">经理</span>
+                                {% else %}
+                                    <span class="role-staff px-2 py-0.5 rounded text-xs">员工</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- 页脚 -->
+    <footer class="bg-slate-800 text-white py-6 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-sm text-slate-300">
+                        <i class="fas fa-brain mr-1"></i> 基于 Genesis Kernel 的元数据驱动 ERP 系统
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">
+                        所有业务逻辑定义在 XML 本体中，支持动态变更
+                    </p>
+                </div>
+                <div class="text-sm text-slate-300">
+                    <p>© 2024 Genesis ERP System. All rights reserved.</p>
+                    <p class="text-xs text-slate-400 mt-1">Powered by FastAPI + Neo4j + HTMX</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script>
+        // 全局 HTMX 配置
+        htmx.config.useTemplateFragments = true;
+        
+        // 显示加载状态
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            const target = evt.target;
+            if (target.hasAttribute('hx-indicator')) {
+                const indicator = document.getElementById(target.getAttribute('hx-indicator'));
+                if (indicator) indicator.classList.remove('hidden');
+            }
+        });
+        
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            const target = evt.target;
+            if (target.hasAttribute('hx-indicator')) {
+                const indicator = document.getElementById(target.getAttribute('hx-indicator'));
+                if (indicator) indicator.classList.add('hidden');
+            }
+        });
+        
+        // 显示 toast 消息
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full`;
+            
+            if (type === 'success') {
+                toast.classList.add('bg-green-100', 'text-green-800', 'border', 'border-green-200');
+            } else if (type === 'error') {
+                toast.classList.add('bg-red-100', 'text-red-800', 'border', 'border-red-200');
+            } else {
+                toast.classList.add('bg-blue-100', 'text-blue-800', 'border', 'border-blue-200');
+            }
+            
+            toast.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // 动画显示
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+                toast.classList.add('translate-x-0');
+            }, 10);
+            
+            // 3秒后消失
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0');
+                toast.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+        
+        // 确认对话框
+        function confirmAction(message, callback) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <h3 class="text-lg font-semibold mb-4">确认操作</h3>
+                    <p class="text-gray-600 mb-6">${message}</p>
+                    <div class="flex justify-end space-x-3">
+                        <button id="confirmCancel" class="btn-secondary">
+                            取消
+                        </button>
+                        <button id="confirmOk" class="btn-primary">
+                            确认
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // 添加事件监听器
+            modal.querySelector('#confirmCancel').addEventListener('click', function() {
+                document.body.removeChild(modal);
+            });
+            
+            modal.querySelector('#confirmOk').addEventListener('click', function() {
+                callback();
+                document.body.removeChild(modal);
+            });
+            
+            document.body.appendChild(modal);
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,193 @@
+{
+  "version": "0.1.0",
+  "description": "游戏动作类型定义 - 定义所有可用动作的验证规则和执行效果",
+
+  "action_types": {
+    "ACT_MOVE": {
+      "display_name": "移动",
+      "description": "移动到相邻地点",
+      "parameters": [
+        {
+          "name": "source_id",
+          "type": "object_ref",
+          "object_type": "Player",
+          "required": true
+        },
+        {
+          "name": "target",
+          "type": "string",
+          "description": "目标地点名称",
+          "required": true
+        }
+      ],
+      "validation": {
+        "logic_type": "cypher_check",
+        "statement": "MATCH (s {id: $source_id})-[:LOCATED_AT]->(cur), (cur)-[:CONNECTED_TO]-(tgt:Location {name: $target}) RETURN count(tgt) > 0 as is_valid, cur.name as current_location, tgt.name as target_name",
+        "error_message": "目标地点不连通，无法前往"
+      },
+      "rules": [
+        {
+          "type": "modify_graph",
+          "description": "更新玩家位置",
+          "statement": "MATCH (s {id: $source_id})-[r:LOCATED_AT]->() DELETE r WITH s MATCH (l:Location {name: $target}) CREATE (s)-[:LOCATED_AT]->(l)"
+        },
+        {
+          "type": "record_event",
+          "description": "记录移动事件",
+          "summary_template": "{source_name} 从 {current_location} 移动到了 {target_name}"
+        },
+        {
+          "type": "memorize",
+          "description": "记忆移动经历",
+          "content": "我移动到了{target_name}",
+          "memory_type": "event"
+        }
+      ]
+    },
+
+    "ACT_ATTACK": {
+      "display_name": "攻击",
+      "description": "对目标发动攻击",
+      "parameters": [
+        {
+          "name": "source_id",
+          "type": "object_ref",
+          "object_type": "Player",
+          "required": true
+        },
+        {
+          "name": "target_id",
+          "type": "object_ref",
+          "object_type": "NPC",
+          "required": true
+        }
+      ],
+      "validation": {
+        "logic_type": "cypher_check",
+        "statement": "MATCH (s {id: $source_id})-[:LOCATED_AT]->(l)<-[:LOCATED_AT]-(t {id: $target_id}) RETURN count(t) > 0 as is_valid, s.name as source_name, t.name as target_name, s.damage as damage",
+        "error_message": "目标不在同一地点，无法攻击"
+      },
+      "rules": [
+        {
+          "type": "modify_graph",
+          "description": "扣减目标HP",
+          "statement": "MATCH (t {id: $target_id}) SET t.hp = t.hp - $damage"
+        },
+        {
+          "type": "record_event",
+          "description": "记录攻击事件",
+          "summary_template": "{source_name} 攻击了 {target_name}，造成 {damage} 点伤害"
+        },
+        {
+          "type": "memorize",
+          "description": "记忆战斗经历",
+          "content": "我攻击了{target_name}，造成了{damage}点伤害",
+          "memory_type": "event"
+        }
+      ]
+    },
+
+    "ACT_TALK": {
+      "display_name": "对话",
+      "description": "与NPC进行对话",
+      "parameters": [
+        {
+          "name": "source_id",
+          "type": "object_ref",
+          "object_type": "Player",
+          "required": true
+        },
+        {
+          "name": "target_id",
+          "type": "object_ref",
+          "object_type": "NPC",
+          "required": true
+        },
+        {
+          "name": "content",
+          "type": "string",
+          "description": "对话内容",
+          "required": false
+        }
+      ],
+      "validation": {
+        "logic_type": "cypher_check",
+        "statement": "MATCH (s {id: $source_id})-[:LOCATED_AT]->(l)<-[:LOCATED_AT]-(t {id: $target_id}) RETURN count(t) > 0 as is_valid, s.name as source_name, t.name as target_name, t.dialogue as npc_dialogue",
+        "error_message": "目标NPC不在同一地点"
+      },
+      "rules": [
+        {
+          "type": "memorize",
+          "description": "记忆对话内容",
+          "content": "我与{target_name}进行了对话：{content}",
+          "memory_type": "dialogue"
+        },
+        {
+          "type": "record_event",
+          "description": "记录对话事件",
+          "summary_template": "{source_name} 与 {target_name} 进行了对话"
+        }
+      ]
+    },
+
+    "ACT_INSPECT": {
+      "display_name": "观察",
+      "description": "仔细观察目标",
+      "parameters": [
+        {
+          "name": "source_id",
+          "type": "object_ref",
+          "object_type": "Player",
+          "required": true
+        },
+        {
+          "name": "target_id",
+          "type": "object_ref",
+          "object_type": "any",
+          "required": false
+        }
+      ],
+      "validation": {
+        "logic_type": "always_allow",
+        "error_message": ""
+      },
+      "rules": [
+        {
+          "type": "record_event",
+          "description": "记录观察事件",
+          "summary_template": "{source_name} 观察了 {target_name}"
+        }
+      ]
+    },
+
+    "ACT_WAIT": {
+      "display_name": "等待",
+      "description": "原地等待或休息",
+      "parameters": [
+        {
+          "name": "source_id",
+          "type": "object_ref",
+          "object_type": "Player",
+          "required": true
+        }
+      ],
+      "validation": {
+        "logic_type": "always_allow",
+        "error_message": ""
+      },
+      "rules": [
+        {
+          "type": "record_event",
+          "description": "记录等待事件",
+          "summary_template": "{source_name} 等待了一段时间"
+        },
+        {
+          "type": "memorize",
+          "description": "记忆等待经历",
+          "content": "我选择等待并观察周围",
+          "memory_type": "event"
+        }
+      ]
+    }
+  }
+}

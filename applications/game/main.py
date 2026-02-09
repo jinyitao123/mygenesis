@@ -22,6 +22,7 @@ from genesis.kernel.connectors.neo4j_connector import Neo4jConnector
 from genesis.kernel.connectors.postgres_connector import PostgresConnector
 from applications.game.game_engine import GameEngine
 from applications.game.cli import GameCLI
+from applications.game.bootstrapper import GameBootstrapper
 
 # 配置日志
 logging.basicConfig(
@@ -36,7 +37,22 @@ def main():
     cli = GameCLI()
     cli.print_banner()
 
-    # 1. 初始化数据库连接
+    # 1. 启动引导 - 部署活动域到 ontology
+    try:
+        cli.print_message("启动引导程序...", "info")
+        bootstrapper = GameBootstrapper(project_root=os.getcwd())
+        
+        if not bootstrapper.deploy_active_domain():
+            cli.print_init_status(False, ">>> 引导程序失败，请检查配置和域文件")
+            cli.print_message("提示：1) 检查 game_config.json 2) 确保 domains/ 目录包含所需文件", "error")
+            return 1
+        
+        cli.print_init_status(True, ">>> 引导程序完成。活动域已部署到 ontology。")
+    except Exception as e:
+        cli.print_init_status(False, f">>> 引导程序异常: {e}")
+        cli.print_message("引导程序异常，尝试继续启动...", "warning")
+
+    # 2. 初始化数据库连接
     try:
         # 使用 Docker 容器中的正确默认值
         neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")

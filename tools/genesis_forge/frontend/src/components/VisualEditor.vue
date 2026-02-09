@@ -268,6 +268,7 @@ const props = defineProps<{
 // Emits
 const emit = defineEmits<{
   close: []
+  refresh: []
 }>()
 
 // 响应式状态
@@ -484,6 +485,8 @@ const saveVisualEditor = async () => {
     
     notifySuccess('本体保存成功', `已保存到领域: ${props.domain?.id}\n\n现在可以在以下位置使用：\n1. E:\\Documents\\MyGame\\genesis\n2. E:\\Documents\\MyGame\\applications\n3. 其他业务系统`)
     
+    // 触发刷新事件，通知父组件更新领域数据
+    emit('refresh')
     closeEditor()
     
   } catch (error) {
@@ -498,6 +501,8 @@ const saveVisualEditor = async () => {
       
       if (response.success) {
         notifySuccess('保存成功', '本体已成功保存')
+        // 触发刷新事件，通知父组件更新领域数据
+        emit('refresh')
         closeEditor()
       } else {
         throw new Error('HTMX保存也失败')

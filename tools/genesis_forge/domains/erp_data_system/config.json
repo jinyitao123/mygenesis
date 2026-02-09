@@ -1,0 +1,8 @@
+{
+  "name": "CSV导入领域",
+  "description": "从CSV文件导入的领域",
+  "ui_config": {
+    "primary_color": "#3b82f6",
+    "secondary_color": "#10b981"
+  }
+}

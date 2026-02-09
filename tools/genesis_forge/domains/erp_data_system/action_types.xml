@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<action_types>
+  <!-- 基本CRUD操作 -->
+  <action_type>
+    <id>ACT_CREATE</id>
+    <name>创建记录</name>
+    <description>创建新的CSV记录</description>
+    <icon>plus</icon>
+    <color>#10b981</color>
+  </action_type>
+  <action_type>
+    <id>ACT_UPDATE</id>
+    <name>更新记录</name>
+    <description>更新现有记录</description>
+    <icon>edit</icon>
+    <color>#f59e0b</color>
+  </action_type>
+</action_types>

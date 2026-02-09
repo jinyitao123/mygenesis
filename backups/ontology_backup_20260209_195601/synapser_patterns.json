@@ -1,0 +1,77 @@
+{
+  "version": "0.1.0",
+  "description": "意图映射模式 - 定义自然语言到动作的映射规则",
+
+  "synapser_patterns": {
+    "ACT_MOVE": {
+      "keywords": ["去", "走", "移动", "前往", "到", "去往", "进入"],
+      "requires_target": true,
+      "target_type": "location",
+      "templates": [
+        "我要去{target}",
+        "前往{target}",
+        "移动到{target}",
+        "去{target}",
+        "走{target}"
+      ]
+    },
+
+    "ACT_ATTACK": {
+      "keywords": ["攻击", "打", "杀", "战斗", "袭击", "击打", "砍"],
+      "requires_target": true,
+      "target_type": "entity",
+      "templates": [
+        "攻击{target}",
+        "打{target}",
+        "杀死{target}",
+        "和{target}战斗",
+        "袭击{target}",
+        "攻击那个{target}"
+      ]
+    },
+
+    "ACT_TALK": {
+      "keywords": ["说话", "问", "询问", "打听", "聊", "对话", "说"],
+      "requires_target": true,
+      "target_type": "npc",
+      "templates": [
+        "和{target}说话",
+        "问{target}",
+        "询问{target}",
+        "打听{target}",
+        "和{target}聊天",
+        "对{target}说{content}",
+        "找{target}对话"
+      ]
+    },
+
+    "ACT_INSPECT": {
+      "keywords": ["看", "查看", "观察", "检查", "环顾", "描述", "仔细看"],
+      "requires_target": false,
+      "target_type": "any",
+      "templates": [
+        "看看{target}",
+        "查看{target}",
+        "观察{target}",
+        "检查{target}",
+        "环顾四周",
+        "仔细看{target}",
+        "描述一下{target}"
+      ]
+    },
+
+    "ACT_WAIT": {
+      "keywords": ["等待", "休息", "静观", "跳过", "不动"],
+      "requires_target": false,
+      "target_type": null,
+      "templates": [
+        "等待",
+        "休息一下",
+        "静观其变",
+        "跳过",
+        "原地不动",
+        "等等"
+      ]
+    }
+  }
+}
