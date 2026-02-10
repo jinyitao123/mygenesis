@@ -396,3 +396,123 @@ class EnhancedDomainManager:
         except Exception as e:
             logger.error(f"Failed to save {filename} for {domain_name}: {e}")
             return False
+    
+    def get_nodes_from_seed(self, domain_name: str) -> List[Dict[str, Any]]:
+        """从 seed_data.xml 中提取节点数据"""
+        nodes = []
+        domain_path = self.domains_dir / domain_name
+        seed_file = domain_path / "seed_data.xml"
+        
+        print(f"[DEBUG EnhancedDomainManager] domains_dir={self.domains_dir}, domain={domain_name}, seed_file={seed_file}", flush=True)
+        print(f"[DEBUG EnhancedDomainManager] seed_file.exists()={seed_file.exists()}", flush=True)
+        
+        if not seed_file.exists():
+            logger.warning(f"Seed data file not found for domain: {domain_name}")
+            print(f"[DEBUG EnhancedDomainManager] 文件不存在，返回空列表", flush=True)
+            return nodes
+        
+        try:
+            # 清理XML内容
+            import re
+            with open(seed_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            cleaned_xml = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', content)
+            cleaned_xml = re.sub(r'[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u0080-\u009F]', '', cleaned_xml)
+            
+            root = ET.fromstring(cleaned_xml)
+            print(f"[DEBUG EnhancedDomainManager] XML root tag={root.tag}", flush=True)
+            
+            # 查找所有 Node 元素（支持 <Node> 和 <node> 标签）
+            all_nodes = root.findall('.//Node') + root.findall('.//node')
+            print(f"[DEBUG EnhancedDomainManager] 找到 {len(all_nodes)} 个节点", flush=True)
+            
+            for node in all_nodes:
+                node_id = node.get('id')
+                node_type = node.get('type')
+                
+                if node_id:
+                    # 提取属性
+                    properties = {}
+                    label = node_id  # 默认使用ID作为标签
+                    name = None
+                    
+                    for prop in node.findall('.//Property') + node.findall('.//property'):
+                        prop_key = prop.get('key') or prop.get('name')
+                        prop_value = prop.text
+                        if prop_key and prop_value:
+                            properties[prop_key] = prop_value
+                            # 查找label或name作为显示名称
+                            if prop_key == 'label':
+                                label = prop_value
+                            elif prop_key == 'name':
+                                name = prop_value
+                    
+                    # 使用 name 作为 label 的备选
+                    if name and label == node_id:
+                        label = name
+                    
+                    nodes.append({
+                        'id': node_id,
+                        'type': node_type or 'object',
+                        'label': label,
+                        'name': name,
+                        'properties': properties
+                    })
+            
+            logger.info(f"Extracted {len(nodes)} nodes from seed_data.xml for {domain_name}")
+            
+        except Exception as e:
+            logger.error(f"Failed to extract nodes from seed_data.xml for {domain_name}: {e}")
+        
+        return nodes
+    
+    def get_relationships_from_seed(self, domain_name: str) -> List[Dict[str, Any]]:
+        """从 seed_data.xml 中提取关系数据"""
+        relationships = []
+        domain_path = self.domains_dir / domain_name
+        seed_file = domain_path / "seed_data.xml"
+        
+        if not seed_file.exists():
+            logger.warning(f"Seed data file not found for domain: {domain_name}")
+            return relationships
+        
+        try:
+            # 清理XML内容
+            import re
+            with open(seed_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            cleaned_xml = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', content)
+            cleaned_xml = re.sub(r'[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u0080-\u009F]', '', cleaned_xml)
+            
+            root = ET.fromstring(cleaned_xml)
+            
+            # 查找所有 Link 元素（支持 <Link> 和 <link> 标签）
+            for link in root.findall('.//Link') + root.findall('.//link'):
+                rel_type = link.get('type')
+                source = link.get('source')
+                target = link.get('target')
+                
+                if rel_type and source and target:
+                    # 提取属性
+                    properties = {}
+                    for prop in link.findall('.//Property') + link.findall('.//property'):
+                        prop_key = prop.get('key') or prop.get('name')
+                        prop_value = prop.text
+                        if prop_key and prop_value:
+                            properties[prop_key] = prop_value
+                    
+                    relationships.append({
+                        'type': rel_type,
+                        'source': source,
+                        'target': target,
+                        'properties': properties
+                    })
+            
+            logger.info(f"Extracted {len(relationships)} relationships from seed_data.xml for {domain_name}")
+            
+        except Exception as e:
+            logger.error(f"Failed to extract relationships from seed_data.xml for {domain_name}: {e}")
+        
+        return relationships

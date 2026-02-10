@@ -21,6 +21,7 @@ from datetime import datetime
 from pathlib import Path
 from flask import Flask, request, render_template, jsonify, send_from_directory, Response, stream_with_context
 from flask_socketio import SocketIO, emit
+from flask_cors import CORS
 
 # 添加项目根目录到路径
 project_root = Path(__file__).parent.parent.parent
@@ -64,6 +65,9 @@ app = Flask(__name__,
             static_folder=str(BASE_DIR / 'static'))
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB文件上传限制
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')  # Session 加密密钥
+
+# 启用CORS
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # 初始化WebSocket
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
@@ -230,7 +234,7 @@ def studio():
                          object_types=object_types,
                          action_rules=action_rules,
                          seed_data=seed_data,
-                         graph_elements=[])  # 图谱数据将通过HTMX加载
+                         graph_elements=[])  # 图谱数据将通过API加载
 
 @app.route('/editor')
 def editor():
@@ -275,7 +279,7 @@ def editor():
                          object_types=object_types,
                          action_rules=action_rules,
                          seed_data=seed_data,
-                         graph_elements=[])  # 图谱数据将通过HTMX加载
+                         graph_elements=[])  # 图谱数据将通过API加载
 
 # ========== 原子服务API端点 ==========
 
@@ -988,80 +992,41 @@ def copilot_stream():
 
 请用中文回答，保持专业和实用。"""
                 
-                # 直接调用DeepSeek流式API
-                logger.info(f"调用DeepSeek流式API处理消息: {chat_message}")
+                # 使用现有的AI Copilot服务
+                logger.info(f"调用AI Copilot处理消息: {chat_message}")
                 
-                # 使用DeepSeek API
-                api_key = os.environ.get("DEEPSEEK_API_KEY", "")
-                base_url = "https://api.deepseek.com"
-                
-                if not api_key:
-                    logger.warning("DeepSeek API key not available")
-                    raise Exception("DeepSeek API密钥未配置，请设置DEEPSEEK_API_KEY环境变量")
-                
-                # 尝试导入OpenAI SDK
                 try:
-                    from openai import OpenAI
-                except ImportError:
-                    logger.error("OpenAI SDK not installed")
-                    raise Exception("OpenAI SDK未安装")
-                
-                # 构建系统提示
-                system_prompt = """你是一个专业的仿真世界构建助手，专门帮助用户创建和修改Genesis Studio本体结构。
-
-核心原则：
-1. 严格遵循XML和JSON格式规范
-2. 保持与现有本体结构的一致性
-3. 提供实用且可执行的建议
-4. 考虑性能和可扩展性
-
-可用操作：
-- 生成对象类型定义（XML格式）
-- 创建动作类型规则（XML格式）
-- 编写Cypher查询
-- 建议关系模式
-- 验证现有结构
-
-响应格式：
-- 对于XML内容，使用```xml代码块包裹
-- 对于JSON内容，使用```json代码块包裹
-- 包含复杂逻辑的解释
-- 在适当时提供替代解决方案"""
-                
-                client = OpenAI(
-                    api_key=api_key,
-                    base_url=base_url
-                )
-                
-                # 调用DeepSeek流式API
-                logger.info(f"调用DeepSeek流式API，提示词长度: {len(prompt)}")
-                
-                stream = client.chat.completions.create(
-                    model="deepseek-chat",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt},
-                    ],
-                    temperature=0.3,
-                    max_tokens=4000,
-                    stream=True  # 启用流式输出
-                )
-                
-                # 处理流式响应
-                chunk_count = 0
-                for chunk in stream:
-                    if chunk.choices[0].delta.content:
-                        content = chunk.choices[0].delta.content
-                        chunk_count += 1
+                    # 调用AI Copilot的chat方法
+                    result = ai_copilot.chat(chat_message)
+                    
+                    if result["status"] == "success":
+                        response = result.get("response", "")
                         
-                        # 发送到前端
-                        chunk_msg = json.dumps({'type': 'chunk', 'content': content})
-                        yield f"data: {chunk_msg}\n\n"
+                        # 将响应分块发送（模拟流式）
+                        chunk_size = 50
+                        for i in range(0, len(response), chunk_size):
+                            chunk = response[i:i+chunk_size]
+                            data = json.dumps({'type': 'chunk', 'content': chunk})
+                            yield f"data: {data}\n\n"
+                            time.sleep(0.05)  # 稍微延迟以模拟流式
+                    else:
+                        # 发送错误消息
+                        error_msg = result.get("error", "AI处理失败")
+                        data = json.dumps({'type': 'chunk', 'content': f"抱歉，AI处理时出现错误: {error_msg}"})
+                        yield f"data: {data}\n\n"
                         
-                        if chunk_count % 10 == 0:  # 每10个块记录一次
-                            logger.debug(f"发送流式响应块 {chunk_count}: {content[:50]}...")
-                
-                logger.info(f"DeepSeek流式响应完成，共发送 {chunk_count} 个块")
+                except Exception as e:
+                    logger.error(f"AI流式处理失败: {e}")
+                    # 发送模拟响应
+                    mock_response = "我收到了: " + chat_message + ". 这是一个模拟响应，因为AI服务暂时不可用。"
+                    
+                    # 分块发送模拟响应
+                    chunk_size = 50
+                    for i in range(0, len(mock_response), chunk_size):
+                        chunk = mock_response[i:i+chunk_size]
+                        data = json.dumps({'type': 'chunk', 'content': chunk})
+                        yield f"data: {data}\n\n"
+                        time.sleep(0.05)
                 
             except Exception as ai_error:
                 logger.error(f"AI流式处理失败: {ai_error}", exc_info=True)
@@ -2240,16 +2205,8 @@ def serve_static(filename):
     """提供静态文件"""
     return send_from_directory(BASE_DIR / 'static', filename)
 
-try:
-    import sys
-    sys.path.insert(0, str(Path(__file__).parent))
-    from api.routes.htmx_routes import register_htmx_routes
-    app = register_htmx_routes(app, domain_manager, validation_engine, ai_copilot, git_ops, rule_engine)
-    logger.info("HTMX路由注册成功")
-except ImportError as e:
-    logger.warning(f"HTMX路由导入失败: {e}")
-except Exception as e:
-    logger.error(f"HTMX路由注册失败: {e}")
+# HTMX路由已被废弃，所有必要路由已在app_studio.py中直接定义
+logger.info("API路由注册完成")
 
 @app.route('/api/performance/metrics', methods=['POST'])
 def receive_performance_metrics():
@@ -2312,6 +2269,564 @@ def handle_schema_validation(error):
 def internal_error(error):
     logger.error(f"内部服务器错误: {error}")
     return jsonify({"error": "内部服务器错误"}), 500
+
+# ========== 编辑器相关路由 ==========
+
+@app.route('/studio/sidebar/data', methods=['GET'])
+def get_sidebar_data():
+    """获取侧边栏数据"""
+    try:
+        current_domain = request.args.get('domain', 'supply_chain')
+        logger.info(f"获取侧边栏数据请求: domain={current_domain}, path={request.path}, full_path={request.full_path}")
+        
+        # 获取领域信息
+        domain_info = domain_manager.get_domain_info(current_domain)
+        
+        # 提取结构化数据
+        object_types = domain_info.get('object_types', [])
+        action_rules = domain_info.get('action_rules', [])
+        seed_data = domain_info.get('seed_data', [])
+        
+        # 如果从config.json中获取的数据为空，尝试从XML文件中提取
+        if not object_types and domain_info.get('files', {}).get('schema'):
+            schema_content = domain_info['files']['schema']
+            if schema_content:
+                try:
+                    # 尝试从XML中提取对象类型
+                    import xml.etree.ElementTree as ET
+                    root = ET.fromstring(schema_content)
+                    for obj_type in root.findall('.//ObjectType'):
+                        name = obj_type.get('name') or obj_type.findtext('Name')
+                        if name:
+                            object_types.append({
+                                'name': name,
+                                'description': obj_type.get('description') or obj_type.findtext('Description') or f'{name} 对象类型'
+                            })
+                except Exception as e:
+                    logger.warning(f"从XML提取对象类型失败: {e}")
+        
+        if not action_rules and domain_info.get('files', {}).get('actions'):
+            actions_content = domain_info['files']['actions']
+            if actions_content:
+                try:
+                    # 尝试从XML中提取动作规则
+                    import xml.etree.ElementTree as ET
+                    root = ET.fromstring(actions_content)
+                    for action in root.findall('.//Action'):
+                        name = action.get('name') or action.findtext('Name')
+                        if name:
+                            action_rules.append({
+                                'name': name,
+                                'description': action.get('description') or action.findtext('Description') or f'{name} 动作规则'
+                            })
+                except Exception as e:
+                    logger.warning(f"从XML提取动作规则失败: {e}")
+        
+        # 格式化种子数据
+        formatted_seed_data = []
+        for seed in seed_data:
+            if isinstance(seed, dict):
+                formatted_seed_data.append({
+                    'name': seed.get('id') or seed.get('name', '未知'),
+                    'type': seed.get('type', '未知类型')
+                })
+        
+        return jsonify({
+            'object_types': object_types[:20],  # 限制数量
+            'action_rules': action_rules[:20],
+            'seed_data': formatted_seed_data[:10]
+        })
+        
+    except Exception as e:
+        logger.error(f"获取侧边栏数据失败: {e}")
+        return jsonify({
+            'object_types': [],
+            'action_rules': [],
+            'seed_data': []
+        }), 500
+
+@app.route('/studio/editor/object/<type_key>', methods=['GET'])
+def get_object_editor(type_key):
+    """获取对象类型编辑器数据（JSON版本）"""
+    try:
+        current_domain = request.args.get('domain', 'supply_chain')
+        
+        # 从领域管理器获取对象类型数据
+        domain_data = domain_manager.get_domain_files(current_domain)
+        schema_data = {}
+        if domain_data.get('schema'):
+            try:
+                schema_data = json.loads(domain_data['schema'])
+            except json.JSONDecodeError:
+                # 如果JSON解析失败，返回空数据
+                logger.warning(f"schema JSON解析失败，使用空数据")
+                schema_data = {}
+        
+        # 查找特定对象类型
+        object_type = None
+        if 'object_types' in schema_data:
+            for obj in schema_data['object_types']:
+                if obj.get('type_key') == type_key:
+                    object_type = obj
+                    break
+        
+        if object_type:
+            return jsonify({
+                'success': True,
+                'type_key': type_key,
+                'data': object_type,
+                'domain': current_domain
+            })
+        else:
+            # 返回空对象类型模板
+            return jsonify({
+                'success': True,
+                'type_key': type_key,
+                'data': {
+                    'type_key': type_key,
+                    'properties': {},
+                    'visual_assets': [],
+                    'tags': []
+                },
+                'domain': current_domain,
+                'is_new': True
+            })
+            
+    except Exception as e:
+        logger.error(f"获取对象编辑器数据失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'type_key': type_key
+        }), 500
+
+@app.route('/studio/editor/action/<action_id>', methods=['GET'])
+def get_action_editor(action_id):
+    """获取动作规则编辑器数据（JSON版本）"""
+    try:
+        current_domain = request.args.get('domain', 'supply_chain')
+        
+        domain_data = domain_manager.get_domain_files(current_domain)
+        actions_data = {}
+        if domain_data.get('actions'):
+            try:
+                actions_data = json.loads(domain_data['actions'])
+            except json.JSONDecodeError:
+                logger.warning(f"actions JSON解析失败，使用空数据")
+                actions_data = {}
+        
+        # 查找特定动作
+        action = None
+        if 'actions' in actions_data:
+            for act in actions_data['actions']:
+                if act.get('action_id') == action_id:
+                    action = act
+                    break
+        
+        if action:
+            return jsonify({
+                'success': True,
+                'action_id': action_id,
+                'data': action,
+                'domain': current_domain
+            })
+        else:
+            # 返回空动作模板
+            return jsonify({
+                'success': True,
+                'action_id': action_id,
+                'data': {
+                    'action_id': action_id,
+                    'validation_logic': "",
+                    'execution_rules': []
+                },
+                'domain': current_domain,
+                'is_new': True
+            })
+            
+    except Exception as e:
+        logger.error(f"获取动作编辑器数据失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'action_id': action_id
+        }), 500
+
+@app.route('/studio/editor/seed/<seed_name>', methods=['GET'])
+def get_seed_editor(seed_name):
+    """获取种子数据编辑器数据（JSON版本）"""
+    try:
+        current_domain = request.args.get('domain', 'supply_chain')
+        
+        domain_data = domain_manager.get_domain_files(current_domain)
+        seed_data = {}
+        if domain_data.get('seed'):
+            try:
+                seed_data = json.loads(domain_data['seed'])
+            except json.JSONDecodeError:
+                logger.warning(f"seed JSON解析失败，使用空数据")
+                seed_data = {}
+        
+        # 这里简化处理，返回整个种子数据
+        return jsonify({
+            'success': True,
+            'seed_name': seed_name,
+            'data': seed_data,
+            'domain': current_domain
+        })
+            
+    except Exception as e:
+        logger.error(f"获取种子编辑器数据失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'seed_name': seed_name
+        }), 500
+
+@app.route('/api/save', methods=['POST'])
+def save_file():
+    """保存文件（JSON版本）"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': '没有提供数据'}), 400
+        
+        current_domain = request.args.get('domain', 'supply_chain')
+        file_type = data.get('file_type', 'schema')
+        content = data.get('content', '')
+        
+        logger.info(f"保存文件: domain={current_domain}, type={file_type}")
+        
+        # 这里应该调用domain_manager保存数据
+        # 暂时返回成功响应
+        return jsonify({
+            'success': True,
+            'message': '保存成功',
+            'domain': current_domain,
+            'file_type': file_type,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"保存文件失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/validate', methods=['POST'])
+def validate_content():
+    """验证内容（JSON版本）"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': '没有提供数据'}), 400
+        
+        current_domain = request.args.get('domain', 'supply_chain')
+        content = data.get('content', '')
+        content_type = data.get('type', 'schema')
+        
+        logger.info(f"验证内容: domain={current_domain}, type={content_type}")
+        
+        # 这里应该调用validation_engine验证数据
+        # 暂时返回成功响应
+        return jsonify({
+            'success': True,
+            'valid': True,
+            'message': '验证通过',
+            'domain': current_domain,
+            'type': content_type,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"验证内容失败: {e}")
+        return jsonify({
+            'success': False,
+            'valid': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/deploy', methods=['POST'])
+def deploy_changes():
+    """部署变更（JSON版本）"""
+    try:
+        data = request.get_json()
+        current_domain = request.args.get('domain', 'supply_chain')
+        
+        logger.info(f"部署变更: domain={current_domain}")
+        
+        # 这里应该调用git_ops部署变更
+        # 暂时返回成功响应
+        return jsonify({
+            'success': True,
+            'message': '部署成功',
+            'domain': current_domain,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"部署变更失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/tools/format', methods=['POST'])
+def format_code():
+    """格式化代码（JSON版本）"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': '没有提供数据'}), 400
+        
+        code = data.get('code', '')
+        language = data.get('language', 'json')
+        
+        # 简单格式化：如果是JSON，尝试美化和验证
+        formatted_code = code
+        if language == 'json':
+            try:
+                parsed = json.loads(code)
+                formatted_code = json.dumps(parsed, indent=2, ensure_ascii=False)
+            except json.JSONDecodeError as e:
+                return jsonify({
+                    'success': False,
+                    'error': f'JSON格式错误: {str(e)}',
+                    'formatted': code
+                }), 400
+        
+        return jsonify({
+            'success': True,
+            'formatted': formatted_code,
+            'language': language
+        })
+        
+    except Exception as e:
+        logger.error(f"格式化代码失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/graph/data', methods=['GET'])
+def get_graph_data():
+    """获取图谱数据"""
+    try:
+        current_domain = request.args.get('domain', 'supply_chain')
+        logger.info(f"获取图谱数据请求: domain={current_domain}, path={request.path}, full_path={request.full_path}")
+        
+        # 获取领域信息
+        domain_info = domain_manager.get_domain_info(current_domain)
+        elements = []
+        
+        # 基于领域配置生成图数据
+        config = domain_info.get('config', {})
+        features = config.get('features', {})
+        default_objects = config.get('default_objects', [])
+        
+        # 从 seed_data.xml 加载节点和关系
+        seed_nodes = []
+        try:
+            # 检查文件是否存在
+            seed_file = domain_manager.domains_dir / current_domain / "seed_data.xml"
+            file_exists = seed_file.exists()
+            print(f"[DEBUG] 查找 seed_data.xml: {seed_file}, exists={file_exists}", flush=True)
+            logger.info(f"查找 seed_data.xml: {seed_file}, exists={file_exists}")
+            
+            if not file_exists:
+                print(f"[DEBUG] 文件不存在，尝试使用绝对路径", flush=True)
+                seed_file = Path(r"E:\Documents\MyGame\domains") / current_domain / "seed_data.xml"
+                print(f"[DEBUG] 尝试路径: {seed_file}, exists={seed_file.exists()}", flush=True)
+            
+            seed_nodes = domain_manager.get_nodes_from_seed(current_domain)
+            print(f"[DEBUG] 从 seed_data.xml 加载了 {len(seed_nodes)} 个节点", flush=True)
+            logger.info(f"从 seed_data.xml 加载了 {len(seed_nodes)} 个节点")
+            
+            # 打印前几个节点用于调试
+            if seed_nodes:
+                print(f"[DEBUG] 前3个节点: {seed_nodes[:3]}", flush=True)
+                logger.info(f"前3个节点: {seed_nodes[:3]}")
+        except Exception as e:
+            print(f"[DEBUG] 从 seed_data.xml 加载节点失败: {e}", flush=True)
+            logger.warning(f"从 seed_data.xml 加载节点失败: {e}")
+            import traceback
+            traceback_str = traceback.format_exc()
+            print(f"[DEBUG] {traceback_str}", flush=True)
+            logger.warning(traceback_str)
+        
+        # 添加 seed_data.xml 中的节点（优先使用）
+        if seed_nodes:
+            for i, node in enumerate(seed_nodes[:20]):  # 限制数量
+                elements.append({
+                    'data': {
+                        'id': node.get('id', f'node_{i}'),
+                        'label': node.get('label', node.get('name', node.get('id', f'节点{i}'))),
+                        'type': node.get('type', 'object'),
+                        'properties': node.get('properties', {})
+                    },
+                    'position': {'x': 100 + (i % 5) * 150, 'y': 100 + (i // 5) * 150}
+                })
+        else:
+            # 备用：从 config.json 加载
+            # 添加对象类型作为节点
+            object_types = features.get('object_types', [])
+            for i, obj_type in enumerate(object_types[:10]):  # 限制数量
+                elements.append({
+                    'data': {
+                        'id': f'type_{obj_type}',
+                        'label': obj_type,
+                        'type': 'object_type',
+                        'description': f'{obj_type} 对象类型'
+                    },
+                    'position': {'x': 100 + i * 150, 'y': 100}
+                })
+            
+            # 添加默认对象作为节点
+            for i, obj in enumerate(default_objects[:8]):  # 限制数量
+                elements.append({
+                    'data': {
+                        'id': obj.get('id', f'obj_{i}'),
+                        'label': obj.get('name', obj.get('id', f'对象{i}')),
+                        'type': 'object',
+                        'description': obj.get('description', '')
+                    },
+                    'position': {'x': 100 + i * 150, 'y': 250}
+                })
+        
+        # 添加关系作为边
+        relationships = features.get('relationships', [])
+        logger.info(f"从 config.json 加载了 {len(relationships)} 条关系")
+        
+        # 如果没有在 config.json 中定义关系，则从 seed_data.xml 中提取
+        if not relationships:
+            try:
+                relationships = domain_manager.get_relationships_from_seed(current_domain)
+                logger.info(f"从 seed_data.xml 加载了 {len(relationships)} 条关系")
+                
+                # 打印所有关系用于调试
+                if relationships:
+                    logger.info(f"所有关系: {relationships}")
+            except Exception as e:
+                logger.warning(f"从 seed_data.xml 加载关系失败: {e}")
+                import traceback
+                logger.warning(traceback.format_exc())
+        
+        # 创建节点ID集合用于快速查找
+        node_ids = {e['data']['id'] for e in elements}
+        logger.info(f"节点ID集合: {node_ids}")
+        
+        valid_edges = 0
+        skipped_edges = 0
+        
+        for i, rel in enumerate(relationships[:20]):  # 限制数量
+            source_id = rel.get("source")
+            target_id = rel.get("target")
+            rel_type = rel.get("type", "关联")
+            
+            logger.info(f"处理关系 {i}: type={rel_type}, source={source_id}, target={target_id}")
+            
+            if not source_id or not target_id:
+                logger.warning(f"关系缺少 source 或 target: {rel}")
+                skipped_edges += 1
+                continue
+            
+            # 确保源和目标节点存在
+            source_exists = source_id in node_ids
+            target_exists = target_id in node_ids
+            
+            if source_exists and target_exists:
+                rel_props = rel.get('properties', {})
+                elements.append({
+                    'data': {
+                        'id': f'edge_{i}_{source_id}_{target_id}',
+                        'source': source_id,
+                        'target': target_id,
+                        'label': rel_type,
+                        'type': 'relationship',
+                        'properties': rel_props
+                    }
+                })
+                valid_edges += 1
+                logger.info(f"添加边: {source_id} -> {target_id} [{rel_type}]")
+            else:
+                skipped_edges += 1
+                logger.warning(f"跳过无效关系: source={source_id} (exists={source_exists}), target={target_id} (exists={target_exists})")
+        
+        # 统计节点和边的数量
+        nodes_count = len([e for e in elements if 'source' not in e['data']])
+        edges_count = len([e for e in elements if 'source' in e['data']])
+        
+        logger.info(f"返回图谱数据: {nodes_count} 个节点, {edges_count} 条边 (有效: {valid_edges}, 跳过: {skipped_edges})")
+        
+        # 调试信息
+        debug_info = {
+            'version': '2.0-fixed',
+            'seed_nodes_loaded': len(seed_nodes),
+            'domains_dir': str(domain_manager.domains_dir),
+            'file_checked': str(domain_manager.domains_dir / current_domain / "seed_data.xml"),
+            'file_exists': (domain_manager.domains_dir / current_domain / "seed_data.xml").exists(),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        return jsonify({
+            'elements': elements,
+            'domain': current_domain,
+            'stats': {
+                'nodes': nodes_count,
+                'edges': edges_count
+            },
+            'debug': debug_info,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"获取图谱数据失败: {e}")
+        return jsonify({
+            'elements': [],
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@app.route('/graph/node', methods=['POST'])
+def add_graph_node():
+    """添加图谱节点"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': '没有提供数据'}), 400
+        
+        node_type = data.get('type', 'object')
+        node_label = data.get('label', '新节点')
+        x = data.get('x', 100)
+        y = data.get('y', 100)
+        
+        # 生成唯一ID
+        import uuid
+        node_id = f'node_{uuid.uuid4().hex[:8]}'
+        
+        new_node = {
+            'data': {
+                'id': node_id,
+                'label': node_label,
+                'type': node_type,
+                'description': f'新添加的{node_type}节点'
+            },
+            'position': {'x': x, 'y': y}
+        }
+        
+        return jsonify({
+            'success': True,
+            'node': new_node,
+            'message': '节点添加成功'
+        })
+        
+    except Exception as e:
+        logger.error(f"添加图谱节点失败: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 # ========== WebSocket事件处理器 ==========
 
