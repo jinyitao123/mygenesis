@@ -1,23 +1,23 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ObjectTypes domain="erp">
-    <!-- 采购订单 -->
-    <ObjectType name="PurchaseOrder" icon="clipboard-list" color="#3b82f6" primary_key="id">
-        <Property name="id" type="string" required="true" description="订单号"/>
-        <Property name="item_name" type="string" description="采购物品"/>
-        <Property name="amount" type="float" description="金额"/>
-        <Property name="status" type="string" enum="DRAFT,PENDING,APPROVED,REJECTED" default="DRAFT" description="状态"/>
-        <Property name="created_at" type="date" description="创建时间"/>
-        <Property name="created_by" type="string" description="创建人"/>
+<?xml version="1.0" ?>
+<ObjectTypes domain="supply_chain_erp">
+    <ObjectType name="object_type">
+        <Property name="label" type="string" description="节点标签"/>
+        <Property name="type" type="string" description="节点类型"/>
     </ObjectType>
-
-    <!-- 员工 -->
-    <ObjectType name="Employee" icon="user" color="#10b981" primary_key="id">
-        <Property name="id" type="string" required="true"/>
-        <Property name="name" type="string"/>
-        <Property name="role" type="string" enum="STAFF,MANAGER"/>
+    <ObjectType name="Employee">
+        <Property name="label" type="string" description="节点标签"/>
+        <Property name="type" type="string" description="节点类型"/>
+        <Property name="role" type="string"/>
     </ObjectType>
-
-    <!-- 关系类型定义 -->
-    <LinkType name="CREATED_BY" source="PurchaseOrder" target="Employee" color="#3b82f6" description="订单创建人"/>
-    <LinkType name="APPROVED_BY" source="PurchaseOrder" target="Employee" color="#10b981" description="订单审批人"/>
+    <ObjectType name="relation_type">
+        <Property name="label" type="string" description="节点标签"/>
+        <Property name="type" type="string" description="节点类型"/>
+    </ObjectType>
+    <ObjectType name="action_type">
+        <Property name="label" type="string" description="节点标签"/>
+        <Property name="type" type="string" description="节点类型"/>
+    </ObjectType>
+    <LinkTypes>
+        <LinkType name="RELATES_TO" source="Unknown" target="Unknown"/>
+    </LinkTypes>
 </ObjectTypes>

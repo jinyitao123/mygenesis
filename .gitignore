@@ -19,8 +19,11 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-env/
+MANIFEST
+
+# Virtual Environments
 venv/
+env/
 ENV/
 env.bak/
 venv.bak/
@@ -32,48 +35,51 @@ venv.bak/
 *.swo
 *~
 
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Logs
-logs/
-*.log
-src/logs/
-neo4j_logs/
-neo4j_data/
-
-# Test
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
-
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Temporary and session files
-SESSION_CONTEXT.md
-NEW_SESSION_PROMPT.md
-diagnose_log_viewer.py
-fix_emoji.py
-test_web_log.py
-start_game.py
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
-# Project specific test files
-test_*.py
-test_brain_collaboration.py
-test_embedding_complete.py
-test_embedding_simple.py
-test_ollama_embedding.py
-test_vector_client_quick.py
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
 
-# Docker
-docker-compose.override.yml
+# Test coverage
+coverage/
+*.lcov
 
-# Temporary files
-*.tmp
-*.temp
+# Node modules
+node_modules/
+npm-debug.log
+
+# Frontend build
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Local development files
+start_backend.py
+test_sse.html
+nul
+
+# Server logs
+tools/genesis_forge/backend/api/server.log

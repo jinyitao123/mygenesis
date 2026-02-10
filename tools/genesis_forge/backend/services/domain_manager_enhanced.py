@@ -171,7 +171,12 @@ class EnhancedDomainManager:
         """从XML中提取对象类型"""
         object_types = []
         try:
-            root = ET.fromstring(xml_content)
+            # 清理XML内容
+            import re
+            cleaned_xml = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', xml_content)
+            cleaned_xml = re.sub(r'[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u0080-\u009F]', '', cleaned_xml)
+            
+            root = ET.fromstring(cleaned_xml)
             
             # 查找对象类型定义
             for obj_type in root.findall('.//ObjectType'):
@@ -204,7 +209,14 @@ class EnhancedDomainManager:
         """从XML中提取动作规则"""
         action_rules = []
         try:
-            root = ET.fromstring(xml_content)
+            # 清理XML内容，移除无效字符
+            import re
+            # 移除控制字符和非XML字符，但保留中文字符
+            cleaned_xml = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', xml_content)
+            # 移除无效的Unicode字符（某些emoji）
+            cleaned_xml = re.sub(r'[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u0080-\u009F]', '', cleaned_xml)
+            
+            root = ET.fromstring(cleaned_xml)
             
             # 查找动作规则定义
             for action in root.findall('.//action_type'):
@@ -250,7 +262,12 @@ class EnhancedDomainManager:
         """从XML中提取种子数据"""
         seed_data = []
         try:
-            root = ET.fromstring(xml_content)
+            # 清理XML内容
+            import re
+            cleaned_xml = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', xml_content)
+            cleaned_xml = re.sub(r'[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u0080-\u009F]', '', cleaned_xml)
+            
+            root = ET.fromstring(cleaned_xml)
             
             # 查找实体定义
             for entity in root.findall('.//Entity'):

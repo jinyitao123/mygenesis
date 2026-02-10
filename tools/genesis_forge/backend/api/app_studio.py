@@ -922,7 +922,15 @@ def copilot_stream():
     chat_message = request.args.get('message')
     session_id = request.args.get('session_id', 'default')
     
-    logger.info(f"SSE连接建立 - 会话: {session_id}, 消息: {chat_message}")
+    # 记录所有请求参数
+    logger.info(f"SSE请求 - URL: {request.url}")
+    logger.info(f"SSE请求 - 参数: {dict(request.args)}")
+    
+    if chat_message:
+        logger.info(f"SSE连接建立 - 会话: {session_id}, 消息长度: {len(chat_message)}")
+        logger.info(f"消息内容: {chat_message[:100]}...")
+    else:
+        logger.info(f"SSE连接建立 - 会话: {session_id}, 消息: None")
     
     def generate():
         import json
@@ -952,7 +960,7 @@ def copilot_stream():
             return
         
         # 如果有聊天消息，处理AI响应
-        logger.info(f"处理聊天消息: {chat_message}")
+        logger.info(f"处理聊天消息，长度: {len(chat_message)}")
         
         try:
             # 首先发送连接确认和思考状态
@@ -965,31 +973,120 @@ def copilot_stream():
             logger.info("发送思考状态")
             yield f"data: {thinking}\n\n"
             logger.info("思考状态已发送")
-            time.sleep(0.5)
             
-            # 先发送简单的测试响应，确保SSE工作
-            logger.info("发送测试流式响应")
+            # 对于SSE流，避免长时间阻塞，使用yield来模拟延迟
+            # 不直接使用time.sleep，因为它会阻塞整个线程
             
-            test_responses = [
-                "我正在思考您的问题...",
-                "这是一个测试流式响应。",
-                "真正的AI集成需要更多配置。",
-                "但SSE流式传输正在工作！"
-            ]
-            
-            full_response = ""
-            for i, resp in enumerate(test_responses):
-                data = json.dumps({'type': 'chunk', 'content': resp + ' '})
-                logger.info(f"发送测试块 {i+1}: {resp}")
-                yield f"data: {data}\n\n"
-                full_response += resp + ' '
-                time.sleep(0.3)
-            
-            logger.info(f"测试响应完成，总长度: {len(full_response)}")
+            try:
+                # 构建更专业的提示词
+                prompt = f"""用户请求: {chat_message}
+
+请作为Genesis Studio的AI Copilot助手，专门帮助用户创建和修改本体结构。
+
+如果是关于创建对象类型定义的请求，请提供完整的XML格式定义。
+如果是其他问题，请提供有帮助的回应。
+
+请用中文回答，保持专业和实用。"""
+                
+                # 直接调用DeepSeek流式API
+                logger.info(f"调用DeepSeek流式API处理消息: {chat_message}")
+                
+                # 使用DeepSeek API
+                api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+                base_url = "https://api.deepseek.com"
+                
+                if not api_key:
+                    logger.warning("DeepSeek API key not available")
+                    raise Exception("DeepSeek API密钥未配置，请设置DEEPSEEK_API_KEY环境变量")
+                
+                # 尝试导入OpenAI SDK
+                try:
+                    from openai import OpenAI
+                except ImportError:
+                    logger.error("OpenAI SDK not installed")
+                    raise Exception("OpenAI SDK未安装")
+                
+                # 构建系统提示
+                system_prompt = """你是一个专业的仿真世界构建助手，专门帮助用户创建和修改Genesis Studio本体结构。
+
+核心原则：
+1. 严格遵循XML和JSON格式规范
+2. 保持与现有本体结构的一致性
+3. 提供实用且可执行的建议
+4. 考虑性能和可扩展性
+
+可用操作：
+- 生成对象类型定义（XML格式）
+- 创建动作类型规则（XML格式）
+- 编写Cypher查询
+- 建议关系模式
+- 验证现有结构
+
+响应格式：
+- 对于XML内容，使用```xml代码块包裹
+- 对于JSON内容，使用```json代码块包裹
+- 包含复杂逻辑的解释
+- 在适当时提供替代解决方案"""
+                
+                client = OpenAI(
+                    api_key=api_key,
+                    base_url=base_url
+                )
+                
+                # 调用DeepSeek流式API
+                logger.info(f"调用DeepSeek流式API，提示词长度: {len(prompt)}")
+                
+                stream = client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.3,
+                    max_tokens=4000,
+                    stream=True  # 启用流式输出
+                )
+                
+                # 处理流式响应
+                chunk_count = 0
+                for chunk in stream:
+                    if chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        chunk_count += 1
+                        
+                        # 发送到前端
+                        chunk_msg = json.dumps({'type': 'chunk', 'content': content})
+                        yield f"data: {chunk_msg}\n\n"
+                        
+                        if chunk_count % 10 == 0:  # 每10个块记录一次
+                            logger.debug(f"发送流式响应块 {chunk_count}: {content[:50]}...")
+                
+                logger.info(f"DeepSeek流式响应完成，共发送 {chunk_count} 个块")
+                
+            except Exception as ai_error:
+                logger.error(f"AI流式处理失败: {ai_error}", exc_info=True)
+                # 发送错误消息
+                error_msg = json.dumps({'type': 'chunk', 'content': f'抱歉，AI处理时出现错误: {str(ai_error)[:100]}'})
+                yield f"data: {error_msg}\n\n"
+                
+                # 发送备用响应
+                backup_msg = json.dumps({'type': 'chunk', 'content': f'我收到了: {chat_message}. 这是一个模拟响应，因为AI服务暂时不可用。'})
+                yield f"data: {backup_msg}\n\n"
             
             # 发送完成消息
-            complete = json.dumps({'type': 'complete', 'full_response': full_response, 'test': True})
-            yield f"data: {complete}\n\n"
+            complete = json.dumps({'type': 'complete', 'ai_processed': True})
+            complete_data = f"data: {complete}\n\n"
+            logger.info("发送complete消息")
+            yield complete_data
+            
+            logger.info("AI响应发送完成")
+            
+            # 添加一个明确的结束标记，确保连接正常关闭
+            # 发送一个注释行表示流结束
+            yield ": stream completed\n\n"
+            
+            # 确保生成器结束
+            return
             
         except Exception as e:
             logger.error(f"AI处理失败: {e}", exc_info=True)
@@ -1004,7 +1101,7 @@ def copilot_stream():
             complete = json.dumps({'type': 'complete', 'mock': True})
             yield f"data: {complete}\n\n"
     
-    response = Response(generate(), 
+    response = Response(stream_with_context(generate()), 
                        mimetype='text/event-stream')
     
     # 设置SSE所需的头
@@ -1014,6 +1111,8 @@ def copilot_stream():
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    response.headers['Access-Control-Expose-Headers'] = 'Content-Type'
     
     return response
 
@@ -2267,4 +2366,6 @@ if __name__ == '__main__':
     logger.info("Starting Flask server with WebSocket support on http://localhost:5000")
     logger.info("Press Ctrl+C to stop")
     
-    socketio.run(app, debug=True, port=5000, host='0.0.0.0')
+    # 使用普通Flask开发服务器，避免eventlet在Windows上的问题
+    # 禁用debug模式，避免自动重载
+    app.run(debug=False, port=5000, host='0.0.0.0')

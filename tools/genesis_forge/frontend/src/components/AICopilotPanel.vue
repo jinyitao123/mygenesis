@@ -10,12 +10,12 @@
           <div>
             <h3 class="font-bold text-lg">AI Copilot</h3>
             <div class="flex items-center space-x-2 mt-1">
-              <div class="flex items-center space-x-1">
-                <div :class="['w-2 h-2 rounded-full', isConnected ? 'bg-green-500' : 'bg-red-500']"></div>
-                <span class="text-xs text-gray-400">
-                  {{ isConnected ? '已连接' : '连接中...' }}
-                </span>
-              </div>
+               <div class="flex items-center space-x-1">
+                 <div :class="['w-2 h-2 rounded-full', isLoading ? 'bg-blue-500' : isConnected ? 'bg-green-500' : 'bg-gray-500']"></div>
+                 <span class="text-xs text-gray-400">
+                   {{ isLoading ? 'AI思考中...' : isConnected ? '已连接' : '就绪' }}
+                 </span>
+               </div>
               <span class="text-xs text-gray-400">•</span>
               <span class="text-xs text-gray-400">
                 {{ messages.length }} 条消息
@@ -251,19 +251,22 @@
                     rows="3"
                     class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50"></textarea>
           
-          <div class="absolute bottom-2 right-2 flex items-center space-x-3">
-            <div class="text-xs text-gray-400">
-              <span v-if="!isConnected" class="text-yellow-400">
-                <i class="fas fa-unlink mr-1"></i>连接中...
-              </span>
-              <span v-else class="text-green-400">
-                <i class="fas fa-link mr-1"></i>已连接
-              </span>
-            </div>
-            <div class="text-xs text-gray-400">
-              {{ inputText.length }}/1000
-            </div>
-          </div>
+           <div class="absolute bottom-2 right-2 flex items-center space-x-3">
+             <div class="text-xs text-gray-400">
+               <span v-if="isLoading" class="text-blue-400">
+                 <i class="fas fa-spinner fa-spin mr-1"></i>AI思考中...
+               </span>
+               <span v-else-if="!isConnected && eventSource" class="text-yellow-400">
+                 <i class="fas fa-unlink mr-1"></i>连接中...
+               </span>
+               <span v-else class="text-green-400">
+                 <i class="fas fa-check mr-1"></i>就绪
+               </span>
+             </div>
+             <div class="text-xs text-gray-400">
+               {{ inputText.length }}/1000
+             </div>
+           </div>
         </div>
         
         <div class="flex flex-col space-y-2">
@@ -326,6 +329,8 @@ const isLoading = ref(false)
 const isConnected = ref(false)
 const messagesContainer = ref<HTMLElement>()
 const eventSource = ref<EventSource | null>(null)
+const isSSECompleting = ref(false) // 标记SSE是否正在正常完成
+const hasReceivedSSEResponse = ref(false) // 标记是否已经收到SSE响应
 
 // CSV导入相关状态
 const csvFile = ref<File | null>(null)
@@ -441,9 +446,12 @@ const showCSVPreview = () => {
 }
 
 const askQuestion = (question: string) => {
+  console.log('askQuestion被调用:', question)
   inputText.value = question
   sendMessage()
 }
+
+// 备用API调用已移除，只使用SSE流式响应
 
 // 初始化
 onMounted(() => {
@@ -464,71 +472,127 @@ onUnmounted(() => {
   }
 })
 
-// 连接SSE
-const connectSSE = (message?: string) => {
-  if (eventSource.value) {
-    eventSource.value.close()
-  }
-
-  // 构建URL，可选包含消息参数
-  let url = '/api/copilot/stream'
-  if (message) {
-    const sessionId = Date.now().toString() // 简单的会话ID
-    url += `?message=${encodeURIComponent(message)}&session_id=${sessionId}`
-    console.log('通过SSE发送消息:', message)
-  }
-
-  eventSource.value = new EventSource(url)
-
-  eventSource.value.onopen = () => {
-    isConnected.value = true
-    console.log('SSE连接已建立', message ? '(带消息)' : '(心跳模式)')
-  }
-
-  eventSource.value.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data)
-      handleSSEMessage(data)
-    } catch (error) {
-      console.error('解析SSE消息失败:', error)
+  // 连接SSE
+  const connectSSE = (message?: string) => {
+    if (eventSource.value) {
+      console.log('关闭现有SSE连接')
+      eventSource.value.close()
+      eventSource.value = null
     }
-  }
 
-  eventSource.value.onerror = (error) => {
-    console.error('SSE连接错误:', error)
-    isConnected.value = false
+    // 重置状态
+    isSSECompleting.value = false
+    hasReceivedSSEResponse.value = false
+
+    // 构建URL，可选包含消息参数
+    // 注意：SSE连接需要完整的URL，因为EventSource可能不会走Vite代理
+    let url = '/api/copilot/stream'
+    if (message) {
+      const sessionId = Date.now().toString() // 简单的会话ID
+      const encodedMessage = encodeURIComponent(message)
+      url += `?message=${encodedMessage}&session_id=${sessionId}`
+      console.log('通过SSE发送消息:', message)
+      console.log('编码后的消息:', encodedMessage)
+      console.log('完整URL:', url)
+    }
     
-    // 尝试重新连接
-    setTimeout(() => {
-      if (!isConnected.value) {
-        connectSSE()
+    // 添加调试信息
+    console.log('当前页面URL:', window.location.href)
+    console.log('SSE连接URL:', url)
+
+    try {
+      console.log('正在建立SSE连接，URL:', url)
+      console.log('EventSource支持情况:', 'EventSource' in window)
+      
+      // 创建EventSource时启用CORS
+      eventSource.value = new EventSource(url, { withCredentials: false })
+    
+    eventSource.value.onopen = () => {
+      isConnected.value = true
+      console.log('SSE连接已建立', message ? '(带消息)' : '(心跳模式)')
+      console.log('EventSource readyState:', eventSource.value.readyState)
+      console.log('EventSource URL:', eventSource.value.url)
+      console.log('EventSource withCredentials:', eventSource.value.withCredentials)
+    }
+
+    eventSource.value.onmessage = (event) => {
+      console.log('SSE onmessage事件:', event)
+      console.log('SSE消息数据:', event.data)
+      try {
+        const data = JSON.parse(event.data)
+        handleSSEMessage(data)
+      } catch (error) {
+        console.error('解析SSE消息失败:', error, '原始数据:', event.data)
       }
-    }, 3000)
+    }
+
+    eventSource.value.onerror = (error) => {
+      console.error('SSE连接错误:', error, 'URL:', url)
+      console.error('EventSource readyState:', eventSource.value?.readyState)
+      console.error('EventSource URL:', eventSource.value?.url)
+      isConnected.value = false
+      
+      // 如果SSE正在正常完成，不进行重连
+      if (isSSECompleting.value) {
+        console.log('SSE正常完成，不进行重连')
+        isSSECompleting.value = false
+        return
+      }
+      
+      // 检查是否是连接关闭导致的错误（readyState为2表示关闭）
+      if (eventSource.value?.readyState === 2) {
+        console.log('SSE连接正常关闭，不进行重连')
+        return
+      }
+      
+      // 尝试重新连接
+      setTimeout(() => {
+        if (!isConnected.value) {
+          console.log('尝试重新连接SSE')
+          connectSSE()
+        }
+      }, 3000)
+    }
+  } catch (error) {
+    console.error('创建EventSource失败:', error, 'URL:', url)
+    isConnected.value = false
   }
 }
 
-// 处理SSE消息
-const handleSSEMessage = (data: any) => {
-  console.log('收到SSE消息:', data.type, data)
-  
-  if (data.type === 'connected') {
-    // 连接确认
-    console.log('SSE连接确认:', data.message)
-    // 不显示给用户，只用于调试
-  } else if (data.type === 'heartbeat') {
-    // 心跳消息，保持连接活跃
-    console.log('SSE心跳:', data.timestamp)
-    // 不显示给用户
-  } else if (data.type === 'test') {
-    // 测试消息，不显示给用户
-    console.log('SSE测试消息:', data.content)
-  } else if (data.type === 'chunk') {
-    // 流式文本块
-    appendToLastMessage(data.content)
-  } else if (data.type === 'complete') {
-    // 消息完成
-    isLoading.value = false
-    markLastMessageComplete()
+  // 处理SSE消息
+  const handleSSEMessage = (data: any) => {
+    console.log('收到SSE消息:', data.type, data)
+    
+    if (data.type === 'connected') {
+      // 连接确认
+      console.log('SSE连接确认:', data.message)
+      // 不显示给用户，只用于调试
+    } else if (data.type === 'heartbeat') {
+      // 心跳消息，保持连接活跃
+      console.log('SSE心跳:', data.timestamp)
+      // 不显示给用户
+    } else if (data.type === 'test') {
+      // 测试消息，不显示给用户
+      console.log('SSE测试消息:', data.content)
+    } else if (data.type === 'chunk') {
+      // 流式文本块
+      hasReceivedSSEResponse.value = true
+      appendToLastMessage(data.content)
+    } else if (data.type === 'complete') {
+      // 消息完成
+      isLoading.value = false
+      markLastMessageComplete()
+      
+      // 标记SSE正在正常完成，避免错误重连
+      isSSECompleting.value = true
+      
+      // 消息完成后，主动关闭SSE连接，避免错误重连
+      if (eventSource.value) {
+        console.log('消息完成，关闭SSE连接')
+        eventSource.value.close()
+        eventSource.value = null
+        isConnected.value = false
+      }
   } else if (data.type === 'error') {
     // 错误消息
     addMessage({
@@ -597,7 +661,14 @@ const appendToLastMessage = (content: string) => {
   
   const lastMessage = messages.value[messages.value.length - 1]
   if (lastMessage.role === 'assistant' && !lastMessage.isComplete) {
-    lastMessage.content += content
+    // 如果当前内容是"正在思考您的问题..."，则用新内容替换它
+    // 这样用户就能看到AI的思考过程逐步展开
+    if (lastMessage.content === '正在思考您的问题...') {
+      lastMessage.content = content
+    } else {
+      // 否则追加内容
+      lastMessage.content += content
+    }
     
     // 触发UI更新
     messages.value = [...messages.value]
@@ -628,6 +699,10 @@ const sendMessage = async () => {
   
   const userMessage = inputText.value.trim()
   
+  console.log('=== 开始发送消息 ===')
+  console.log('消息内容:', userMessage)
+  console.log('当前加载状态:', isLoading.value)
+  
   // 添加用户消息
   addMessage({
     role: 'user',
@@ -635,15 +710,32 @@ const sendMessage = async () => {
     isComplete: true
   })
   
+  // 立即创建一个AI消息占位符，显示加载动画
+  addMessage({
+    role: 'assistant',
+    content: '正在思考您的问题...',
+    isComplete: false
+  })
+  
   inputText.value = ''
   isLoading.value = true
   
   try {
-    // 通过SSE发送消息（重新建立连接并传递消息参数）
+    // 方法1：尝试使用SSE
+    console.log('尝试通过SSE发送消息')
     connectSSE(userMessage)
     
-    // 等待SSE流式响应
-    // 响应将通过handleSSEMessage处理
+    // 设置超时监控（3分钟），仅用于日志记录，不切换到备用API
+    setTimeout(() => {
+      if (isLoading.value) {
+        console.log('SSE响应已进行3分钟，仍在处理中...')
+        if (!hasReceivedSSEResponse.value) {
+          console.log('警告：3分钟内未收到任何SSE响应')
+        } else {
+          console.log('已收到SSE响应，继续等待完成...')
+        }
+      }
+    }, 180000) // 3分钟 = 180000毫秒
     
   } catch (error) {
     console.error('发送消息失败:', error)

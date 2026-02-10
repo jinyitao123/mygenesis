@@ -84,7 +84,7 @@ Response format:
             context = {}
         
         # 使用DeepSeek API
-        api_key = "sk-5894e2fc368b41b5b12438bc55422e80"
+        api_key = os.environ.get("DEEPSEEK_API_KEY", "")
         base_url = "https://api.deepseek.com"
         
         if not api_key:
