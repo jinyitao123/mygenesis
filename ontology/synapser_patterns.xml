@@ -1,70 +1,94 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <SynapserPatterns>
     <Version>1.0.0</Version>
-    <Description>供应链ERP系统 - 自然语言意图映射</Description>
+    <Description>智慧城市系统 - 自然语言意图映射</Description>
     
-    <Pattern action="ACT_SUBMIT_ORDER" requires_target="true" target_type="PurchaseOrder">
-        <Keywords>提交,审批,送审,提请</Keywords>
+    <!-- 交通控制 -->
+    <Pattern action="ADJUST_TRAFFIC_LIGHT" requires_target="true" target_type="TrafficLight">
+        <Keywords>交通灯,红绿灯,调整,traffic,light,adjust</Keywords>
         <Templates>
-            <Template>提交{target}审批</Template>
-            <Template>审批{target}</Template>
-            <Template>送审{target}</Template>
+            <Template>调整{traffic_light}</Template>
+            <Template>切换{traffic_light}相位</Template>
+            <Template>adjust {traffic_light}</Template>
         </Templates>
     </Pattern>
     
-    <Pattern action="ACT_APPROVE_ORDER" requires_target="true" target_type="PurchaseOrder">
-        <Keywords>批准,同意,通过,核准</Keywords>
+    <!-- 能源调度 -->
+    <Pattern action="ADJUST_ENERGY_LOAD" requires_target="true" target_type="EnergyGrid">
+        <Keywords>能源,电力,负载,energy,power,load</Keywords>
         <Templates>
-            <Template>批准{target}</Template>
-            <Template>同意{target}</Template>
-            <Template>通过{target}审批</Template>
+            <Template>调整{energy_grid}负载</Template>
+            <Template>调度{energy_grid}电力</Template>
+            <Template>adjust {energy_grid} load</Template>
         </Templates>
     </Pattern>
     
-    <Pattern action="ACT_CREATE_ORDER" requires_target="false">
-        <Keywords>创建,新建,建立,下单</Keywords>
+    <!-- 公交调度 -->
+    <Pattern action="DISPATCH_TRANSPORT" requires_target="true" target_type="PublicTransport">
+        <Keywords>公交,发车,调度,bus,dispatch</Keywords>
         <Templates>
-            <Template>创建采购订单</Template>
-            <Template>新建订单</Template>
-            <Template>下单</Template>
+            <Template>调度{public_transport}</Template>
+            <Template>让{public_transport}发车</Template>
+            <Template>dispatch {public_transport}</Template>
         </Templates>
     </Pattern>
     
-    <Pattern action="ACT_SHIP_ORDER" requires_target="true" target_type="PurchaseOrder">
-        <Keywords>发货,运送,配送,发出</Keywords>
+    <!-- 垃圾收集 -->
+    <Pattern action="SCHEDULE_WASTE_COLLECTION" requires_target="true" target_type="WasteManagement">
+        <Keywords>垃圾,收集,waste,collection</Keywords>
         <Templates>
-            <Template>发货{target}</Template>
-            <Template>运送{target}</Template>
-            <Template>配送{target}</Template>
+            <Template>安排{waste_management}收集</Template>
+            <Template>调度{waste_management}</Template>
+            <Template>schedule {waste_management} collection</Template>
         </Templates>
     </Pattern>
     
-    <Pattern action="ACT_RECEIVE_ORDER" requires_target="true" target_type="PurchaseOrder">
-        <Keywords>收货,接收,收到,入库</Keywords>
+    <!-- 公园管理 -->
+    <Pattern action="UPDATE_PARK_STATUS" requires_target="true" target_type="Park">
+        <Keywords>公园,开放,活动,park,open,event</Keywords>
         <Templates>
-            <Template>收货{target}</Template>
-            <Template>接收{target}</Template>
-            <Template>{target}入库</Template>
+            <Template>更新{park}状态</Template>
+            <Template>设置{park}活动</Template>
+            <Template>update {park} status</Template>
         </Templates>
     </Pattern>
     
+    <!-- 通用查询 -->
+    <Pattern action="ACT_INSPECT" requires_target="false" target_type="any">
+        <Keywords>查看,查询,检查,状态,信息,check,view,status,info</Keywords>
+        <Templates>
+            <Template>查看{building}能源使用</Template>
+            <Template>查询{sensor}读数</Template>
+            <Template>check status of {target}</Template>
+        </Templates>
+    </Pattern>
+    
+    <!-- 同义词库 - 智慧城市特定实体别名 -->
     <Synonyms>
-        <SynonymGroup primary="订单">
-            <Alias>采购单</Alias>
-            <Alias>订购单</Alias>
-            <Alias>PO</Alias>
+        <SynonymGroup primary="建筑">
+            <Alias>building</Alias>
+            <Alias>楼宇</Alias>
+            <Alias>大楼</Alias>
         </SynonymGroup>
-        
-        <SynonymGroup primary="供应商">
-            <Alias>供货商</Alias>
-            <Alias>厂商</Alias>
-            <Alias>卖家</Alias>
+        <SynonymGroup primary="传感器">
+            <Alias>sensor</Alias>
+            <Alias>探测仪</Alias>
+            <Alias>监测器</Alias>
         </SynonymGroup>
-        
-        <SynonymGroup primary="产品">
-            <Alias>商品</Alias>
-            <Alias>货物</Alias>
-            <Alias>物品</Alias>
+        <SynonymGroup primary="交通灯">
+            <Alias>traffic_light</Alias>
+            <Alias>红绿灯</Alias>
+            <Alias>信号灯</Alias>
+        </SynonymGroup>
+        <SynonymGroup primary="公共交通">
+            <Alias>public_transport</Alias>
+            <Alias>公交</Alias>
+            <Alias>巴士</Alias>
+        </SynonymGroup>
+        <SynonymGroup primary="电网">
+            <Alias>energy_grid</Alias>
+            <Alias>电力网</Alias>
+            <Alias>供电网</Alias>
         </SynonymGroup>
     </Synonyms>
 </SynapserPatterns>

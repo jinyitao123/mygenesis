@@ -1,146 +1,139 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <action_types>
-  <!-- 供应链ERP领域动作类型定义 -->
+  <!-- 智慧城市领域动作类型定义 -->
   
-  <!-- 提交订单审批 -->
+  <!-- 交通控制 -->
   <action_type>
-    <id>ACT_SUBMIT_ORDER</id>
-    <name>提交审批</name>
-    <description>提交订单进行审批</description>
-    <icon>document-check</icon>
-    <color>#3b82f6</color>
-    
-    <preconditions>
-      <precondition>
-        <type>object_exists</type>
-        <object_type>PurchaseOrder</object_type>
-        <property>status</property>
-        <operator>==</operator>
-        <value>DRAFT</value>
-      </precondition>
-    </preconditions>
-    
-    <effects>
-      <effect>
-        <type>property_change</type>
-        <object_type>PurchaseOrder</object_type>
-        <property>status</property>
-        <value>PENDING</value>
-      </effect>
-    </effects>
-  </action_type>
-  
-  <!-- 经理批准订单 -->
-  <action_type>
-    <id>ACT_APPROVE_ORDER</id>
-    <name>经理批准</name>
-    <description>经理批准采购订单</description>
-    <icon>check-circle</icon>
-    <color>#10b981</color>
-    
-    <preconditions>
-      <precondition>
-        <type>object_exists</type>
-        <object_type>PurchaseOrder</object_type>
-        <property>status</property>
-        <operator>==</operator>
-        <value>PENDING</value>
-      </precondition>
-    </preconditions>
-    
-    <effects>
-      <effect>
-        <type>property_change</type>
-        <object_type>PurchaseOrder</object_type>
-        <property>status</property>
-        <value>APPROVED</value>
-      </effect>
-    </effects>
-  </action_type>
-  
-  <!-- 创建采购订单 -->
-  <action_type>
-    <id>ACT_CREATE_ORDER</id>
-    <name>创建订单</name>
-    <description>创建新的采购订单</description>
-    <icon>file-plus</icon>
+    <id>ADJUST_TRAFFIC_LIGHT</id>
+    <name>调整交通灯</name>
+    <description>调整交通灯相位和时间</description>
+    <icon>traffic-light</icon>
     <color>#f59e0b</color>
     
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>Supplier</object_type>
+        <object_type>TrafficLight</object_type>
         <property>status</property>
         <operator>==</operator>
-        <value>ACTIVE</value>
+        <value>OPERATIONAL</value>
       </precondition>
     </preconditions>
     
     <effects>
-      <effect>
-        <type>create_object</type>
-        <object_type>PurchaseOrder</object_type>
-        <properties>
-          <property name="status" value="DRAFT"/>
-          <property name="supplier_id" value="$supplier_id"/>
-        </properties>
-      </effect>
-    </effects>
-  </action_type>
-  
-  <!-- 发货 -->
-  <action_type>
-    <id>ACT_SHIP_ORDER</id>
-    <name>发货</name>
-    <description>发货已批准的订单</description>
-    <icon>truck</icon>
-    <color>#8b5cf6</color>
-    
-    <preconditions>
-      <precondition>
-        <type>object_exists</type>
-        <object_type>PurchaseOrder</object_type>
-        <property>status</property>
-        <operator>==</operator>
-        <value>APPROVED</value>
-      </precondition>
-    </preconditions>
-    
-    <effects>
-      <effect>
+       <effect>
         <type>property_change</type>
-        <object_type>PurchaseOrder</object_type>
-        <property>status</property>
-        <value>SHIPPED</value>
+        <object_type>TrafficLight</object_type>
+        <property>phase</property>
+        <value>GREEN</value>
       </effect>
     </effects>
   </action_type>
   
-  <!-- 收货 -->
+  <!-- 能源调度 -->
   <action_type>
-    <id>ACT_RECEIVE_ORDER</id>
-    <name>收货</name>
-    <description>接收已发货的货物</description>
-    <icon>package</icon>
+    <id>ADJUST_ENERGY_LOAD</id>
+    <name>能源调度</name>
+    <description>调整能源负载分配</description>
+    <icon>⚡</icon>
     <color>#ef4444</color>
     
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>PurchaseOrder</object_type>
+        <object_type>EnergyGrid</object_type>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+       <effect>
+        <type>property_change</type>
+        <object_type>EnergyGrid</object_type>
+        <property>load</property>
+        <value>0</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 公共交通调度 -->
+  <action_type>
+    <id>DISPATCH_TRANSPORT</id>
+    <name>调度公交</name>
+    <description>调度公共交通车辆</description>
+    <icon>bus</icon>
+    <color>#8b5cf6</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>PublicTransport</object_type>
         <property>status</property>
         <operator>==</operator>
-        <value>SHIPPED</value>
+        <value>STOPPED</value>
       </precondition>
     </preconditions>
     
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>PurchaseOrder</object_type>
+        <object_type>PublicTransport</object_type>
         <property>status</property>
-        <value>RECEIVED</value>
+        <value>IN_TRANSIT</value>
       </effect>
     </effects>
   </action_type>
+  
+  <!-- 垃圾收集调度 -->
+  <action_type>
+    <id>SCHEDULE_WASTE_COLLECTION</id>
+    <name>调度垃圾收集</name>
+    <description>安排垃圾收集任务</description>
+    <icon>🗑️</icon>
+    <color>#64748b</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>WasteManagement</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>OPERATIONAL</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>WasteManagement</object_type>
+        <property>current_load</property>
+        <value>0</value>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 公园管理 -->
+  <action_type>
+    <id>UPDATE_PARK_STATUS</id>
+    <name>更新公园状态</name>
+    <description>更新公园开放状态和活动</description>
+    <icon>🌳</icon>
+    <color>#10b981</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>Park</object_type>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>property_change</type>
+        <object_type>Park</object_type>
+        <property>status</property>
+        <value>EVENT</value>
+      </effect>
+    </effects>
+  </action_type>
+
 </action_types>

@@ -62,11 +62,16 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false
         },
-        '^/(v1|save|validate|graph|deploy|tools|upload|domains|copilot|launch_simulation|save_ontology)': {
+        '^/(v1|save|validate|deploy|tools|upload|domains|copilot|launch_simulation|save_ontology)': {
           target: env.VITE_API_BASE_URL || 'http://localhost:5000',
           changeOrigin: true,
           secure: false,
           rewrite: (path) => `/api${path}`
+        },
+        '^/graph': {
+          target: env.VITE_API_BASE_URL || 'http://localhost:5000',
+          changeOrigin: true,
+          secure: false
         },
         '^/studio': {
           target: env.VITE_API_BASE_URL || 'http://localhost:5000',

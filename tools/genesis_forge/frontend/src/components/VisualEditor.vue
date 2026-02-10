@@ -24,14 +24,14 @@
     <!-- 主编辑器区域 - 使用Grid布局实现真正自适应 -->
     <div class="flex-1 grid grid-cols-[auto_1fr_auto] overflow-hidden" ref="editorGrid">
       <!-- 左侧边栏（可调整宽度） -->
-      <ResizablePanel 
-        :default-width="256" 
-        :min-width="180" 
+      <ResizablePanel
+        :default-width="256"
+        :min-width="180"
         :max-width="600"
         storage-key="visual_editor_sidebar_width"
         position="left"
         class="bg-gray-800 border-r border-gray-700 overflow-y-auto h-full"
-        @width-change="(width) => leftPanelWidth.value = width"
+        @width-change="handleLeftPanelWidthChange"
       >
         <div class="p-4 h-full overflow-y-auto">
           <h3 class="font-semibold mb-4">对象类型 ({{ sidebarData?.object_types?.length || 0 }})</h3>
@@ -127,15 +127,15 @@
       </div>
 
       <!-- 右侧属性编辑面板（可调整宽度） -->
-      <ResizablePanel 
+      <ResizablePanel
         v-show="showPropertyPanel"
-        :default-width="320" 
-        :min-width="200" 
+        :default-width="320"
+        :min-width="200"
         :max-width="800"
         storage-key="visual_editor_property_panel_width"
         position="right"
         class="bg-gray-800 border-l border-gray-700 overflow-y-auto h-full"
-        @width-change="(width) => rightPanelWidth.value = width"
+        @width-change="handleRightPanelWidthChange"
        >
          <div class="p-4 h-full flex flex-col overflow-hidden">
            <div class="flex justify-between items-center mb-3">
@@ -297,6 +297,15 @@ const gridStyle = computed(() => {
   console.log('Grid style:', style)
   return style
 })
+
+// 处理面板宽度变化
+const handleLeftPanelWidthChange = (width: number) => {
+  leftPanelWidth.value = width
+}
+
+const handleRightPanelWidthChange = (width: number) => {
+  rightPanelWidth.value = width
+}
 
 // 关闭编辑器
 const closeEditor = () => {

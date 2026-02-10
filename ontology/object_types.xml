@@ -1,23 +1,80 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ObjectTypes domain="erp">
-    <!-- 采购订单 -->
-    <ObjectType name="PurchaseOrder" icon="clipboard-list" color="#3b82f6" primary_key="id">
-        <Property name="id" type="string" required="true" description="订单号"/>
-        <Property name="item_name" type="string" description="采购物品"/>
-        <Property name="amount" type="float" description="金额"/>
-        <Property name="status" type="string" enum="DRAFT,PENDING,APPROVED,REJECTED" default="DRAFT" description="状态"/>
-        <Property name="created_at" type="date" description="创建时间"/>
-        <Property name="created_by" type="string" description="创建人"/>
-    </ObjectType>
-
-    <!-- 员工 -->
-    <ObjectType name="Employee" icon="user" color="#10b981" primary_key="id">
-        <Property name="id" type="string" required="true"/>
-        <Property name="name" type="string"/>
-        <Property name="role" type="string" enum="STAFF,MANAGER"/>
-    </ObjectType>
-
-    <!-- 关系类型定义 -->
-    <LinkType name="CREATED_BY" source="PurchaseOrder" target="Employee" color="#3b82f6" description="订单创建人"/>
-    <LinkType name="APPROVED_BY" source="PurchaseOrder" target="Employee" color="#10b981" description="订单审批人"/>
+<ObjectTypes domain="smart_city">
+  <!-- 智慧城市领域对象类型定义 -->
+  
+  <ObjectType name="Building" icon="building" color="#3b82f6" primary_key="building_id">
+    <Property name="building_id" type="string" required="true" description="建筑ID"/>
+    <Property name="name" type="string" description="建筑名称"/>
+    <Property name="type" type="string" enum="RESIDENTIAL,COMMERCIAL,INDUSTRIAL,PUBLIC,TRANSPORTATION" description="建筑类型"/>
+    <Property name="address" type="string" description="地址"/>
+    <Property name="floors" type="int" description="楼层数"/>
+    <Property name="energy_usage" type="float" default="0" description="能源消耗(kWh)"/>
+    <Property name="status" type="string" enum="ACTIVE,INACTIVE,MAINTENANCE" default="ACTIVE" description="状态"/>
+  </ObjectType>
+  
+  <ObjectType name="Sensor" icon="sensor" color="#10b981" primary_key="sensor_id">
+    <Property name="sensor_id" type="string" required="true" description="传感器ID"/>
+    <Property name="name" type="string" description="传感器名称"/>
+    <Property name="type" type="string" enum="TEMPERATURE,HUMIDITY,AIR_QUALITY,NOISE,MOTION,CAMERA" description="传感器类型"/>
+    <Property name="location" type="string" description="安装位置"/>
+    <Property name="reading" type="float" description="当前读数"/>
+    <Property name="unit" type="string" description="单位"/>
+    <Property name="status" type="string" enum="ONLINE,OFFLINE,ERROR" default="ONLINE" description="状态"/>
+  </ObjectType>
+  
+  <ObjectType name="TrafficLight" icon="traffic" color="#f59e0b" primary_key="light_id">
+    <Property name="light_id" type="string" required="true" description="交通灯ID"/>
+    <Property name="intersection" type="string" description="交叉路口"/>
+    <Property name="coordinates" type="string" description="坐标"/>
+    <Property name="phase" type="string" enum="GREEN,RED,YELLOW" description="当前相位"/>
+    <Property name="cycle_time" type="int" default="60" description="周期时间(秒)"/>
+    <Property name="status" type="string" enum="OPERATIONAL,FAULTY,OFF" default="OPERATIONAL" description="状态"/>
+  </ObjectType>
+  
+  <ObjectType name="PublicTransport" icon="bus" color="#8b5cf6" primary_key="vehicle_id">
+    <Property name="vehicle_id" type="string" required="true" description="车辆ID"/>
+    <Property name="type" type="string" enum="BUS,SUBWAY,TRAM,TAXI" description="交通工具类型"/>
+    <Property name="route" type="string" description="路线"/>
+    <Property name="current_stop" type="string" description="当前站点"/>
+    <Property name="passengers" type="int" default="0" description="乘客数"/>
+    <Property name="capacity" type="int" description="载客容量"/>
+    <Property name="status" type="string" enum="IN_TRANSIT,STOPPED,MAINTENANCE" default="IN_TRANSIT" description="状态"/>
+  </ObjectType>
+  
+  <ObjectType name="Park" icon="park" color="#10b981" primary_key="park_id">
+    <Property name="park_id" type="string" required="true" description="公园ID"/>
+    <Property name="name" type="string" description="公园名称"/>
+    <Property name="area" type="float" description="面积(公顷)"/>
+    <Property name="facilities" type="string" description="设施"/>
+    <Property name="open_hours" type="string" description="开放时间"/>
+    <Property name="visitors" type="int" default="0" description="当前游客数"/>
+    <Property name="status" type="string" enum="OPEN,CLOSED,EVENT" default="OPEN" description="状态"/>
+  </ObjectType>
+  
+  <ObjectType name="EnergyGrid" icon="power" color="#ef4444" primary_key="grid_id">
+    <Property name="grid_id" type="string" required="true" description="电网ID"/>
+    <Property name="name" type="string" description="电网名称"/>
+    <Property name="capacity" type="float" description="发电容量(MW)"/>
+    <Property name="load" type="float" default="0" description="当前负载(MW)"/>
+    <Property name="source" type="string" enum="SOLAR,WIND,GAS,COAL,NUCLEAR,HYDRO" description="能源类型"/>
+    <Property name="frequency" type="float" default="50" description="频率(Hz)"/>
+    <Property name="status" type="string" enum="STABLE,WARNING,CRITICAL" default="STABLE" description="状态"/>
+  </ObjectType>
+  
+  <ObjectType name="WasteManagement" icon="waste" color="#64748b" primary_key="facility_id">
+    <Property name="facility_id" type="string" required="true" description="设施ID"/>
+    <Property name="name" type="string" description="设施名称"/>
+    <Property name="type" type="string" enum="RECYCLING,LANDFILL,INCINERATION,COMPOST" description="处理类型"/>
+    <Property name="capacity" type="float" description="处理能力(吨/天)"/>
+    <Property name="current_load" type="float" default="0" description="当前负荷"/>
+    <Property name="location" type="string" description="位置"/>
+    <Property name="status" type="string" enum="OPERATIONAL,MAINTENANCE,OVERLOADED" default="OPERATIONAL" description="状态"/>
+  </ObjectType>
+  
+  <!-- 关系类型定义 -->
+  <LinkType name="MONITORS" source="Sensor" target="Building" color="#10b981" description="传感器监控建筑"/>
+   <LinkType name="CONTROLS" source="TrafficLight" target="Building" color="#f59e0b" description="交通灯控制区域"/>
+  <LinkType name="SERVES" source="PublicTransport" target="Building" color="#8b5cf6" description="公共交通服务区域"/>
+  <LinkType name="LOCATED_IN" source="Sensor" target="Building" color="#10b981" description="传感器位于建筑内"/>
+   <LinkType name="CONNECTS" source="EnergyGrid" target="Building" color="#ef4444" description="电网连接建筑"/>
 </ObjectTypes>
