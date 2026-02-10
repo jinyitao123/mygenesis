@@ -122,35 +122,99 @@ def register_copilot_routes(app, ai_copilot, domain_manager):
             logger.error(f"Copilot聊天失败: {e}")
             return jsonify({'error': str(e)}), 500
     
-    # 5. AI流式响应
-    @app.route('/api/v1/copilot/stream')
+    # 5. AI流式响应 - 使用真正的LLM流式调用
+    @app.route('/api/v1/copilot/stream', methods=['GET', 'OPTIONS'])
     def copilot_stream():
-        """AI Copilot流式响应 - Server-Sent Events"""
+        """AI Copilot流式响应 - Server-Sent Events (真正的LLM流式调用)"""
+        # 处理CORS预检请求
+        if request.method == 'OPTIONS':
+            response = jsonify({'status': 'ok'})
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+            response.headers.add('Access-Control-Allow-Methods', 'GET, OPTIONS')
+            return response
+        
+        # 获取请求参数
+        chat_message = request.args.get('message')
+        session_id = request.args.get('session_id', 'default')
+        
+        logger.info(f"SSE流式请求 - session_id: {session_id}, message_length: {len(chat_message) if chat_message else 0}")
+        
         def generate():
-            # 模拟流式响应
-            messages = [
-                "正在思考您的问题...",
-                "分析上下文信息...",
-                "生成回答...",
-                "这是我对您问题的回答。"
-            ]
-            
             import json
             import time
             
-            for msg in messages:
-                yield f"data: {json.dumps({'type': 'chunk', 'content': msg})}\n\n"
-                time.sleep(0.5)
-            
-            yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+            try:
+                # 发送连接确认
+                yield f"data: {json.dumps({'type': 'connected', 'message': 'SSE连接已建立', 'session_id': session_id})}\n\n"
+                
+                # 如果没有聊天消息，进入心跳模式
+                if not chat_message:
+                    logger.info("无聊天消息，进入心跳模式")
+                    count = 0
+                    while True:
+                        count += 1
+                        time.sleep(10)
+                        yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': time.time(), 'count': count})}\n\n"
+                    return
+                
+                # 发送开始处理标记
+                yield f"data: {json.dumps({'type': 'chunk', 'content': '正在思考您的问题...'})}\n\n"
+                
+                # 构建提示词
+                prompt = f"""用户请求: {chat_message}
+
+请作为Genesis Studio的AI Copilot助手，专门帮助用户创建和修改本体结构。
+
+如果是关于创建对象类型定义的请求，请提供完整的XML格式定义。
+如果是其他问题，请提供有帮助的回应。
+
+请用中文回答，保持专业和实用。"""
+                
+                # 使用真正的流式LLM调用
+                logger.info(f"开始流式LLM调用，消息长度: {len(chat_message)}")
+                full_response = []
+                
+                try:
+                    # 调用流式LLM
+                    for chunk in ai_copilot._call_real_llm_stream(prompt, {}):
+                        if chunk:
+                            full_response.append(chunk)
+                            # 发送每个块
+                            yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
+                    
+                    logger.info(f"流式响应完成，总长度: {len(''.join(full_response))}")
+                    
+                except Exception as e:
+                    logger.error(f"流式LLM调用失败: {e}")
+                    # 发送错误信息
+                    yield f"data: {json.dumps({'type': 'chunk', 'content': f'抱歉，AI服务出现错误: {str(e)[:100]}'})}\n\n"
+                
+                # 发送完成标记
+                yield f"data: {json.dumps({'type': 'complete', 'ai_processed': True})}\n\n"
+                yield ": stream completed\n\n"
+                
+            except GeneratorExit:
+                logger.info(f"SSE连接被客户端关闭 - session_id: {session_id}")
+            except Exception as e:
+                logger.error(f"SSE生成器错误: {e}")
+                error_data = json.dumps({'type': 'error', 'message': str(e)})
+                yield f"data: {error_data}\n\n"
         
-        return Response(stream_with_context(generate()), 
-                       mimetype='text/event-stream',
-                       headers={
-                           'Cache-Control': 'no-cache',
-                           'Connection': 'keep-alive',
-                           'X-Accel-Buffering': 'no'
-                       })
+        response = Response(
+            stream_with_context(generate()),
+            mimetype='text/event-stream'
+        )
+        
+        # 设置SSE响应头
+        response.headers['Cache-Control'] = 'no-cache'
+        response.headers['Connection'] = 'keep-alive'
+        response.headers['X-Accel-Buffering'] = 'no'
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        
+        return response
     
     # 6. 简化的AI生成路由
     @app.route('/api/v1/copilot/simple-generate', methods=['POST'])

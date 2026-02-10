@@ -1,106 +1,93 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" ?>
 <World domain="healthcare">
-  <Version>1.0.0</Version>
-  <Description>医疗健康系统 - 示例数据</Description>
-  
-  <Nodes>
-    <!-- 患者 -->
-    <Node id="PAT_001" type="Patient">
-      <Property key="patient_id" type="string">P001</Property>
-      <Property key="name" type="string">张三</Property>
-      <Property key="gender" type="string">MALE</Property>
-      <Property key="age" type="int">45</Property>
-      <Property key="blood_type" type="string">A</Property>
-      <Property key="allergies" type="string">青霉素</Property>
-      <Property key="status" type="string">IN_TREATMENT</Property>
-    </Node>
-    
-    <Node id="PAT_002" type="Patient">
-      <Property key="patient_id" type="string">P002</Property>
-      <Property key="name" type="string">李四</Property>
-      <Property key="gender" type="string">FEMALE</Property>
-      <Property key="age" type="int">32</Property>
-      <Property key="blood_type" type="string">O</Property>
-      <Property key="allergies" type="string">无</Property>
-      <Property key="status" type="string">ADMITTED</Property>
-    </Node>
-    
-    <!-- 医生 -->
-    <Node id="DOC_001" type="Doctor">
-      <Property key="doctor_id" type="string">D001</Property>
-      <Property key="name" type="string">王医生</Property>
-      <Property key="specialty" type="string">内科</Property>
-      <Property key="title" type="string">ATTENDING</Property>
-      <Property key="department" type="string">内科</Property>
-      <Property key="status" type="string">AVAILABLE</Property>
-    </Node>
-    
-    <!-- 护士 -->
-    <Node id="NUR_001" type="Nurse">
-      <Property key="nurse_id" type="string">N001</Property>
-      <Property key="name" type="string">赵护士</Property>
-      <Property key="department" type="string">内科</Property>
-      <Property key="shift" type="string">DAY</Property>
-      <Property key="status" type="string">AVAILABLE</Property>
-    </Node>
-    
-    <!-- 病房 -->
-    <Node id="WARD_001" type="Ward">
-      <Property key="ward_id" type="string">W001</Property>
-      <Property key="name" type="string">内科病房A区</Property>
-      <Property key="capacity" type="int">20</Property>
-      <Property key="occupied" type="int">12</Property>
-      <Property key="floor" type="int">3</Property>
-      <Property key="type" type="string">GENERAL</Property>
-    </Node>
-    
-    <!-- 病历 -->
-    <Node id="REC_001" type="MedicalRecord">
-      <Property key="record_id" type="string">R001</Property>
-      <Property key="patient_id" type="string">P001</Property>
-      <Property key="diagnosis" type="string">高血压</Property>
-      <Property key="treatment" type="string">药物治疗+生活方式调整</Property>
-      <Property key="prescription" type="string">降压药A 每日一次</Property>
-      <Property key="record_date" type="string">2026-01-15</Property>
-      <Property key="doctor_id" type="string">D001</Property>
-    </Node>
-    
-    <!-- 药品 -->
-    <Node id="MED_001" type="Medication">
-      <Property key="med_id" type="string">M001</Property>
-      <Property key="name" type="string">降压药A</Property>
-      <Property key="dosage" type="string">50mg</Property>
-      <Property key="unit" type="string">片</Property>
-      <Property key="manufacturer" type="string">制药公司A</Property>
-      <Property key="stock" type="int">500</Property>
-      <Property key="expiry_date" type="string">2027-06-30</Property>
-    </Node>
-    
-    <!-- 设备 -->
-    <Node id="EQP_001" type="Equipment">
-      <Property key="equip_id" type="string">E001</Property>
-      <Property key="name" type="string">心电监护仪</Property>
-      <Property key="type" type="string">MONITOR</Property>
-      <Property key="status" type="string">OPERATIONAL</Property>
-      <Property key="location" type="string">ICU</Property>
-    </Node>
-  </Nodes>
-  
-  <Links>
-    <!-- 医生治疗患者 -->
-    <Link type="TREATS" source="DOC_001" target="PAT_001"/>
-    <Link type="TREATS" source="DOC_001" target="PAT_002"/>
-    
-    <!-- 护士照顾患者 -->
-    <Link type="CARES_FOR" source="NUR_001" target="PAT_001"/>
-    
-    <!-- 患者入住病房 -->
-    <Link type="ADMITS_TO" source="PAT_001" target="WARD_001"/>
-    
-    <!-- 医生记录病历 -->
-    <Link type="RECORDS" source="DOC_001" target="REC_001"/>
-    
-    <!-- 医生开药 -->
-    <Link type="PRESCRIBES" source="DOC_001" target="MED_001"/>
-  </Links>
+    <Nodes>
+        <Node id="entity_1" type="Patient">
+            <Property key="label" type="string">张三</Property>
+            <Property key="type" type="string">Patient</Property>
+            <Property key="age" type="string">45</Property>
+            <Property key="allergies" type="string">青霉素</Property>
+            <Property key="blood_type" type="string">A</Property>
+            <Property key="gender" type="string">MALE</Property>
+            <Property key="name" type="string">张三</Property>
+            <Property key="patient_id" type="string">P001</Property>
+            <Property key="status" type="string">IN_TREATMENT</Property>
+        </Node>
+        <Node id="entity_2" type="Patient">
+            <Property key="label" type="string">李四</Property>
+            <Property key="type" type="string">Patient</Property>
+            <Property key="age" type="string">32</Property>
+            <Property key="allergies" type="string">无</Property>
+            <Property key="blood_type" type="string">O</Property>
+            <Property key="gender" type="string">FEMALE</Property>
+            <Property key="name" type="string">李四</Property>
+            <Property key="patient_id" type="string">P002</Property>
+            <Property key="status" type="string">ADMITTED</Property>
+        </Node>
+        <Node id="entity_3" type="Doctor">
+            <Property key="label" type="string">王医生</Property>
+            <Property key="type" type="string">Doctor</Property>
+            <Property key="department" type="string">内科</Property>
+            <Property key="doctor_id" type="string">D001</Property>
+            <Property key="name" type="string">王医生</Property>
+            <Property key="specialty" type="string">内科</Property>
+            <Property key="status" type="string">AVAILABLE</Property>
+            <Property key="title" type="string">ATTENDING</Property>
+        </Node>
+        <Node id="entity_4" type="Nurse">
+            <Property key="label" type="string">赵护士</Property>
+            <Property key="type" type="string">Nurse</Property>
+            <Property key="department" type="string">内科</Property>
+            <Property key="name" type="string">赵护士</Property>
+            <Property key="nurse_id" type="string">N001</Property>
+            <Property key="shift" type="string">DAY</Property>
+            <Property key="status" type="string">AVAILABLE</Property>
+        </Node>
+        <Node id="entity_5" type="Ward">
+            <Property key="label" type="string">内科病房A区</Property>
+            <Property key="type" type="string">GENERAL</Property>
+            <Property key="capacity" type="string">20</Property>
+            <Property key="floor" type="string">3</Property>
+            <Property key="name" type="string">内科病房A区</Property>
+            <Property key="occupied" type="string">12</Property>
+            <Property key="ward_id" type="string">W001</Property>
+        </Node>
+        <Node id="entity_6" type="MedicalRecord">
+            <Property key="label" type="string">REC_001</Property>
+            <Property key="type" type="string">MedicalRecord</Property>
+            <Property key="diagnosis" type="string">高血压</Property>
+            <Property key="doctor_id" type="string">D001</Property>
+            <Property key="patient_id" type="string">P001</Property>
+            <Property key="prescription" type="string">降压药A 每日一次</Property>
+            <Property key="record_date" type="string">2026-01-15</Property>
+            <Property key="record_id" type="string">R001</Property>
+            <Property key="treatment" type="string">药物治疗+生活方式调整</Property>
+        </Node>
+        <Node id="entity_7" type="Medication">
+            <Property key="label" type="string">降压药A</Property>
+            <Property key="type" type="string">Medication</Property>
+            <Property key="dosage" type="string">50mg</Property>
+            <Property key="expiry_date" type="string">2027-06-30</Property>
+            <Property key="manufacturer" type="string">制药公司A</Property>
+            <Property key="med_id" type="string">M001</Property>
+            <Property key="name" type="string">降压药A</Property>
+            <Property key="stock" type="string">500</Property>
+            <Property key="unit" type="string">片</Property>
+        </Node>
+        <Node id="entity_8" type="Equipment">
+            <Property key="label" type="string">心电监护仪</Property>
+            <Property key="type" type="string">MONITOR</Property>
+            <Property key="equip_id" type="string">E001</Property>
+            <Property key="location" type="string">ICU</Property>
+            <Property key="name" type="string">心电监护仪</Property>
+            <Property key="status" type="string">OPERATIONAL</Property>
+        </Node>
+    </Nodes>
+    <Links>
+        <Link type="relationship" source="DOC_001" target="PAT_001"/>
+        <Link type="relationship" source="DOC_001" target="PAT_002"/>
+        <Link type="relationship" source="NUR_001" target="PAT_001"/>
+        <Link type="relationship" source="PAT_001" target="WARD_001"/>
+        <Link type="relationship" source="DOC_001" target="REC_001"/>
+        <Link type="relationship" source="DOC_001" target="MED_001"/>
+    </Links>
 </World>

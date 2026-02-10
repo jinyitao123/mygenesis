@@ -1,55 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <SynapserPatterns>
     <Version>1.0.0</Version>
-    <Description>智慧城市系统 - 自然语言意图映射</Description>
+    <Description>医疗健康系统 - 自然语言意图映射</Description>
     
-    <!-- 交通控制 -->
-    <Pattern action="ADJUST_TRAFFIC_LIGHT" requires_target="true" target_type="TrafficLight">
-        <Keywords>交通灯,红绿灯,调整,traffic,light,adjust</Keywords>
+    <!-- 患者入院 -->
+    <Pattern action="ADMIT_PATIENT" requires_target="true" target_type="Patient">
+        <Keywords>入院,住院,办理入院,admit,register</Keywords>
         <Templates>
-            <Template>调整{traffic_light}</Template>
-            <Template>切换{traffic_light}相位</Template>
-            <Template>adjust {traffic_light}</Template>
+            <Template>办理{patient}入院</Template>
+            <Template>安排{patient}住院</Template>
+            <Template>admit {patient}</Template>
         </Templates>
     </Pattern>
     
-    <!-- 能源调度 -->
-    <Pattern action="ADJUST_ENERGY_LOAD" requires_target="true" target_type="EnergyGrid">
-        <Keywords>能源,电力,负载,energy,power,load</Keywords>
+    <!-- 开具处方 -->
+    <Pattern action="PRESCRIBE_MEDICATION" requires_target="true" target_type="Medication">
+        <Keywords>开药,处方,prescribe</Keywords>
         <Templates>
-            <Template>调整{energy_grid}负载</Template>
-            <Template>调度{energy_grid}电力</Template>
-            <Template>adjust {energy_grid} load</Template>
+            <Template>给{patient}开{medication}</Template>
+            <Template>开具{medication}处方</Template>
+            <Template>prescribe {medication}</Template>
         </Templates>
     </Pattern>
     
-    <!-- 公交调度 -->
-    <Pattern action="DISPATCH_TRANSPORT" requires_target="true" target_type="PublicTransport">
-        <Keywords>公交,发车,调度,bus,dispatch</Keywords>
+    <!-- 安排检查 -->
+    <Pattern action="SCHEDULE_EXAM" requires_target="true" target_type="Equipment">
+        <Keywords>检查,安排检查,exam,schedule</Keywords>
         <Templates>
-            <Template>调度{public_transport}</Template>
-            <Template>让{public_transport}发车</Template>
-            <Template>dispatch {public_transport}</Template>
+            <Template>安排{equipment}检查</Template>
+            <Template>给{patient}预约{equipment}</Template>
+            <Template>schedule {equipment} for {patient}</Template>
         </Templates>
     </Pattern>
     
-    <!-- 垃圾收集 -->
-    <Pattern action="SCHEDULE_WASTE_COLLECTION" requires_target="true" target_type="WasteManagement">
-        <Keywords>垃圾,收集,waste,collection</Keywords>
+    <!-- 分配病房 -->
+    <Pattern action="ASSIGN_WARD" requires_target="true" target_type="Ward">
+        <Keywords>分配,病房,assign,ward</Keywords>
         <Templates>
-            <Template>安排{waste_management}收集</Template>
-            <Template>调度{waste_management}</Template>
-            <Template>schedule {waste_management} collection</Template>
+            <Template>分配{ward}给{patient}</Template>
+            <Template>安排{ward}床位</Template>
+            <Template>assign {ward} to {patient}</Template>
         </Templates>
     </Pattern>
     
-    <!-- 公园管理 -->
-    <Pattern action="UPDATE_PARK_STATUS" requires_target="true" target_type="Park">
-        <Keywords>公园,开放,活动,park,open,event</Keywords>
+    <!-- 护理操作 -->
+    <Pattern action="NURSE_CARE" requires_target="true" target_type="Nurse">
+        <Keywords>护理,照顾,care,nurse</Keywords>
         <Templates>
-            <Template>更新{park}状态</Template>
-            <Template>设置{park}活动</Template>
-            <Template>update {park} status</Template>
+            <Template>{nurse}护理{patient}</Template>
+            <Template>安排{nurse}照顾</Template>
+            <Template>{nurse} care for {patient}</Template>
         </Templates>
     </Pattern>
     
@@ -57,38 +57,37 @@
     <Pattern action="ACT_INSPECT" requires_target="false" target_type="any">
         <Keywords>查看,查询,检查,状态,信息,check,view,status,info</Keywords>
         <Templates>
-            <Template>查看{building}能源使用</Template>
-            <Template>查询{sensor}读数</Template>
+            <Template>查看{patient}病历</Template>
+            <Template>查询{doctor}排班</Template>
             <Template>check status of {target}</Template>
         </Templates>
     </Pattern>
     
-    <!-- 同义词库 - 智慧城市特定实体别名 -->
+    <!-- 同义词库 - 医疗健康特定实体别名 -->
     <Synonyms>
-        <SynonymGroup primary="建筑">
-            <Alias>building</Alias>
-            <Alias>楼宇</Alias>
-            <Alias>大楼</Alias>
+        <SynonymGroup primary="患者">
+            <Alias>patient</Alias>
+            <Alias>病人</Alias>
+            <Alias>病患</Alias>
         </SynonymGroup>
-        <SynonymGroup primary="传感器">
-            <Alias>sensor</Alias>
-            <Alias>探测仪</Alias>
-            <Alias>监测器</Alias>
+        <SynonymGroup primary="医生">
+            <Alias>doctor</Alias>
+            <Alias>医师</Alias>
+            <Alias>主治医生</Alias>
         </SynonymGroup>
-        <SynonymGroup primary="交通灯">
-            <Alias>traffic_light</Alias>
-            <Alias>红绿灯</Alias>
-            <Alias>信号灯</Alias>
+        <SynonymGroup primary="护士">
+            <Alias>nurse</Alias>
+            <Alias>护理人员</Alias>
         </SynonymGroup>
-        <SynonymGroup primary="公共交通">
-            <Alias>public_transport</Alias>
-            <Alias>公交</Alias>
-            <Alias>巴士</Alias>
+        <SynonymGroup primary="病房">
+            <Alias>ward</Alias>
+            <Alias>病房</Alias>
+            <Alias>病区</Alias>
         </SynonymGroup>
-        <SynonymGroup primary="电网">
-            <Alias>energy_grid</Alias>
-            <Alias>电力网</Alias>
-            <Alias>供电网</Alias>
+        <SynonymGroup primary="药品">
+            <Alias>medication</Alias>
+            <Alias>药物</Alias>
+            <Alias>药</Alias>
         </SynonymGroup>
     </Synonyms>
 </SynapserPatterns>

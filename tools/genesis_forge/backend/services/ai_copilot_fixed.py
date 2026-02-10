@@ -99,36 +99,7 @@ Response format:
                 logger.error("OpenAI SDK not installed. Install with: pip install openai")
                 return self._generate_mock_llm_response(prompt, context)
             
-            # 构建系统提示
-            system_prompt = """你是一个专业的仿真世界构建助手，专门帮助用户创建和修改Genesis Studio本体结构。
-
-核心原则：
-1. 严格遵循XML和JSON格式规范
-2. 保持与现有本体结构的一致性
-3. 提供实用且可执行的建议
-4. 考虑性能和可扩展性
-
-可用操作：
-- 生成对象类型定义（XML格式）
-- 创建动作类型规则（XML格式）
-- 编写Cypher查询
-- 建议关系模式
-- 验证现有结构
-
-响应格式：
-- 对于XML内容，使用```xml代码块包裹
-- 对于JSON内容，使用```json代码块包裹
-- 包含复杂逻辑的解释
-- 在适当时提供替代解决方案
-
-重要：请为CSV转领域任务生成以下5个完整的文件：
-1. config.json - 领域配置文件（JSON格式）
-2. object_types.xml - 对象类型定义（XML格式）
-3. action_types.xml - 动作类型定义（XML格式）
-4. seed_data.xml - 种子数据（XML格式）
-5. synapser_patterns.xml - 同步模式定义（XML格式）
-
-每个文件都要用相应的代码块包裹。"""
+            system_prompt = self._get_system_prompt()
             
             client = OpenAI(
                 api_key=api_key,
@@ -159,6 +130,111 @@ Response format:
         except Exception as e:
             logger.error(f"DeepSeek API call failed: {e}")
             return self._generate_mock_llm_response(prompt, context)
+    
+    def _call_real_llm_stream(self, prompt: str, context: Optional[Dict[str, Any]] = None):
+        """
+        流式调用真实的大模型API（使用DeepSeek）
+        
+        Args:
+            prompt: 用户提示词
+            context: 上下文信息
+            
+        Yields:
+            str: 每个流式响应块
+        """
+        if context is None:
+            context = {}
+        
+        api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+        base_url = "https://api.deepseek.com"
+        
+        if not api_key:
+            logger.warning("DeepSeek API key not available, using mock stream")
+            # 模拟流式响应
+            mock_response = self._generate_mock_llm_response(prompt, context)
+            # 将模拟响应分块返回
+            chunk_size = 100
+            for i in range(0, len(mock_response), chunk_size):
+                chunk = mock_response[i:i+chunk_size]
+                import time
+                time.sleep(0.1)  # 模拟网络延迟
+                yield chunk
+            return
+        
+        try:
+            try:
+                from openai import OpenAI
+            except ImportError:
+                logger.error("OpenAI SDK not installed. Install with: pip install openai")
+                mock_response = self._generate_mock_llm_response(prompt, context)
+                yield mock_response
+                return
+            
+            system_prompt = self._get_system_prompt()
+            
+            client = OpenAI(
+                api_key=api_key,
+                base_url=base_url
+            )
+            
+            logger.info(f"Calling DeepSeek API (streaming) with prompt length: {len(prompt)}")
+            
+            response = client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.3,
+                max_tokens=4000,
+                stream=True  # 启用流式
+            )
+            
+            for chunk in response:
+                if chunk.choices and len(chunk.choices) > 0:
+                    delta = chunk.choices[0].delta
+                    if delta and delta.content:
+                        yield delta.content
+            
+            logger.info("DeepSeek streaming response completed")
+            
+        except Exception as e:
+            logger.error(f"DeepSeek API streaming call failed: {e}")
+            # 失败时返回模拟响应
+            mock_response = self._generate_mock_llm_response(prompt, context)
+            yield mock_response
+    
+    def _get_system_prompt(self) -> str:
+        """获取系统提示词"""
+        return """你是一个专业的仿真世界构建助手，专门帮助用户创建和修改Genesis Studio本体结构。
+
+核心原则：
+1. 严格遵循XML和JSON格式规范
+2. 保持与现有本体结构的一致性
+3. 提供实用且可执行的建议
+4. 考虑性能和可扩展性
+
+可用操作：
+- 生成对象类型定义（XML格式）
+- 创建动作类型规则（XML格式）
+- 编写Cypher查询
+- 建议关系模式
+- 验证现有结构
+
+响应格式：
+- 对于XML内容，使用```xml代码块包裹
+- 对于JSON内容，使用```json代码块包裹
+- 包含复杂逻辑的解释
+- 在适当时提供替代解决方案
+
+重要：请为CSV转领域任务生成以下5个完整的文件：
+1. config.json - 领域配置文件（JSON格式）
+2. object_types.xml - 对象类型定义（XML格式）
+3. action_types.xml - 动作类型定义（XML格式）
+4. seed_data.xml - 种子数据（XML格式）
+5. synapser_patterns.xml - 同步模式定义（XML格式）
+
+每个文件都要用相应的代码块包裹。"""
     
     def _generate_mock_llm_response(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> str:
         """生成模拟的LLM响应（当真实API不可用时）"""

@@ -83,3 +83,4 @@ nul
 
 # Server logs
 tools/genesis_forge/backend/api/server.log
+neo4j_data/

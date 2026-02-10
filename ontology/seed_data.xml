@@ -1,101 +1,93 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<World domain="smart_city">
-  <Version>1.0.0</Version>
-  <Description>智慧城市系统 - 示例数据</Description>
-  
-  <Nodes>
-    <!-- 建筑 -->
-    <Node id="BLD_001" type="Building">
-      <Property key="building_id" type="string">BLD001</Property>
-      <Property key="name" type="string">智慧大厦</Property>
-      <Property key="type" type="string">COMMERCIAL</Property>
-      <Property key="address" type="string">市中心广场1号</Property>
-      <Property key="floors" type="int">30</Property>
-      <Property key="energy_usage" type="float">5200.5</Property>
-      <Property key="status" type="string">ACTIVE</Property>
-    </Node>
-    
-    <!-- 传感器 -->
-    <Node id="SNS_001" type="Sensor">
-      <Property key="sensor_id" type="string">SNS001</Property>
-      <Property key="name" type="string">大厦温度传感器</Property>
-      <Property key="type" type="string">TEMPERATURE</Property>
-      <Property key="location" type="string">智慧大厦1层大厅</Property>
-      <Property key="reading" type="float">22.5</Property>
-      <Property key="unit" type="string">°C</Property>
-      <Property key="status" type="string">ONLINE</Property>
-    </Node>
-    
-    <Node id="SNS_002" type="Sensor">
-      <Property key="sensor_id" type="string">SNS002</Property>
-      <Property key="name" type="string">空气质量传感器</Property>
-      <Property key="type" type="string">AIR_QUALITY</Property>
-      <Property key="location" type="string">城市公园</Property>
-      <Property key="reading" type="float">42</Property>
-      <Property key="unit" type="string">AQI</Property>
-      <Property key="status" type="string">ONLINE</Property>
-    </Node>
-    
-    <!-- 交通灯 -->
-    <Node id="TL_001" type="TrafficLight">
-      <Property key="light_id" type="string">TL001</Property>
-      <Property key="intersection" type="string">中山路-人民路交叉口</Property>
-      <Property key="coordinates" type="string">116.397,39.907</Property>
-      <Property key="phase" type="string">GREEN</Property>
-      <Property key="cycle_time" type="int">90</Property>
-      <Property key="status" type="string">OPERATIONAL</Property>
-    </Node>
-    
-    <!-- 公共交通 -->
-    <Node id="PT_001" type="PublicTransport">
-      <Property key="vehicle_id" type="string">BUS001</Property>
-      <Property key="type" type="string">BUS</Property>
-      <Property key="route" type="string">1路</Property>
-      <Property key="current_stop" type="string">中央公园站</Property>
-      <Property key="passengers" type="int">28</Property>
-      <Property key="capacity" type="int">50</Property>
-      <Property key="status" type="string">IN_TRANSIT</Property>
-    </Node>
-    
-    <!-- 公园 -->
-    <Node id="PRK_001" type="Park">
-      <Property key="park_id" type="string">PRK001</Property>
-      <Property key="name" type="string">中央公园</Property>
-      <Property key="area" type="float">120.5</Property>
-      <Property key="facilities" type="string">游乐场,健身设施,湖泊</Property>
-      <Property key="open_hours" type="string">6:00-22:00</Property>
-      <Property key="visitors" type="int">356</Property>
-      <Property key="status" type="string">OPEN</Property>
-    </Node>
-    
-    <!-- 电网 -->
-    <Node id="GRID_001" type="EnergyGrid">
-      <Property key="grid_id" type="string">GRID001</Property>
-      <Property key="name" type="string">城市主电网</Property>
-      <Property key="capacity" type="float">500</Property>
-      <Property key="load" type="float">385.2</Property>
-      <Property key="source" type="string">HYDRO</Property>
-      <Property key="frequency" type="float">50.02</Property>
-      <Property key="status" type="string">STABLE</Property>
-    </Node>
-    
-    <!-- 垃圾处理 -->
-    <Node id="WM_001" type="WasteManagement">
-      <Property key="facility_id" type="string">WM001</Property>
-      <Property key="name" type="string">城市垃圾处理中心</Property>
-      <Property key="type" type="string">RECYCLING</Property>
-      <Property key="capacity" type="float">500</Property>
-      <Property key="current_load" type="float">320</Property>
-      <Property key="location" type="string">城市东部</Property>
-      <Property key="status" type="string">OPERATIONAL</Property>
-    </Node>
-  </Nodes>
-  
-  <Links>
-    <!-- 传感器监控建筑 -->
-    <Link type="MONITORS" source="SNS_001" target="BLD_001"/>
-    
-    <!-- 电网连接建筑 -->
-    <Link type="CONNECTS" source="GRID_001" target="BLD_001"/>
-  </Links>
+<?xml version="1.0" ?>
+<World domain="healthcare">
+    <Nodes>
+        <Node id="entity_1" type="Patient">
+            <Property key="label" type="string">张三</Property>
+            <Property key="type" type="string">Patient</Property>
+            <Property key="age" type="string">45</Property>
+            <Property key="allergies" type="string">青霉素</Property>
+            <Property key="blood_type" type="string">A</Property>
+            <Property key="gender" type="string">MALE</Property>
+            <Property key="name" type="string">张三</Property>
+            <Property key="patient_id" type="string">P001</Property>
+            <Property key="status" type="string">IN_TREATMENT</Property>
+        </Node>
+        <Node id="entity_2" type="Patient">
+            <Property key="label" type="string">李四</Property>
+            <Property key="type" type="string">Patient</Property>
+            <Property key="age" type="string">32</Property>
+            <Property key="allergies" type="string">无</Property>
+            <Property key="blood_type" type="string">O</Property>
+            <Property key="gender" type="string">FEMALE</Property>
+            <Property key="name" type="string">李四</Property>
+            <Property key="patient_id" type="string">P002</Property>
+            <Property key="status" type="string">ADMITTED</Property>
+        </Node>
+        <Node id="entity_3" type="Doctor">
+            <Property key="label" type="string">王医生</Property>
+            <Property key="type" type="string">Doctor</Property>
+            <Property key="department" type="string">内科</Property>
+            <Property key="doctor_id" type="string">D001</Property>
+            <Property key="name" type="string">王医生</Property>
+            <Property key="specialty" type="string">内科</Property>
+            <Property key="status" type="string">AVAILABLE</Property>
+            <Property key="title" type="string">ATTENDING</Property>
+        </Node>
+        <Node id="entity_4" type="Nurse">
+            <Property key="label" type="string">赵护士</Property>
+            <Property key="type" type="string">Nurse</Property>
+            <Property key="department" type="string">内科</Property>
+            <Property key="name" type="string">赵护士</Property>
+            <Property key="nurse_id" type="string">N001</Property>
+            <Property key="shift" type="string">DAY</Property>
+            <Property key="status" type="string">AVAILABLE</Property>
+        </Node>
+        <Node id="entity_5" type="Ward">
+            <Property key="label" type="string">内科病房A区</Property>
+            <Property key="type" type="string">GENERAL</Property>
+            <Property key="capacity" type="string">20</Property>
+            <Property key="floor" type="string">3</Property>
+            <Property key="name" type="string">内科病房A区</Property>
+            <Property key="occupied" type="string">12</Property>
+            <Property key="ward_id" type="string">W001</Property>
+        </Node>
+        <Node id="entity_6" type="MedicalRecord">
+            <Property key="label" type="string">REC_001</Property>
+            <Property key="type" type="string">MedicalRecord</Property>
+            <Property key="diagnosis" type="string">高血压</Property>
+            <Property key="doctor_id" type="string">D001</Property>
+            <Property key="patient_id" type="string">P001</Property>
+            <Property key="prescription" type="string">降压药A 每日一次</Property>
+            <Property key="record_date" type="string">2026-01-15</Property>
+            <Property key="record_id" type="string">R001</Property>
+            <Property key="treatment" type="string">药物治疗+生活方式调整</Property>
+        </Node>
+        <Node id="entity_7" type="Medication">
+            <Property key="label" type="string">降压药A</Property>
+            <Property key="type" type="string">Medication</Property>
+            <Property key="dosage" type="string">50mg</Property>
+            <Property key="expiry_date" type="string">2027-06-30</Property>
+            <Property key="manufacturer" type="string">制药公司A</Property>
+            <Property key="med_id" type="string">M001</Property>
+            <Property key="name" type="string">降压药A</Property>
+            <Property key="stock" type="string">500</Property>
+            <Property key="unit" type="string">片</Property>
+        </Node>
+        <Node id="entity_8" type="Equipment">
+            <Property key="label" type="string">心电监护仪</Property>
+            <Property key="type" type="string">MONITOR</Property>
+            <Property key="equip_id" type="string">E001</Property>
+            <Property key="location" type="string">ICU</Property>
+            <Property key="name" type="string">心电监护仪</Property>
+            <Property key="status" type="string">OPERATIONAL</Property>
+        </Node>
+    </Nodes>
+    <Links>
+        <Link type="relationship" source="DOC_001" target="PAT_001"/>
+        <Link type="relationship" source="DOC_001" target="PAT_002"/>
+        <Link type="relationship" source="NUR_001" target="PAT_001"/>
+        <Link type="relationship" source="PAT_001" target="WARD_001"/>
+        <Link type="relationship" source="DOC_001" target="REC_001"/>
+        <Link type="relationship" source="DOC_001" target="MED_001"/>
+    </Links>
 </World>

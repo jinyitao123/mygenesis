@@ -1,137 +1,139 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <action_types>
-  <!-- 智慧城市领域动作类型定义 -->
+  <!-- 医疗健康领域动作类型定义 -->
   
-  <!-- 交通控制 -->
+  <!-- 患者入院 -->
   <action_type>
-    <id>ADJUST_TRAFFIC_LIGHT</id>
-    <name>调整交通灯</name>
-    <description>调整交通灯相位和时间</description>
-    <icon>traffic-light</icon>
-    <color>#f59e0b</color>
+    <id>ADMIT_PATIENT</id>
+    <name>办理入院</name>
+    <description>办理患者入院手续</description>
+    <icon>hospital</icon>
+    <color>#3b82f6</color>
     
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>TrafficLight</object_type>
+        <object_type>Patient</object_type>
         <property>status</property>
         <operator>==</operator>
-        <value>OPERATIONAL</value>
-      </precondition>
-    </preconditions>
-    
-    <effects>
-       <effect>
-        <type>property_change</type>
-        <object_type>TrafficLight</object_type>
-        <property>phase</property>
-        <value>GREEN</value>
-      </effect>
-    </effects>
-  </action_type>
-  
-  <!-- 能源调度 -->
-  <action_type>
-    <id>ADJUST_ENERGY_LOAD</id>
-    <name>能源调度</name>
-    <description>调整能源负载分配</description>
-    <icon>⚡</icon>
-    <color>#ef4444</color>
-    
-    <preconditions>
-      <precondition>
-        <type>object_exists</type>
-        <object_type>EnergyGrid</object_type>
-      </precondition>
-    </preconditions>
-    
-    <effects>
-       <effect>
-        <type>property_change</type>
-        <object_type>EnergyGrid</object_type>
-        <property>load</property>
-        <value>0</value>
-      </effect>
-    </effects>
-  </action_type>
-  
-  <!-- 公共交通调度 -->
-  <action_type>
-    <id>DISPATCH_TRANSPORT</id>
-    <name>调度公交</name>
-    <description>调度公共交通车辆</description>
-    <icon>bus</icon>
-    <color>#8b5cf6</color>
-    
-    <preconditions>
-      <precondition>
-        <type>object_exists</type>
-        <object_type>PublicTransport</object_type>
-        <property>status</property>
-        <operator>==</operator>
-        <value>STOPPED</value>
+        <value>REGISTERED</value>
       </precondition>
     </preconditions>
     
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>PublicTransport</object_type>
+        <object_type>Patient</object_type>
         <property>status</property>
-        <value>IN_TRANSIT</value>
+        <value>ADMITTED</value>
       </effect>
     </effects>
   </action_type>
   
-  <!-- 垃圾收集调度 -->
+  <!-- 开具处方 -->
   <action_type>
-    <id>SCHEDULE_WASTE_COLLECTION</id>
-    <name>调度垃圾收集</name>
-    <description>安排垃圾收集任务</description>
-    <icon>🗑️</icon>
-    <color>#64748b</color>
-    
-    <preconditions>
-      <precondition>
-        <type>object_exists</type>
-        <object_type>WasteManagement</object_type>
-        <property>status</property>
-        <operator>==</operator>
-        <value>OPERATIONAL</value>
-      </precondition>
-    </preconditions>
-    
-    <effects>
-      <effect>
-        <type>property_change</type>
-        <object_type>WasteManagement</object_type>
-        <property>current_load</property>
-        <value>0</value>
-      </effect>
-    </effects>
-  </action_type>
-  
-  <!-- 公园管理 -->
-  <action_type>
-    <id>UPDATE_PARK_STATUS</id>
-    <name>更新公园状态</name>
-    <description>更新公园开放状态和活动</description>
-    <icon>🌳</icon>
+    <id>PRESCRIBE_MEDICATION</id>
+    <name>开具处方</name>
+    <description>医生为患者开具处方</description>
+    <icon>pill</icon>
     <color>#10b981</color>
     
     <preconditions>
       <precondition>
         <type>object_exists</type>
-        <object_type>Park</object_type>
+        <object_type>Doctor</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>AVAILABLE</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>object_create</type>
+        <object_type>MedicalRecord</object_type>
+        <properties>
+          <property name="doctor_id" value="$doctor_id"/>
+        </properties>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 安排检查 -->
+  <action_type>
+    <id>SCHEDULE_EXAM</id>
+    <name>安排检查</name>
+    <description>为患者安排医疗设备检查</description>
+    <icon>🔬</icon>
+    <color>#8b5cf6</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>Equipment</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>OPERATIONAL</value>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>object_create</type>
+        <object_type>MedicalRecord</object_type>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 病房分配 -->
+  <action_type>
+    <id>ASSIGN_WARD</id>
+    <name>分配病房</name>
+    <description>为患者分配病房床位</description>
+    <icon>🛏️</icon>
+    <color>#f59e0b</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>Ward</object_type>
+      </precondition>
+    </preconditions>
+    
+    <effects>
+      <effect>
+        <type>relation_create</type>
+        <relation_type>ADMITS_TO</relation_type>
+        <from_object>PATIENT</from_object>
+        <to_object>WARD</to_object>
+      </effect>
+    </effects>
+  </action_type>
+  
+  <!-- 护士护理 -->
+  <action_type>
+    <id>NURSE_CARE</id>
+    <name>护理操作</name>
+    <description>护士对患者进行护理操作</description>
+    <icon>💉</icon>
+    <color>#ef4444</color>
+    
+    <preconditions>
+      <precondition>
+        <type>object_exists</type>
+        <object_type>Nurse</object_type>
+        <property>status</property>
+        <operator>==</operator>
+        <value>AVAILABLE</value>
       </precondition>
     </preconditions>
     
     <effects>
       <effect>
         <type>property_change</type>
-        <object_type>Park</object_type>
+        <object_type>Nurse</object_type>
         <property>status</property>
-        <value>EVENT</value>
+        <value>BUSY</value>
       </effect>
     </effects>
   </action_type>

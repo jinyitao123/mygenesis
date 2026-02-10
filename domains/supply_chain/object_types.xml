@@ -1,69 +1,62 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" ?>
 <ObjectTypes domain="supply_chain">
-  <!-- 供应链领域对象类型定义 -->
-  
-  <ObjectType name="TRUCK" icon="truck" color="#3b82f6" primary_key="truck_id">
-    <Property name="truck_id" type="string" required="true" description="卡车ID"/>
-    <Property name="label" type="string" description="卡车名称"/>
-    <Property name="capacity" type="int" description="载货容量(吨)"/>
-    <Property name="fuel_level" type="float" default="100" description="油量百分比"/>
-    <Property name="location" type="string" description="当前位置"/>
-    <Property name="status" type="string" enum="IDLE,LOADING,IN_TRANSIT,UNLOADING,MAINTENANCE" default="IDLE" description="状态"/>
-    <Property name="current_load" type="int" default="0" description="当前载货量"/>
-  </ObjectType>
-  
-  <ObjectType name="WAREHOUSE" icon="warehouse" color="#10b981" primary_key="warehouse_id">
-    <Property name="warehouse_id" type="string" required="true" description="仓库ID"/>
-    <Property name="label" type="string" description="仓库名称"/>
-    <Property name="capacity" type="int" description="存储容量(吨)"/>
-    <Property name="current_load" type="int" default="0" description="当前库存"/>
-    <Property name="location" type="string" description="仓库位置"/>
-    <Property name="type" type="string" enum="DISTRIBUTION,STORAGE,COLD_STORAGE" default="STORAGE" description="仓库类型"/>
-    <Property name="status" type="string" enum="OPEN,CLOSED,MAINTENANCE" default="OPEN" description="状态"/>
-  </ObjectType>
-  
-  <ObjectType name="PACKAGE" icon="package" color="#f59e0b" primary_key="package_id">
-    <Property name="package_id" type="string" required="true" description="包裹ID"/>
-    <Property name="label" type="string" description="包裹名称"/>
-    <Property name="destination" type="string" description="目的地"/>
-    <Property name="location" type="string" description="当前位置"/>
-    <Property name="weight" type="float" description="重量(kg)"/>
-    <Property name="status" type="string" enum="CREATED,IN_WAREHOUSE,IN_TRANSIT,DELIVERED" default="CREATED" description="状态"/>
-    <Property name="priority" type="string" enum="LOW,MEDIUM,HIGH,URGENT" default="MEDIUM" description="优先级"/>
-  </ObjectType>
-  
-  <ObjectType name="SUPPLIER" icon="supplier" color="#8b5cf6" primary_key="supplier_id">
-    <Property name="supplier_id" type="string" required="true" description="供应商ID"/>
-    <Property name="label" type="string" description="供应商名称"/>
-    <Property name="location" type="string" description="供应商位置"/>
-    <Property name="product_type" type="string" description="产品类型"/>
-    <Property name="capacity" type="int" description="供应能力(吨/月)"/>
-    <Property name="status" type="string" enum="ACTIVE,INACTIVE,OVERLOADED" default="ACTIVE" description="状态"/>
-  </ObjectType>
-  
-  <ObjectType name="CUSTOMER" icon="customer" color="#ef4444" primary_key="customer_id">
-    <Property name="customer_id" type="string" required="true" description="客户ID"/>
-    <Property name="label" type="string" description="客户名称"/>
-    <Property name="location" type="string" description="客户位置"/>
-    <Property name="demand" type="int" default="0" description="需求数量"/>
-    <Property name="status" type="string" enum="ACTIVE,INACTIVE,VIP" default="ACTIVE" description="状态"/>
-  </ObjectType>
-  
-  <ObjectType name="ROUTE" icon="route" color="#6366f1" primary_key="route_id">
-    <Property name="route_id" type="string" required="true" description="路线ID"/>
-    <Property name="label" type="string" description="路线名称"/>
-    <Property name="start_location" type="string" description="起点"/>
-    <Property name="end_location" type="string" description="终点"/>
-    <Property name="distance" type="float" description="距离(km)"/>
-    <Property name="estimated_time" type="float" description="预计时间(小时)"/>
-    <Property name="status" type="string" enum="OPEN,CLOSED,CONGESTED" default="OPEN" description="状态"/>
-  </ObjectType>
-  
-  <!-- 关系类型定义 -->
-  <LinkType name="TRANSPORTS" source="TRUCK" target="PACKAGE" color="#3b82f6" description="卡车运输包裹"/>
-  <LinkType name="STORES" source="WAREHOUSE" target="PACKAGE" color="#10b981" description="仓库存储包裹"/>
-  <LinkType name="SUPPLIES" source="SUPPLIER" target="WAREHOUSE" color="#8b5cf6" description="供应商供应货物"/>
-  <LinkType name="ORDERS" source="CUSTOMER" target="PACKAGE" color="#ef4444" description="客户订购包裹"/>
-  <LinkType name="FOLLOWS" source="TRUCK" target="ROUTE" color="#6366f1" description="卡车遵循路线"/>
-  <LinkType name="LOCATED_AT" source="PACKAGE" target="WAREHOUSE" color="#f59e0b" description="包裹位于仓库"/>
+    <ObjectType name="TRUCK">
+        <Property name="label" type="string"/>
+        <Property name="type" type="string" description="节点类型"/>
+        <Property name="capacity" type="string"/>
+        <Property name="current_load" type="string"/>
+        <Property name="fuel_level" type="string"/>
+        <Property name="location" type="string"/>
+        <Property name="status" type="string"/>
+        <Property name="truck_id" type="string"/>
+    </ObjectType>
+    <ObjectType name="WAREHOUSE">
+        <Property name="label" type="string"/>
+        <Property name="type" type="string"/>
+        <Property name="capacity" type="string"/>
+        <Property name="current_load" type="string"/>
+        <Property name="location" type="string"/>
+        <Property name="status" type="string"/>
+        <Property name="warehouse_id" type="string"/>
+    </ObjectType>
+    <ObjectType name="PACKAGE">
+        <Property name="label" type="string"/>
+        <Property name="type" type="string" description="节点类型"/>
+        <Property name="destination" type="string"/>
+        <Property name="location" type="string"/>
+        <Property name="package_id" type="string"/>
+        <Property name="priority" type="string"/>
+        <Property name="status" type="string"/>
+        <Property name="weight" type="string"/>
+    </ObjectType>
+    <ObjectType name="SUPPLIER">
+        <Property name="label" type="string"/>
+        <Property name="type" type="string" description="节点类型"/>
+        <Property name="capacity" type="string"/>
+        <Property name="location" type="string"/>
+        <Property name="product_type" type="string"/>
+        <Property name="status" type="string"/>
+        <Property name="supplier_id" type="string"/>
+    </ObjectType>
+    <ObjectType name="CUSTOMER">
+        <Property name="label" type="string"/>
+        <Property name="type" type="string" description="节点类型"/>
+        <Property name="customer_id" type="string"/>
+        <Property name="demand" type="string"/>
+        <Property name="location" type="string"/>
+        <Property name="status" type="string"/>
+    </ObjectType>
+    <ObjectType name="ROUTE">
+        <Property name="label" type="string"/>
+        <Property name="type" type="string" description="节点类型"/>
+        <Property name="distance" type="string"/>
+        <Property name="end_location" type="string"/>
+        <Property name="estimated_time" type="string"/>
+        <Property name="route_id" type="string"/>
+        <Property name="start_location" type="string"/>
+        <Property name="status" type="string"/>
+    </ObjectType>
+    <LinkTypes>
+        <LinkType name="relationship" source="Unknown" target="Unknown"/>
+    </LinkTypes>
 </ObjectTypes>

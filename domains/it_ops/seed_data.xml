@@ -1,95 +1,82 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" ?>
 <World domain="it_ops">
-  <Version>1.0.0</Version>
-  <Description>IT运维系统 - 示例数据</Description>
-  
-  <Nodes>
-    <!-- 服务器 -->
-    <Node id="SRV_001" type="Server">
-      <Property key="hostname" type="string">web-server-01</Property>
-      <Property key="ip_address" type="string">192.168.1.10</Property>
-      <Property key="cpu_usage" type="float">45.5</Property>
-      <Property key="memory_usage" type="float">62.3</Property>
-      <Property key="disk_usage" type="float">35.0</Property>
-      <Property key="status" type="string">RUNNING</Property>
-      <Property key="os" type="string">Ubuntu 22.04</Property>
-    </Node>
-    
-    <Node id="SRV_002" type="Server">
-      <Property key="hostname" type="string">db-server-01</Property>
-      <Property key="ip_address" type="string">192.168.1.20</Property>
-      <Property key="cpu_usage" type="float">78.2</Property>
-      <Property key="memory_usage" type="float">85.6</Property>
-      <Property key="disk_usage" type="float">62.0</Property>
-      <Property key="status" type="string">RUNNING</Property>
-      <Property key="os" type="string">CentOS 8</Property>
-    </Node>
-    
-    <!-- 应用 -->
-    <Node id="APP_001" type="Application">
-      <Property key="app_id" type="string">WEB_APP</Property>
-      <Property key="name" type="string">企业官网</Property>
-      <Property key="version" type="string">2.1.0</Property>
-      <Property key="port" type="int">8080</Property>
-      <Property key="status" type="string">RUNNING</Property>
-      <Property key="uptime" type="int">864000</Property>
-    </Node>
-    
-    <!-- 数据库 -->
-    <Node id="DB_001" type="Database">
-      <Property key="db_id" type="string">MYSQL_PRIMARY</Property>
-      <Property key="name" type="string">企业主数据库</Property>
-      <Property key="type" type="string">MYSQL</Property>
-      <Property key="size" type="float">256.5</Property>
-      <Property key="connections" type="int">145</Property>
-      <Property key="status" type="string">ONLINE</Property>
-    </Node>
-    
-    <!-- 网络设备 -->
-    <Node id="NET_001" type="NetworkDevice">
-      <Property key="device_id" type="string">SWITCH_01</Property>
-      <Property key="name" type="string">核心交换机</Property>
-      <Property key="type" type="string">SWITCH</Property>
-      <Property key="ip_address" type="string">192.168.1.1</Property>
-      <Property key="bandwidth" type="float">10000</Property>
-      <Property key="status" type="string">ONLINE</Property>
-    </Node>
-    
-    <!-- 事件 -->
-    <Node id="INC_001" type="Incident">
-      <Property key="incident_id" type="string">INC001</Property>
-      <Property key="title" type="string">数据库连接数过高</Property>
-      <Property key="severity" type="string">HIGH</Property>
-      <Property key="category" type="string">PERFORMANCE</Property>
-      <Property key="status" type="string">INVESTIGATING</Property>
-      <Property key="assignee" type="string">李工</Property>
-    </Node>
-    
-    <!-- 用户 -->
-    <Node id="USER_001" type="User">
-      <Property key="user_id" type="string">USER001</Property>
-      <Property key="username" type="string">admin</Property>
-      <Property key="email" type="string">admin@company.com</Property>
-      <Property key="role" type="string">ADMIN</Property>
-      <Property key="department" type="string">IT部门</Property>
-    </Node>
-  </Nodes>
-  
-  <Links>
-    <!-- 应用运行在服务器上 -->
-    <Link type="RUNS_ON" source="APP_001" target="SRV_001"/>
-    
-    <!-- 应用使用数据库 -->
-    <Link type="USES" source="APP_001" target="DB_001"/>
-    
-    <!-- 服务器连接到网络设备 -->
-    <Link type="CONNECTED_TO" source="SRV_001" target="NET_001"/>
-    <Link type="CONNECTED_TO" source="SRV_002" target="NET_001"/>
-    
-    <!-- 服务器引发事件 -->
-    <Link type="AFFECTS" source="DB_001" target="INC_001"/>
-    
-    <!-- 用户负责事件 -->
-    <Link type="RESPONSIBLE_FOR" source="USER_001" target="INC_001"/>
-  </Links>
+    <Nodes>
+        <Node id="entity_1" type="Server">
+            <Property key="label" type="string">SRV_001</Property>
+            <Property key="type" type="string">Server</Property>
+            <Property key="cpu_usage" type="string">45.5</Property>
+            <Property key="disk_usage" type="string">35.0</Property>
+            <Property key="hostname" type="string">web-server-01</Property>
+            <Property key="ip_address" type="string">192.168.1.10</Property>
+            <Property key="memory_usage" type="string">62.3</Property>
+            <Property key="os" type="string">Ubuntu 22.04</Property>
+            <Property key="status" type="string">RUNNING</Property>
+        </Node>
+        <Node id="entity_2" type="Server">
+            <Property key="label" type="string">SRV_002</Property>
+            <Property key="type" type="string">Server</Property>
+            <Property key="cpu_usage" type="string">78.2</Property>
+            <Property key="disk_usage" type="string">62.0</Property>
+            <Property key="hostname" type="string">db-server-01</Property>
+            <Property key="ip_address" type="string">192.168.1.20</Property>
+            <Property key="memory_usage" type="string">85.6</Property>
+            <Property key="os" type="string">CentOS 8</Property>
+            <Property key="status" type="string">RUNNING</Property>
+        </Node>
+        <Node id="entity_3" type="Application">
+            <Property key="label" type="string">企业官网</Property>
+            <Property key="type" type="string">Application</Property>
+            <Property key="app_id" type="string">WEB_APP</Property>
+            <Property key="name" type="string">企业官网</Property>
+            <Property key="port" type="string">8080</Property>
+            <Property key="status" type="string">RUNNING</Property>
+            <Property key="uptime" type="string">864000</Property>
+            <Property key="version" type="string">2.1.0</Property>
+        </Node>
+        <Node id="entity_4" type="Database">
+            <Property key="label" type="string">企业主数据库</Property>
+            <Property key="type" type="string">MYSQL</Property>
+            <Property key="connections" type="string">145</Property>
+            <Property key="db_id" type="string">MYSQL_PRIMARY</Property>
+            <Property key="name" type="string">企业主数据库</Property>
+            <Property key="size" type="string">256.5</Property>
+            <Property key="status" type="string">ONLINE</Property>
+        </Node>
+        <Node id="entity_5" type="NetworkDevice">
+            <Property key="label" type="string">核心交换机</Property>
+            <Property key="type" type="string">SWITCH</Property>
+            <Property key="bandwidth" type="string">10000</Property>
+            <Property key="device_id" type="string">SWITCH_01</Property>
+            <Property key="ip_address" type="string">192.168.1.1</Property>
+            <Property key="name" type="string">核心交换机</Property>
+            <Property key="status" type="string">ONLINE</Property>
+        </Node>
+        <Node id="entity_6" type="Incident">
+            <Property key="label" type="string">INC_001</Property>
+            <Property key="type" type="string">Incident</Property>
+            <Property key="assignee" type="string">李工</Property>
+            <Property key="category" type="string">PERFORMANCE</Property>
+            <Property key="incident_id" type="string">INC001</Property>
+            <Property key="severity" type="string">HIGH</Property>
+            <Property key="status" type="string">INVESTIGATING</Property>
+            <Property key="title" type="string">数据库连接数过高</Property>
+        </Node>
+        <Node id="entity_7" type="User">
+            <Property key="label" type="string">USER_001</Property>
+            <Property key="type" type="string">User</Property>
+            <Property key="department" type="string">IT部门</Property>
+            <Property key="email" type="string">admin@company.com</Property>
+            <Property key="role" type="string">ADMIN</Property>
+            <Property key="user_id" type="string">USER001</Property>
+            <Property key="username" type="string">admin</Property>
+        </Node>
+    </Nodes>
+    <Links>
+        <Link type="relationship" source="APP_001" target="SRV_001"/>
+        <Link type="relationship" source="APP_001" target="DB_001"/>
+        <Link type="relationship" source="SRV_001" target="NET_001"/>
+        <Link type="relationship" source="SRV_002" target="NET_001"/>
+        <Link type="relationship" source="DB_001" target="INC_001"/>
+        <Link type="relationship" source="USER_001" target="INC_001"/>
+    </Links>
 </World>
